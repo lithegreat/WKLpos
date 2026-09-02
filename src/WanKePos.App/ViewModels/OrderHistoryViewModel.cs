@@ -34,9 +34,13 @@ namespace WanKePos.App.ViewModels
             _orderRepository = orderRepository;
         }
 
+        private bool _isInitialized;
+
         [RelayCommand]
         public async Task InitializeAsync()
         {
+            if (_isInitialized) return;
+            _isInitialized = true;
             await RefreshAsync();
         }
 

@@ -22,11 +22,11 @@ namespace WanKePos.App
         private static readonly IHost _host = Host.CreateDefaultBuilder()
             .ConfigureServices((context, services) =>
             {
-                // 数据库
+                // 数据库 (单例工厂或作用域)
                 services.AddDbContext<PosDbContext>(options =>
                 {
                     options.UseSqlite("Data Source=pos.db");
-                });
+                }, ServiceLifetime.Scoped);
 
                 // 仓储
                 services.AddScoped<IProductRepository, ProductRepository>();
@@ -42,22 +42,22 @@ namespace WanKePos.App
                 // 导航服务
                 services.AddSingleton<NavigationService>();
 
-                // ViewModels
+                // ViewModels (使用 Singleton 保持页面状态和瞬时切换性能)
                 services.AddSingleton<MainViewModel>();
-                services.AddTransient<CashierViewModel>();
-                services.AddTransient<ProductListViewModel>();
-                services.AddTransient<MemberListViewModel>();
-                services.AddTransient<OrderHistoryViewModel>();
-                services.AddTransient<SettingsViewModel>();
+                services.AddSingleton<CashierViewModel>();
+                services.AddSingleton<ProductListViewModel>();
+                services.AddSingleton<MemberListViewModel>();
+                services.AddSingleton<OrderHistoryViewModel>();
+                services.AddSingleton<SettingsViewModel>();
                 services.AddTransient<CheckoutDialogViewModel>();
 
-                // Views
+                // Views (使用 Singleton 避免每次切换选项卡重复创建 VisualTree 与重复加载)
                 services.AddSingleton<MainWindow>();
-                services.AddTransient<CashierView>();
-                services.AddTransient<ProductListView>();
-                services.AddTransient<MemberListView>();
-                services.AddTransient<OrderHistoryView>();
-                services.AddTransient<SettingsView>();
+                services.AddSingleton<CashierView>();
+                services.AddSingleton<ProductListView>();
+                services.AddSingleton<MemberListView>();
+                services.AddSingleton<OrderHistoryView>();
+                services.AddSingleton<SettingsView>();
             })
             .Build();
 

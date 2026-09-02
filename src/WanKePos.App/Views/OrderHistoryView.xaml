@@ -7,7 +7,7 @@
     <Page.Resources>
         <converters:DecimalToCurrencyConverter x:Key="DecimalToCurrencyConverter" />
     </Page.Resources>
-    <Grid>
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -23,25 +23,34 @@
             <ui:CardControl Grid.Column="0" Margin="5" BorderBrush="Green" BorderThickness="1">
                 <StackPanel>
                     <TextBlock Text="今日销售额" FontSize="12" Foreground="Gray" />
-                    <TextBlock Text="{Binding Summary.TotalSales, Converter={StaticResource DecimalToCurrencyConverter}}" FontSize="20" FontWeight="Bold" />
+                    <TextBlock Text="{Binding TodayTotalSales, Converter={StaticResource DecimalToCurrencyConverter}}" FontSize="20" FontWeight="Bold" />
                 </StackPanel>
             </ui:CardControl>
             <ui:CardControl Grid.Column="1" Margin="5" BorderBrush="Blue" BorderThickness="1">
                 <StackPanel>
                     <TextBlock Text="订单数" FontSize="12" Foreground="Gray" />
-                    <TextBlock Text="{Binding Summary.OrderCount}" FontSize="20" FontWeight="Bold" />
+                    <TextBlock Text="{Binding TodayOrderCount}" FontSize="20" FontWeight="Bold" />
                 </StackPanel>
             </ui:CardControl>
             <ui:CardControl Grid.Column="2" Margin="5" BorderBrush="Orange" BorderThickness="1">
                 <StackPanel>
                     <TextBlock Text="今日毛利" FontSize="12" Foreground="Gray" />
-                    <TextBlock Text="{Binding Summary.TotalProfit, Converter={StaticResource DecimalToCurrencyConverter}}" FontSize="20" FontWeight="Bold" />
+                    <TextBlock Text="{Binding TodayProfit, Converter={StaticResource DecimalToCurrencyConverter}}" FontSize="20" FontWeight="Bold" />
                 </StackPanel>
             </ui:CardControl>
             <ui:Button Grid.Column="3" Content="刷新" Command="{Binding RefreshCommand}" Margin="10,5,5,5" VerticalAlignment="Center" />
         </Grid>
 
-        <DataGrid Grid.Row="1" ItemsSource="{Binding Orders}" AutoGenerateColumns="False" IsReadOnly="True" AlternatingRowBackground="#1AFFFFFF">
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Orders}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  AlternatingRowBackground="#1AFFFFFF"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  VirtualizingPanel.ScrollUnit="Pixel"
+                  ScrollViewer.CanContentScroll="True">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="订单号" Binding="{Binding OrderNo}" />
                 <DataGridTextColumn Header="时间" Binding="{Binding CreatedAt, StringFormat=\{0:yyyy-MM-dd HH:mm\}}" />

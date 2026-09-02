@@ -4,7 +4,6 @@ using Microsoft.Win32;
 using System;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using WanKePos.Domain.Entities;
@@ -41,9 +40,14 @@ namespace WanKePos.App.ViewModels
             _excelImporter = excelImporter;
         }
 
+        private bool _isInitialized;
+
         [RelayCommand]
         public async Task InitializeAsync()
         {
+            if (_isInitialized) return;
+            _isInitialized = true;
+
             Settings = await _settingsRepository.GetSettingsAsync() ?? new StoreSettings();
             
             AvailablePorts.Clear();
@@ -55,7 +59,7 @@ namespace WanKePos.App.ViewModels
         public async Task SaveSettingsAsync()
         {
             await _settingsRepository.SaveSettingsAsync(Settings);
-            MessageBox.Show("设置已保存", "提示");
+            MessageBox.Show("设置已保存", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         [RelayCommand]
@@ -63,7 +67,7 @@ namespace WanKePos.App.ViewModels
         {
             if (string.IsNullOrEmpty(Settings.PrinterPort))
             {
-                MessageBox.Show("请先选择打印机端口", "提示");
+                MessageBox.Show("请先选择打印机端口", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
             try
@@ -73,7 +77,7 @@ namespace WanKePos.App.ViewModels
                 _receiptPrinter.Connect();
                 _receiptPrinter.TestPrint();
                 _receiptPrinter.Disconnect();
-                MessageBox.Show("测试打印已发送", "提示");
+                MessageBox.Show("测试打印已发送", "提示", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -96,7 +100,7 @@ namespace WanKePos.App.ViewModels
                 {
                     var products = await _excelImporter.ImportProductsAsync(dialog.FileName);
                     await _productRepository.ImportFromListAsync(products);
-                    MessageBox.Show($"成功导入 {products.Count} 个商品。", "导入成功");
+                    MessageBox.Show($"成功导入 {products.Count} 个商品。", "导入成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {
@@ -120,7 +124,7 @@ namespace WanKePos.App.ViewModels
                 {
                     var members = await _excelImporter.ImportMembersAsync(dialog.FileName);
                     await _memberRepository.ImportFromListAsync(members);
-                    MessageBox.Show($"成功导入 {members.Count} 个会员。", "导入成功");
+                    MessageBox.Show($"成功导入 {members.Count} 个会员。", "导入成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 catch (Exception ex)
                 {

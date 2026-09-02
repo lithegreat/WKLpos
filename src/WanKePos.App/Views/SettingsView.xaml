@@ -3,7 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
       Title="设置">
-    <ScrollViewer>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="20">
             
             <TextBlock Text="门店信息" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
@@ -22,9 +22,9 @@
             <ui:CardControl Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="打印机端口" Margin="0,0,0,5"/>
-                    <ComboBox ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding PrinterPort}" Margin="0,0,0,10"/>
+                    <ComboBox ItemsSource="{Binding AvailablePorts}" SelectedItem="{Binding Settings.PrinterPort}" Margin="0,0,0,10"/>
                     <TextBlock Text="波特率" Margin="0,0,0,5"/>
-                    <ui:TextBox Text="{Binding BaudRate}" Margin="0,0,0,10"/>
+                    <ui:TextBox Text="{Binding Settings.PrinterBaudRate}" Margin="0,0,0,10"/>
                     <ui:Button Content="测试打印" Command="{Binding TestPrintCommand}"/>
                 </StackPanel>
             </ui:CardControl>
@@ -33,7 +33,7 @@
             <ui:CardControl Margin="0,0,0,20">
                 <StackPanel>
                     <TextBlock Text="每消费1元获得积分数" Margin="0,0,0,5"/>
-                    <ui:TextBox Text="{Binding PointsPerYuan}"/>
+                    <ui:TextBox Text="{Binding Settings.PointsPerYuan}"/>
                 </StackPanel>
             </ui:CardControl>
 
@@ -55,7 +55,7 @@
                 </StackPanel>
             </ui:CardControl>
 
-            <ui:Button Content="保存设置" Command="{Binding SaveCommand}" HorizontalAlignment="Left" Appearance="Primary"/>
+            <ui:Button Content="保存设置" Command="{Binding SaveSettingsCommand}" HorizontalAlignment="Left" Appearance="Primary" Height="40" Padding="20,0"/>
 
         </StackPanel>
     </ScrollViewer>

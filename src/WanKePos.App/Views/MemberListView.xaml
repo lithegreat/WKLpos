@@ -23,7 +23,16 @@
             <ui:Button Content="导入Excel" Command="{Binding ImportFromExcelCommand}" />
         </StackPanel>
 
-        <DataGrid Grid.Row="1" ItemsSource="{Binding Members}" AutoGenerateColumns="False" IsReadOnly="True" AlternatingRowBackground="#1AFFFFFF">
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Members}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  AlternatingRowBackground="#1AFFFFFF"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  VirtualizingPanel.ScrollUnit="Pixel"
+                  ScrollViewer.CanContentScroll="True">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="编号" Binding="{Binding MemberNo}" />
                 <DataGridTextColumn Header="手机号" Binding="{Binding Phone}" />

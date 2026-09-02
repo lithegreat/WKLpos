@@ -25,8 +25,17 @@ namespace WanKePos.App.ViewModels
             _excelImporter = excelImporter;
         }
 
+        private bool _isInitialized;
+
         [RelayCommand]
         public async Task InitializeAsync()
+        {
+            if (_isInitialized) return;
+            _isInitialized = true;
+            await ReloadAsync();
+        }
+
+        public async Task ReloadAsync()
         {
             var members = await _memberRepository.GetAllAsync();
             Members.Clear();

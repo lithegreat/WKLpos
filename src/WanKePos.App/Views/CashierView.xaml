@@ -54,34 +54,57 @@
                         <KeyBinding Key="Enter" Command="{Binding SearchOrScanCommand}"/>
                     </ui:TextBox.InputBindings>
                 </ui:TextBox>
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding DisplayProducts}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{ui:ThemeResource ControlFillColorDefaultBrush}" BorderBrush="{ui:ThemeResource ControlElevationBorderBrush}" BorderThickness="1" CornerRadius="8" Width="150" Height="120" Margin="5">
-                                    <Border.InputBindings>
-                                        <MouseBinding MouseAction="LeftClick" Command="{Binding DataContext.AddToCartCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" CommandParameter="{Binding}" />
-                                    </Border.InputBindings>
-                                    <Grid Margin="10">
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="*"/>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-                                        <TextBlock Grid.Row="0" Text="{Binding Name}" TextWrapping="Wrap" FontSize="16" FontWeight="SemiBold"/>
-                                        <TextBlock Grid.Row="1" Text="{Binding RetailPrice, Converter={StaticResource CurrencyConverter}}" FontSize="14" Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
-                                        <TextBlock Grid.Row="2" Text="{Binding Stock, StringFormat='库存: {0}'}" FontSize="12" Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}"/>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                <ListView Grid.Row="1"
+                          ItemsSource="{Binding DisplayProducts}"
+                          ScrollViewer.CanContentScroll="True"
+                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          VirtualizingPanel.IsVirtualizing="True"
+                          VirtualizingPanel.VirtualizationMode="Recycling"
+                          VirtualizingPanel.ScrollUnit="Pixel"
+                          Background="Transparent"
+                          BorderThickness="0"
+                          HorizontalContentAlignment="Stretch">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{ui:ThemeResource ControlFillColorDefaultBrush}"
+                                    BorderBrush="{ui:ThemeResource ControlElevationBorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="12,10"
+                                    Margin="0,3">
+                                <Border.InputBindings>
+                                    <MouseBinding MouseAction="LeftClick"
+                                                  Command="{Binding DataContext.AddToCartCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                  CommandParameter="{Binding}" />
+                                </Border.InputBindings>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}" FontSize="15" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                            <TextBlock Text="{Binding Barcode, StringFormat='条码: {0}'}" FontSize="12" Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Margin="0,0,12,0"/>
+                                            <TextBlock Text="{Binding StoreCategory, StringFormat='分类: {0}'}" FontSize="12" Foreground="{ui:ThemeResource TextFillColorTertiaryBrush}" Margin="0,0,12,0"/>
+                                            <TextBlock Text="{Binding Stock, StringFormat='库存: {0}'}" FontSize="12" Foreground="{ui:ThemeResource TextFillColorSecondaryBrush}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="15,0">
+                                        <TextBlock Text="{Binding RetailPrice, Converter={StaticResource CurrencyConverter}}" FontSize="16" FontWeight="Bold" Foreground="#FF8C00" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding MemberPrice, StringFormat='会员价: ¥{0:F2}'}" FontSize="12" Foreground="LightGreen" HorizontalAlignment="Right"/>
+                                    </StackPanel>
+                                    <ui:Button Grid.Column="2" Content="+ 加入"
+                                               Command="{Binding DataContext.AddToCartCommand, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                               CommandParameter="{Binding}"
+                                               Appearance="Primary" Height="36" Padding="12,0" VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
             </Grid>
         </Border>
 

@@ -100,12 +100,16 @@ namespace WanKePos.App.ViewModels
             _printer = printer;
         }
 
+        private bool _isInitialized;
+
         /// <summary>
-        /// 页面加载时初始化数据
+        /// 页面加载时初始化数据（仅首次加载，后续切换选项卡秒开）
         /// </summary>
         [RelayCommand]
         private async Task InitializeAsync()
         {
+            if (_isInitialized) return;
+            _isInitialized = true;
             await LoadCategoriesAsync();
             await LoadProductsAsync();
         }

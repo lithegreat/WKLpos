@@ -24,7 +24,16 @@
             <ui:Button Content="导入Excel" Command="{Binding ImportFromExcelCommand}" />
         </StackPanel>
 
-        <DataGrid Grid.Row="1" ItemsSource="{Binding Products}" AutoGenerateColumns="False" IsReadOnly="True" AlternatingRowBackground="#1AFFFFFF">
+        <DataGrid Grid.Row="1" ItemsSource="{Binding Products}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  AlternatingRowBackground="#1AFFFFFF"
+                  EnableRowVirtualization="True"
+                  EnableColumnVirtualization="True"
+                  VirtualizingPanel.IsVirtualizing="True"
+                  VirtualizingPanel.VirtualizationMode="Recycling"
+                  VirtualizingPanel.ScrollUnit="Pixel"
+                  ScrollViewer.CanContentScroll="True">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="条码" Binding="{Binding Barcode}" />
                 <DataGridTextColumn Header="名称" Binding="{Binding Name}" />
