@@ -100,6 +100,21 @@ namespace WanKePos.Infrastructure.Data.Repositories
             }
         }
 
+        public async Task<Member?> GetByIdAsync(int id)
+        {
+            return await _context.Members.FindAsync(id);
+        }
+
+        public async Task DeleteAsync(int memberId)
+        {
+            var member = await _context.Members.FindAsync(memberId);
+            if (member != null)
+            {
+                _context.Members.Remove(member);
+                await _context.SaveChangesAsync();
+            }
+        }
+
         public async Task<int> ImportFromListAsync(List<Member> members)
         {
             int count = 0;

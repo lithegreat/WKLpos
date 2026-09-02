@@ -47,6 +47,9 @@
     <Page Include="Dialogs\AddProductContentDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Dialogs\AddMemberContentDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>
