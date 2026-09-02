@@ -9,6 +9,7 @@ using WanKePos.Infrastructure.Data;
 using WanKePos.Infrastructure.Data.Repositories;
 using WanKePos.Infrastructure.Hardware;
 using WanKePos.Infrastructure.Import;
+using WanKePos.Infrastructure.Export;
 using WanKePos.Infrastructure.Sync;
 using WanKePos.WinUI.ViewModels;
 using WanKePos.WinUI.Views;
@@ -30,12 +31,14 @@ namespace WanKePos.WinUI
                 services.AddScoped<IProductRepository, ProductRepository>();
                 services.AddScoped<IMemberRepository, MemberRepository>();
                 services.AddScoped<IOrderRepository, OrderRepository>();
+                services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
                 services.AddScoped<ISettingsRepository, SettingsRepository>();
                 services.AddScoped<ISyncService, ApiSyncService>();
 
                 // 硬件与工具
                 services.AddSingleton<ReceiptPrinter>();
                 services.AddTransient<ExcelImporter>();
+                services.AddTransient<PurchaseOrderExporter>();
 
                 // ViewModels (单例模式保证毫秒级切换)
                 services.AddSingleton<MainViewModel>();
@@ -43,6 +46,7 @@ namespace WanKePos.WinUI
                 services.AddSingleton<ProductListViewModel>();
                 services.AddSingleton<MemberListViewModel>();
                 services.AddSingleton<OrderHistoryViewModel>();
+                services.AddSingleton<PurchaseOrderViewModel>();
                 services.AddSingleton<SettingsViewModel>();
 
                 // Views (单例模式页面缓存)
@@ -51,6 +55,7 @@ namespace WanKePos.WinUI
                 services.AddSingleton<ProductListPage>();
                 services.AddSingleton<MemberListPage>();
                 services.AddSingleton<OrderHistoryPage>();
+                services.AddSingleton<PurchaseOrderPage>();
                 services.AddSingleton<SettingsPage>();
             })
             .Build();

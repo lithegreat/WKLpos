@@ -11,6 +11,7 @@ using WanKePos.Infrastructure.Data;
 using WanKePos.Infrastructure.Data.Repositories;
 using WanKePos.Infrastructure.Hardware;
 using WanKePos.Infrastructure.Import;
+using WanKePos.Infrastructure.Export;
 using WanKePos.Infrastructure.Sync;
 using WanKePos.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -32,12 +33,14 @@ namespace WanKePos.App
                 services.AddScoped<IProductRepository, ProductRepository>();
                 services.AddScoped<IMemberRepository, MemberRepository>();
                 services.AddScoped<IOrderRepository, OrderRepository>();
+                services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
                 services.AddScoped<ISettingsRepository, SettingsRepository>();
                 services.AddScoped<ISyncService, ApiSyncService>();
 
                 // 硬件和工具
                 services.AddSingleton<ReceiptPrinter>();
                 services.AddTransient<ExcelImporter>();
+                services.AddTransient<PurchaseOrderExporter>();
 
                 // 导航服务
                 services.AddSingleton<NavigationService>();
@@ -48,6 +51,7 @@ namespace WanKePos.App
                 services.AddSingleton<ProductListViewModel>();
                 services.AddSingleton<MemberListViewModel>();
                 services.AddSingleton<OrderHistoryViewModel>();
+                services.AddSingleton<PurchaseOrderViewModel>();
                 services.AddSingleton<SettingsViewModel>();
                 services.AddTransient<CheckoutDialogViewModel>();
 
@@ -57,6 +61,7 @@ namespace WanKePos.App
                 services.AddSingleton<ProductListView>();
                 services.AddSingleton<MemberListView>();
                 services.AddSingleton<OrderHistoryView>();
+                services.AddSingleton<PurchaseOrderView>();
                 services.AddSingleton<SettingsView>();
             })
             .Build();

@@ -13,6 +13,8 @@ namespace WanKePos.Infrastructure.Data
         public DbSet<Member> Members { get; set; } = null!;
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<OrderItem> OrderItems { get; set; } = null!;
+        public DbSet<PurchaseOrder> PurchaseOrders { get; set; } = null!;
+        public DbSet<PurchaseOrderItem> PurchaseOrderItems { get; set; } = null!;
         public DbSet<StoreSettings> StoreSettings { get; set; } = null!;
 
         public PosDbContext() { }
@@ -35,6 +37,7 @@ namespace WanKePos.Infrastructure.Data
             modelBuilder.Entity<Member>().HasIndex(m => m.Phone).IsUnique();
             modelBuilder.Entity<Member>().HasIndex(m => m.MemberNo).IsUnique();
             modelBuilder.Entity<Order>().HasIndex(o => o.OrderNo).IsUnique();
+            modelBuilder.Entity<PurchaseOrder>().HasIndex(po => po.PurchaseOrderNo).IsUnique();
 
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {

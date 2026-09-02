@@ -21,6 +21,7 @@
                 <ui:NavigationViewItem Content="商品管理" Icon="{ui:SymbolIcon Symbol=Box24}" TargetPageType="{x:Type local:Views.ProductListView}" />
                 <ui:NavigationViewItem Content="会员管理" Icon="{ui:SymbolIcon Symbol=People24}" TargetPageType="{x:Type local:Views.MemberListView}" />
                 <ui:NavigationViewItem Content="销售记录" Icon="{ui:SymbolIcon Symbol=Receipt24}" TargetPageType="{x:Type local:Views.OrderHistoryView}" />
+                <ui:NavigationViewItem Content="采购进货" Icon="{ui:SymbolIcon Symbol=VehicleTruckProfile24}" TargetPageType="{x:Type local:Views.PurchaseOrderView}" />
             </ui:NavigationView.MenuItems>
             <ui:NavigationView.FooterMenuItems>
                 <ui:NavigationViewItem Content="系统设置" Icon="{ui:SymbolIcon Symbol=Settings24}" TargetPageType="{x:Type local:Views.SettingsView}" />

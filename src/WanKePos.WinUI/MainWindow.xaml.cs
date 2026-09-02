@@ -55,6 +55,9 @@ namespace WanKePos.WinUI
                     case "Orders":
                         ContentFrame.Content = App.Services.GetRequiredService<OrderHistoryPage>();
                         break;
+                    case "Purchase":
+                        ContentFrame.Content = App.Services.GetRequiredService<PurchaseOrderPage>();
+                        break;
                     case "Settings":
                         ContentFrame.Content = App.Services.GetRequiredService<SettingsPage>();
                         break;

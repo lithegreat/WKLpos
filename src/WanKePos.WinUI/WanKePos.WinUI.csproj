@@ -38,6 +38,9 @@
     <Page Include="Views\SettingsPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Views\PurchaseOrderPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Dialogs\CheckoutContentDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
