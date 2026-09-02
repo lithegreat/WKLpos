@@ -44,6 +44,9 @@
     <Page Include="Dialogs\CheckoutContentDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Dialogs\AddProductContentDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>

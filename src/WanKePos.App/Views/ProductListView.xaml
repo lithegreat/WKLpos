@@ -7,43 +7,80 @@
     <Page.Resources>
         <converters:DecimalToCurrencyConverter x:Key="DecimalToCurrencyConverter" />
     </Page.Resources>
+    
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-            <ui:TextBox PlaceholderText="搜索商品名称或条码..." Width="250" Margin="0,0,10,0" Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}">
-                <ui:TextBox.InputBindings>
-                    <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
-                </ui:TextBox.InputBindings>
-            </ui:TextBox>
-            <ComboBox Width="150" Margin="0,0,10,0" ItemsSource="{Binding Categories}" SelectedItem="{Binding SelectedCategory}" />
-            <ui:Button Content="搜索" Command="{Binding SearchCommand}" Margin="0,0,10,0" />
-            <ui:Button Content="导入Excel" Command="{Binding ImportFromExcelCommand}" />
-        </StackPanel>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="170"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <DataGrid Grid.Row="1" ItemsSource="{Binding Products}"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  AlternatingRowBackground="#1AFFFFFF"
-                  EnableRowVirtualization="True"
-                  EnableColumnVirtualization="True"
-                  VirtualizingPanel.IsVirtualizing="True"
-                  VirtualizingPanel.VirtualizationMode="Recycling"
-                  VirtualizingPanel.ScrollUnit="Pixel"
-                  ScrollViewer.CanContentScroll="True">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="条码" Binding="{Binding Barcode}" />
-                <DataGridTextColumn Header="名称" Binding="{Binding Name}" />
-                <DataGridTextColumn Header="分类" Binding="{Binding StoreCategory}" />
-                <DataGridTextColumn Header="零售价" Binding="{Binding RetailPrice, Converter={StaticResource DecimalToCurrencyConverter}}" />
-                <DataGridTextColumn Header="会员价" Binding="{Binding MemberPrice, Converter={StaticResource DecimalToCurrencyConverter}}" />
-                <DataGridTextColumn Header="库存" Binding="{Binding Stock}" />
-                <DataGridTextColumn Header="单位" Binding="{Binding SaleUnit}" />
-                <DataGridTextColumn Header="状态" Binding="{Binding ShelfStatus}" />
-            </DataGrid.Columns>
-        </DataGrid>
+        <!-- 左侧品类侧边栏 -->
+        <Border Grid.Column="0" Background="#15FFFFFF" CornerRadius="8" Padding="10" Margin="0,0,10,0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="🏷️ 商品品类" FontWeight="Bold" FontSize="14" Margin="4,2,4,8"/>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl ItemsSource="{Binding Categories}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <ui:Button Content="{Binding}" Click="CategoryButton_Click" HorizontalAlignment="Stretch" Margin="0,0,0,4"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- 右侧商品表格与工具条 -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <Grid Grid.Row="0" Margin="0,0,0,10">
+                <StackPanel Orientation="Horizontal">
+                    <ui:TextBox PlaceholderText="搜索商品名称或条码..." Width="250" Margin="0,0,8,0" Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}">
+                        <ui:TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding SearchCommand}" />
+                        </ui:TextBox.InputBindings>
+                    </ui:TextBox>
+                    <ui:Button Content="搜索" Command="{Binding SearchCommand}" Margin="0,0,8,0" />
+                    <TextBlock Text="{Binding SelectedCategory, StringFormat='当前: {0}'}" VerticalAlignment="Center" Foreground="#A0A0A0" Margin="8,0,0,0"/>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <ui:Button Content="➕ 新增商品" Command="{Binding AddProductCommand}" Appearance="Primary" FontWeight="Bold" Margin="0,0,8,0" Padding="14,6"/>
+                    <ui:Button Content="📂 导入Excel" Command="{Binding ImportFromExcelCommand}" Padding="12,6"/>
+                </StackPanel>
+            </Grid>
+
+            <DataGrid Grid.Row="1" ItemsSource="{Binding Products}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      AlternatingRowBackground="#1AFFFFFF"
+                      EnableRowVirtualization="True"
+                      EnableColumnVirtualization="True"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      VirtualizingPanel.ScrollUnit="Pixel"
+                      ScrollViewer.CanContentScroll="True">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="条码" Binding="{Binding Barcode}" Width="150"/>
+                    <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="240"/>
+                    <DataGridTextColumn Header="分类" Binding="{Binding StoreCategory}" Width="110"/>
+                    <DataGridTextColumn Header="零售价" Binding="{Binding RetailPrice, Converter={StaticResource DecimalToCurrencyConverter}}" Width="90"/>
+                    <DataGridTextColumn Header="进货价" Binding="{Binding CostPrice, Converter={StaticResource DecimalToCurrencyConverter}}" Width="90"/>
+                    <DataGridTextColumn Header="会员价" Binding="{Binding MemberPrice, Converter={StaticResource DecimalToCurrencyConverter}}" Width="90"/>
+                    <DataGridTextColumn Header="库存" Binding="{Binding Stock}" Width="80"/>
+                    <DataGridTextColumn Header="单位" Binding="{Binding SaleUnit}" Width="70"/>
+                    <DataGridTextColumn Header="状态" Binding="{Binding ShelfStatus}" Width="80"/>
+                    <DataGridTextColumn Header="供应商" Binding="{Binding Supplier}" Width="*"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Grid>
     </Grid>
 </Page>
