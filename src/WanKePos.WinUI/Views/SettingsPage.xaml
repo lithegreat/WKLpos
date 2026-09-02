@@ -1,0 +1,80 @@
+<Page
+    x:Class="WanKePos.WinUI.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
+        <StackPanel Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
+            
+            <!-- 门店信息 -->
+            <TextBlock Text="🏪 门店信息" FontSize="18" FontWeight="Bold"/>
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="门店名称"/>
+                    <TextBox Text="{Binding Settings.StoreName, Mode=TwoWay}"/>
+                    <TextBlock Text="门店地址"/>
+                    <TextBox Text="{Binding Settings.StoreAddress, Mode=TwoWay}"/>
+                    <TextBlock Text="联系电话"/>
+                    <TextBox Text="{Binding Settings.StorePhone, Mode=TwoWay}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 打印机设置 -->
+            <TextBlock Text="🖨️ 小票打印机设置" FontSize="18" FontWeight="Bold"/>
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="打印机串口 (COM Port)"/>
+                    <ComboBox ItemsSource="{Binding AvailablePorts}" 
+                              SelectedItem="{Binding Settings.PrinterPort, Mode=TwoWay}"
+                              Width="200" HorizontalAlignment="Left"/>
+                    <TextBlock Text="波特率 (Baud Rate)"/>
+                    <TextBox Text="{Binding Settings.PrinterBaudRate, Mode=TwoWay}" Width="200" HorizontalAlignment="Left"/>
+                    <Button Content="🖨️ 发送测试打印" Command="{Binding TestPrintCommand}" Margin="0,6,0,0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 积分规则 -->
+            <TextBlock Text="⭐ 积分规则" FontSize="18" FontWeight="Bold"/>
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="每消费金额 (元) 累计 1 积分"/>
+                    <TextBox Text="{Binding Settings.PointsPerYuan, Mode=TwoWay}" Width="200" HorizontalAlignment="Left"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 小票版面自定义 -->
+            <TextBlock Text="📄 小票抬头与结尾" FontSize="18" FontWeight="Bold"/>
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="小票抬头附加说明 (Header)"/>
+                    <TextBox Text="{Binding Settings.ReceiptHeader, Mode=TwoWay}" AcceptsReturn="True" Height="60"/>
+                    <TextBlock Text="小票结尾感谢语 (Footer)"/>
+                    <TextBox Text="{Binding Settings.ReceiptFooter, Mode=TwoWay}" AcceptsReturn="True" Height="60"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 数据管理 -->
+            <TextBlock Text="💾 数据管理" FontSize="18" FontWeight="Bold"/>
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Orientation="Horizontal" Spacing="12">
+                    <Button Content="📥 重新导入商品库 (Excel)" Command="{Binding ImportProductsCommand}"/>
+                    <Button Content="📥 重新导入会员库 (Excel)" Command="{Binding ImportMembersCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- 保存按钮 -->
+            <Button Content="💾 保存所有设置" 
+                    Command="{Binding SaveSettingsCommand}" 
+                    Style="{StaticResource AccentButtonStyle}" 
+                    Height="44" 
+                    Padding="24,0" 
+                    FontSize="15" 
+                    FontWeight="Bold" 
+                    Margin="0,10,0,30"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

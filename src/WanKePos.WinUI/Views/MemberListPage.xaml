@@ -1,0 +1,101 @@
+<Page
+    x:Class="WanKePos.WinUI.Views.MemberListPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="using:WanKePos.WinUI.Converters"
+    mc:Ignorable="d">
+
+    <Page.Resources>
+        <converters:DecimalToCurrencyConverter x:Key="CurrencyConverter"/>
+    </Page.Resources>
+
+    <Grid Padding="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 搜索与操作栏 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,14">
+            <TextBox PlaceholderText="🔍 搜索会员手机号、姓名或编号 (回车)" 
+                     Width="320" 
+                     Text="{Binding SearchKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     KeyDown="SearchTextBox_KeyDown"/>
+            <Button Content="搜索" Command="{Binding SearchCommand}"/>
+            <Button Content="📂 导入Excel" Command="{Binding ImportFromExcelCommand}" Style="{StaticResource AccentButtonStyle}"/>
+        </StackPanel>
+
+        <!-- 会员原生虚拟化数据表格 -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- 表头 -->
+            <Border Grid.Row="0" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="150"/>
+                        <ColumnDefinition Width="140"/>
+                        <ColumnDefinition Width="130"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="会员编号" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="手机号" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="2" Text="会员姓名" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="3" Text="性别" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="4" Text="当前总积分" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="5" Text="当前余额" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="6" Text="累计消费" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="7" Text="状态" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="8" Text="所属门店" FontWeight="Bold" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- 数据行 -->
+            <ListView Grid.Row="1" 
+                      ItemsSource="{Binding Members}" 
+                      ScrollViewer.VerticalScrollBarVisibility="Auto"
+                      SelectionMode="None"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                      BorderThickness="1,0,1,1"
+                      CornerRadius="0,0,8,8"
+                      Padding="0">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="14,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="130"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="{Binding MemberNo}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="1" Text="{Binding Phone}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="3" Text="{Binding Gender}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="{Binding TotalPoints}" FontWeight="Bold" Foreground="LightGreen" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="{Binding Balance, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="#FF8C00" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="6" Text="{Binding TotalSpent, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="7" Text="{Binding Status}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="8" Text="{Binding StoreName}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+    </Grid>
+</Page>
