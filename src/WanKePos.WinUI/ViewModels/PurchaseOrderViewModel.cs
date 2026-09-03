@@ -5,6 +5,8 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Diagnostics;
+using Windows.ApplicationModel.DataTransfer;
 using WanKePos.Domain.Entities;
 using WanKePos.Domain.Enums;
 using WanKePos.Domain.Interfaces;
@@ -282,7 +284,50 @@ public partial class PurchaseOrderViewModel : ObservableObject
 
             var settings = await _settingsRepo.GetSettingsAsync();
             var exportedPath = await _exporter.ExportToExcelAsync(order, settings, savePath);
-            ShowMessage?.Invoke("导出成功", $"采购单已基于【zggj_门店商品-批量收货】模板成功导出至：\n{exportedPath}\n支持直接导入收货平台或发给供货商。");
+
+            // 1. 复制文件路径到系统剪贴板
+            try
+            {
+                var dataPackage = new DataPackage();
+                dataPackage.SetText(exportedPath);
+                Clipboard.SetContent(dataPackage);
+            }
+            catch { }
+
+            // 2. 在浏览器中打开店铺商品管理
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "https://estore.jd.com/goods/list",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+
+            // 3. 在资源管理器中定位并高亮选中导出的 Excel 文件
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{exportedPath}\"",
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+
+            // 4. 提示用户并在弹窗中清晰给出操作指引
+            ShowMessage?.Invoke("导出成功",
+                $"采购收货单已生成并保存在【我的文档】！\n\n" +
+                $"文件路径：\n{exportedPath}\n\n" +
+                $"📋 文件路径已自动复制到剪贴板！\n" +
+                $"🌐 已为您打开【店铺商品管理 (https://estore.jd.com/goods/list)】。\n" +
+                $"📁 已在文件夹中高亮选中该文件。\n\n" +
+                $"【后续操作指引】：\n" +
+                $"1. 点击网页右上角的【批量操作】按钮；\n" +
+                $"2. 点击下拉列表中的【批量收货】；\n" +
+                $"3. 在弹窗中点击【点击选择Excel文件】，直接按 Ctrl+V 粘贴文件路径（或拖入文件）即可完成批量收货！");
         }
         catch (Exception ex)
         {

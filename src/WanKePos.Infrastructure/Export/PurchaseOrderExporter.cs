@@ -47,9 +47,9 @@ public class PurchaseOrderExporter
     {
         if (string.IsNullOrWhiteSpace(targetFilePath))
         {
-            var downloadsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+            var documentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             var fileName = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
-            targetFilePath = Path.Combine(downloadsFolder, fileName);
+            targetFilePath = Path.Combine(documentsFolder, fileName);
         }
 
         // 确保所有明细项的商品详情均已加载

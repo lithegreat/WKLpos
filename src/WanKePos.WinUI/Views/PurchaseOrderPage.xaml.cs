@@ -63,7 +63,7 @@ public sealed partial class PurchaseOrderPage : Page
     private async Task<string?> OpenSaveFileDialogAsync(string suggestedFileName)
     {
         var savePicker = new FileSavePicker();
-        savePicker.SuggestedStartLocation = PickerLocationId.Downloads;
+        savePicker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
         savePicker.FileTypeChoices.Add("Excel 工作簿", new[] { ".xlsx" });
         savePicker.SuggestedFileName = suggestedFileName;
 
