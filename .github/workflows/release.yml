@@ -25,10 +25,30 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Cache NuGet Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Cache Inno Setup
+        id: cache-innosetup
+        uses: actions/cache@v4
+        with:
+          path: C:\Program Files (x86)\Inno Setup 6
+          key: ${{ runner.os }}-innosetup-6
+
       - name: Install Inno Setup
         shell: pwsh
         run: |
-          choco install innosetup --no-progress -y
+          if (-not (Test-Path "C:\Program Files (x86)\Inno Setup 6\ISCC.exe")) {
+              Write-Host "Inno Setup 未命中缓存，开始安装..." -ForegroundColor Yellow
+              choco install innosetup --no-progress -y
+          } else {
+              Write-Host "Inno Setup 已从缓存还原，跳过重复安装。" -ForegroundColor Green
+          }
 
       - name: Extract Tag & Version
         id: version_info
