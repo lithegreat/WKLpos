@@ -55,6 +55,30 @@
                 </StackPanel>
             </ui:CardControl>
 
+            <TextBlock Text="🚀 软件版本与在线更新 (GitHub Releases)" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+            <ui:CardControl Margin="0,0,0,20">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="当前客户端版本: " FontWeight="SemiBold"/>
+                                <TextBlock Text="v" FontWeight="Bold" Foreground="#FF8C00"/>
+                                <TextBlock Text="{Binding AppVersion}" FontWeight="Bold" Foreground="#FF8C00"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="12" Foreground="#A0A0A0" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <ui:Button Grid.Column="1" Content="🔍 检查新版本" Command="{Binding CheckUpdateCommand}" Appearance="Primary" Height="36" Padding="16,0"/>
+                    </Grid>
+
+                    <TextBlock Text="GitHub 更新源仓库 (格式: 所有者/仓库名):" FontSize="12" Foreground="#888888" Margin="0,0,0,4"/>
+                    <ui:TextBox Text="{Binding GitHubRepo, Mode=TwoWay}" Width="280" HorizontalAlignment="Left" PlaceholderText="例如: WKL/WanKePos"/>
+                </StackPanel>
+            </ui:CardControl>
+
             <ui:Button Content="保存设置" Command="{Binding SaveSettingsCommand}" HorizontalAlignment="Left" Appearance="Primary" Height="40" Padding="20,0"/>
 
         </StackPanel>

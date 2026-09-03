@@ -1,7 +1,11 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
+using WanKePos.Domain.Entities;
+using WanKePos.Domain.Interfaces;
+using WanKePos.WinUI.Dialogs;
 using WanKePos.WinUI.ViewModels;
 using WinRT.Interop;
 
@@ -18,6 +22,7 @@ namespace WanKePos.WinUI.Views
             this.DataContext = viewModel;
 
             ViewModel.RequestOpenFileDialog = OpenFileDialogAsync;
+            ViewModel.RequestUpdateDialog = ShowUpdateDialogAsync;
             ViewModel.ShowMessage = ShowMessageAsync;
 
             this.Loaded += async (s, e) =>
@@ -38,6 +43,16 @@ namespace WanKePos.WinUI.Views
 
             var file = await openPicker.PickSingleFileAsync();
             return file?.Path;
+        }
+
+        private async Task ShowUpdateDialogAsync(UpdateInfo updateInfo)
+        {
+            var updateService = App.Services.GetRequiredService<IUpdateService>();
+            var dialog = new UpdateContentDialog(updateInfo, updateService)
+            {
+                XamlRoot = this.XamlRoot
+            };
+            await dialog.ShowAsync();
         }
 
         private async void ShowMessageAsync(string title, string content)

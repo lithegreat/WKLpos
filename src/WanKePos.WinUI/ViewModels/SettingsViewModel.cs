@@ -9,123 +9,173 @@ using WanKePos.Domain.Interfaces;
 using WanKePos.Infrastructure.Hardware;
 using WanKePos.Infrastructure.Import;
 
-namespace WanKePos.WinUI.ViewModels
+namespace WanKePos.WinUI.ViewModels;
+
+public partial class SettingsViewModel : ObservableObject
 {
-    public partial class SettingsViewModel : ObservableObject
+    private readonly ISettingsRepository _settingsRepository;
+    private readonly ReceiptPrinter _receiptPrinter;
+    private readonly IProductRepository _productRepository;
+    private readonly IMemberRepository _memberRepository;
+    private readonly ExcelImporter _excelImporter;
+    private readonly IUpdateService _updateService;
+
+    [ObservableProperty]
+    private StoreSettings _settings = new();
+
+    [ObservableProperty]
+    private string _appVersion = "1.0.0";
+
+    [ObservableProperty]
+    private string _gitHubRepo = "WKL/WanKePos";
+
+    [ObservableProperty]
+    private bool _isCheckingUpdate;
+
+    [ObservableProperty]
+    private string _updateStatusText = "未检查";
+
+    public ObservableCollection<string> AvailablePorts { get; } = new();
+
+    public Func<Task<string?>>? RequestOpenFileDialog { get; set; }
+    public Func<UpdateInfo, Task>? RequestUpdateDialog { get; set; }
+    public Action<string, string>? ShowMessage { get; set; }
+
+    public SettingsViewModel(
+        ISettingsRepository settingsRepository,
+        ReceiptPrinter receiptPrinter,
+        IProductRepository productRepository,
+        IMemberRepository memberRepository,
+        ExcelImporter excelImporter,
+        IUpdateService updateService)
     {
-        private readonly ISettingsRepository _settingsRepository;
-        private readonly ReceiptPrinter _receiptPrinter;
-        private readonly IProductRepository _productRepository;
-        private readonly IMemberRepository _memberRepository;
-        private readonly ExcelImporter _excelImporter;
+        _settingsRepository = settingsRepository;
+        _receiptPrinter = receiptPrinter;
+        _productRepository = productRepository;
+        _memberRepository = memberRepository;
+        _excelImporter = excelImporter;
+        _updateService = updateService;
+    }
 
-        [ObservableProperty]
-        private StoreSettings _settings = new();
+    private bool _isInitialized;
 
-        public ObservableCollection<string> AvailablePorts { get; } = new();
+    [RelayCommand]
+    public async Task InitializeAsync()
+    {
+        if (_isInitialized) return;
+        _isInitialized = true;
 
-        public Func<Task<string?>>? RequestOpenFileDialog { get; set; }
-        public Action<string, string>? ShowMessage { get; set; }
+        Settings = await _settingsRepository.GetSettingsAsync() ?? new StoreSettings();
+        
+        AvailablePorts.Clear();
+        var ports = SerialPort.GetPortNames();
+        foreach (var p in ports) AvailablePorts.Add(p);
+    }
 
-        public SettingsViewModel(
-            ISettingsRepository settingsRepository,
-            ReceiptPrinter receiptPrinter,
-            IProductRepository productRepository,
-            IMemberRepository memberRepository,
-            ExcelImporter excelImporter)
+    [RelayCommand]
+    public async Task SaveSettingsAsync()
+    {
+        await _settingsRepository.SaveSettingsAsync(Settings);
+        ShowMessage?.Invoke("提示", "设置已成功保存！");
+    }
+
+    [RelayCommand]
+    public async Task CheckUpdateAsync()
+    {
+        if (IsCheckingUpdate) return;
+        IsCheckingUpdate = true;
+        UpdateStatusText = "正在连接 GitHub 检查版本...";
+
+        try
         {
-            _settingsRepository = settingsRepository;
-            _receiptPrinter = receiptPrinter;
-            _productRepository = productRepository;
-            _memberRepository = memberRepository;
-            _excelImporter = excelImporter;
-        }
-
-        private bool _isInitialized;
-
-        [RelayCommand]
-        public async Task InitializeAsync()
-        {
-            if (_isInitialized) return;
-            _isInitialized = true;
-
-            Settings = await _settingsRepository.GetSettingsAsync() ?? new StoreSettings();
-            
-            AvailablePorts.Clear();
-            var ports = SerialPort.GetPortNames();
-            foreach (var p in ports) AvailablePorts.Add(p);
-        }
-
-        [RelayCommand]
-        public async Task SaveSettingsAsync()
-        {
-            await _settingsRepository.SaveSettingsAsync(Settings);
-            ShowMessage?.Invoke("提示", "设置已成功保存！");
-        }
-
-        [RelayCommand]
-        public void TestPrint()
-        {
-            if (string.IsNullOrEmpty(Settings.PrinterPort))
+            var updateInfo = await _updateService.CheckForUpdateAsync(GitHubRepo, AppVersion);
+            if (updateInfo.HasUpdate)
             {
-                ShowMessage?.Invoke("提示", "请先选择打印机端口");
-                return;
-            }
-            try
-            {
-                _receiptPrinter.PortName = Settings.PrinterPort;
-                _receiptPrinter.BaudRate = Settings.PrinterBaudRate;
-                _receiptPrinter.Connect();
-                _receiptPrinter.TestPrint();
-                _receiptPrinter.Disconnect();
-                ShowMessage?.Invoke("提示", "测试打印指令已发送！");
-            }
-            catch (Exception ex)
-            {
-                ShowMessage?.Invoke("错误", $"打印机错误: {ex.Message}");
-            }
-        }
-
-        [RelayCommand]
-        public async Task ImportProductsAsync()
-        {
-            if (RequestOpenFileDialog != null)
-            {
-                var filePath = await RequestOpenFileDialog.Invoke();
-                if (!string.IsNullOrEmpty(filePath))
+                UpdateStatusText = $"发现新版本: v{updateInfo.LatestVersion}";
+                if (RequestUpdateDialog != null)
                 {
-                    try
-                    {
-                        var products = await _excelImporter.ImportProductsAsync(filePath);
-                        await _productRepository.ImportFromListAsync(products);
-                        ShowMessage?.Invoke("导入成功", $"成功导入 {products.Count} 个商品。");
-                    }
-                    catch (Exception ex)
-                    {
-                        ShowMessage?.Invoke("错误", $"导入失败: {ex.Message}");
-                    }
+                    await RequestUpdateDialog.Invoke(updateInfo);
+                }
+            }
+            else
+            {
+                UpdateStatusText = $"已是最新版本 (v{AppVersion})";
+                ShowMessage?.Invoke("检查更新", $"恭喜！当前运行的已是最新版本 (v{AppVersion})，暂无可用更新。");
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatusText = "检查失败";
+            ShowMessage?.Invoke("检查更新异常", $"无法连接到 GitHub Releases 服务：\n{ex.Message}\n请检查网络连接或 GitHub 仓库配置是否正确。");
+        }
+        finally
+        {
+            IsCheckingUpdate = false;
+        }
+    }
+
+    [RelayCommand]
+    public void TestPrint()
+    {
+        if (string.IsNullOrEmpty(Settings.PrinterPort))
+        {
+            ShowMessage?.Invoke("提示", "请先选择打印机端口");
+            return;
+        }
+        try
+        {
+            _receiptPrinter.PortName = Settings.PrinterPort;
+            _receiptPrinter.BaudRate = Settings.PrinterBaudRate;
+            _receiptPrinter.Connect();
+            _receiptPrinter.TestPrint();
+            _receiptPrinter.Disconnect();
+            ShowMessage?.Invoke("提示", "测试打印指令已发送！");
+        }
+        catch (Exception ex)
+        {
+            ShowMessage?.Invoke("错误", $"打印机错误: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    public async Task ImportProductsAsync()
+    {
+        if (RequestOpenFileDialog != null)
+        {
+            var filePath = await RequestOpenFileDialog.Invoke();
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                try
+                {
+                    var products = await _excelImporter.ImportProductsAsync(filePath);
+                    await _productRepository.ImportFromListAsync(products);
+                    ShowMessage?.Invoke("导入成功", $"成功导入 {products.Count} 个商品。");
+                }
+                catch (Exception ex)
+                {
+                    ShowMessage?.Invoke("错误", $"导入失败: {ex.Message}");
                 }
             }
         }
+    }
 
-        [RelayCommand]
-        public async Task ImportMembersAsync()
+    [RelayCommand]
+    public async Task ImportMembersAsync()
+    {
+        if (RequestOpenFileDialog != null)
         {
-            if (RequestOpenFileDialog != null)
+            var filePath = await RequestOpenFileDialog.Invoke();
+            if (!string.IsNullOrEmpty(filePath))
             {
-                var filePath = await RequestOpenFileDialog.Invoke();
-                if (!string.IsNullOrEmpty(filePath))
+                try
                 {
-                    try
-                    {
-                        var members = await _excelImporter.ImportMembersAsync(filePath);
-                        await _memberRepository.ImportFromListAsync(members);
-                        ShowMessage?.Invoke("导入成功", $"成功导入 {members.Count} 个会员。");
-                    }
-                    catch (Exception ex)
-                    {
-                        ShowMessage?.Invoke("错误", $"导入失败: {ex.Message}");
-                    }
+                    var members = await _excelImporter.ImportMembersAsync(filePath);
+                    await _memberRepository.ImportFromListAsync(members);
+                    ShowMessage?.Invoke("导入成功", $"成功导入 {members.Count} 个会员。");
+                }
+                catch (Exception ex)
+                {
+                    ShowMessage?.Invoke("错误", $"导入失败: {ex.Message}");
                 }
             }
         }

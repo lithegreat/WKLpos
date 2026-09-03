@@ -12,6 +12,7 @@ using WanKePos.Infrastructure.Data.Repositories;
 using WanKePos.Infrastructure.Hardware;
 using WanKePos.Infrastructure.Import;
 using WanKePos.Infrastructure.Export;
+using WanKePos.Infrastructure.Services;
 using WanKePos.Infrastructure.Sync;
 using WanKePos.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,7 @@ namespace WanKePos.App
                 services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
                 services.AddScoped<ISettingsRepository, SettingsRepository>();
                 services.AddScoped<ISyncService, ApiSyncService>();
+                services.AddSingleton<IUpdateService, UpdateService>();
 
                 // 硬件和工具
                 services.AddSingleton<ReceiptPrinter>();

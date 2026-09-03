@@ -65,6 +65,38 @@
                 </StackPanel>
             </Border>
 
+            <!-- 软件版本与在线更新 (GitHub Releases) -->
+            <TextBlock Text="🚀 软件版本与在线更新" FontSize="18" FontWeight="Bold"/>
+            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="当前客户端版本: " FontWeight="SemiBold"/>
+                                <TextBlock Text="v" FontWeight="Bold" Foreground="#FF8C00"/>
+                                <TextBlock Text="{Binding AppVersion}" FontWeight="Bold" Foreground="#FF8C00"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" 
+                                Content="🔍 检查新版本" 
+                                Command="{Binding CheckUpdateCommand}"
+                                Height="36" 
+                                Padding="16,0"
+                                Style="{StaticResource AccentButtonStyle}"/>
+                    </Grid>
+
+                    <StackPanel Spacing="4" Margin="0,4,0,0">
+                        <TextBlock Text="GitHub 更新源仓库 (格式: 所有者/仓库名):" FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                        <TextBox Text="{Binding GitHubRepo, Mode=TwoWay}" Width="280" HorizontalAlignment="Left" PlaceholderText="例如: WKL/WanKePos"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- 保存按钮 -->
             <Button Content="💾 保存所有设置" 
                     Command="{Binding SaveSettingsCommand}" 
