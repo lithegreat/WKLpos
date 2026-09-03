@@ -4,6 +4,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:local="clr-namespace:WanKePos.App"
         Title="万客隆 POS 收银系统" Height="768" Width="1024" WindowState="Maximized"
+        Icon="Assets/pos_icon.ico"
         Background="{ui:ThemeResource ApplicationBackgroundBrush}">
 
     <Grid>

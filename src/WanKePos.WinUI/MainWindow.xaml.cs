@@ -27,6 +27,11 @@ namespace WanKePos.WinUI
             if (appWindow != null)
             {
                 appWindow.Title = "万客隆 POS 收银系统 (WinUI 3 现代架构版)";
+                var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "pos_icon.ico");
+                if (System.IO.File.Exists(iconPath))
+                {
+                    appWindow.SetIcon(iconPath);
+                }
                 // 窗口居中并设为1200x800
                 appWindow.Resize(new Windows.Graphics.SizeInt32(1200, 800));
             }
