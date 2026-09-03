@@ -26,10 +26,10 @@ public partial class SettingsViewModel : ObservableObject
     private StoreSettings _settings = new();
 
     [ObservableProperty]
-    private string _appVersion = "1.0.0";
+    private string _appVersion = GetCurrentAppVersion();
 
     [ObservableProperty]
-    private string _gitHubRepo = "WKL/WanKePos";
+    private string _gitHubRepo = "lithegreat/WKLpos";
 
     [ObservableProperty]
     private bool _isCheckingUpdate;
@@ -182,5 +182,15 @@ public partial class SettingsViewModel : ObservableObject
                 }
             }
         }
+    }
+
+    private static string GetCurrentAppVersion()
+    {
+        var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        if (ver == null || (ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
+        {
+            return "1.0.0";
+        }
+        return ver.Build >= 0 ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : $"{ver.Major}.{ver.Minor}.0";
     }
 }

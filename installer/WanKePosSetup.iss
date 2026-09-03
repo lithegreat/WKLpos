@@ -1,8 +1,15 @@
 ; Inno Setup Script for 万客隆 POS 智能收银系统
 ; Documentation: https://jrsoftware.org/isinfo.php
 
+#ifndef MyAppVersion
+  #define MyAppVersion "1.0.0"
+#endif
+
+#ifndef OutputBaseFilename
+  #define OutputBaseFilename "WanKePos_Setup_v" + MyAppVersion
+#endif
+
 #define MyAppName "万客隆 POS 智能收银系统"
-#define MyAppVersion "1.0.0"
 #define MyAppPublisher "万客隆软件"
 #define MyAppExeName "WanKePos.WinUI.exe"
 
@@ -16,7 +23,7 @@ DefaultDirName={autopf}\WanKePos
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 OutputDir=..\output_installer
-OutputBaseFilename=WanKePos_Setup_v1.0.0
+OutputBaseFilename={#OutputBaseFilename}
 SetupIconFile=pos_icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
