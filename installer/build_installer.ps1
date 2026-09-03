@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Version = "1.0.0"
 )
 
@@ -27,7 +27,7 @@ $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";
 dotnet publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$cleanVersion /p:FileVersion=$cleanVersion
 
 if ($LASTEXITCODE -ne 0) {
-    Write-Host "编译发布失败，请检查代码错误！" -ForegroundColor Red
+    Write-Host "编译发布失败，请检查代码错误!" -ForegroundColor Red
     exit 1
 }
 
@@ -76,7 +76,7 @@ if (-not $iscc) {
 }
 
 if (-not $iscc) {
-    Write-Host "错误: 无法找到或安装 Inno Setup 编译器！" -ForegroundColor Red
+    Write-Host "错误: 无法找到或安装 Inno Setup 编译器!" -ForegroundColor Red
     exit 1
 }
 
@@ -95,12 +95,12 @@ if ($LASTEXITCODE -eq 0) {
     $setupFile = Get-Item "$rootDir\output_installer\$outputBaseFilename.exe"
     $fileSizeMB = [Math]::Round($setupFile.Length / 1MB, 2)
     Write-Host "`n==========================================" -ForegroundColor Green
-    Write-Host "  安装包制作成功！" -ForegroundColor Green
+    Write-Host "  安装包制作成功!" -ForegroundColor Green
     Write-Host "  版本: v$cleanVersion" -ForegroundColor Green
     Write-Host "  文件路径: $($setupFile.FullName)" -ForegroundColor White
     Write-Host "  文件大小: $fileSizeMB MB" -ForegroundColor White
     Write-Host "==========================================" -ForegroundColor Green
 } else {
-    Write-Host "安装包打包失败！" -ForegroundColor Red
+    Write-Host "安装包打包失败!" -ForegroundColor Red
     exit 1
 }

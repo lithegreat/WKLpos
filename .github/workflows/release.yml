@@ -47,7 +47,7 @@ jobs:
       - name: Run Packaging Script
         shell: pwsh
         run: |
-          powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1 -Version "${{ env.VERSION }}"
+          pwsh -ExecutionPolicy Bypass -File .\installer\build_installer.ps1 -Version "${{ env.VERSION }}"
 
       - name: Create GitHub Release & Upload Asset
         uses: softprops/action-gh-release@v2
