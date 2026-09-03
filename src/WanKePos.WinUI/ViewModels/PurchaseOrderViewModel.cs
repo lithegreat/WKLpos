@@ -317,7 +317,17 @@ public partial class PurchaseOrderViewModel : ObservableObject
             }
             catch { }
 
-            // 4. 提示用户并在弹窗中清晰给出操作指引
+            // 4. 保持软件窗口在浏览器和文件夹上方
+            App.EnsureMainWindowOnTop();
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(400);
+                App.EnsureMainWindowOnTop();
+                await Task.Delay(800);
+                App.EnsureMainWindowOnTop();
+            });
+
+            // 5. 提示用户并在弹窗中清晰给出操作指引
             ShowMessage?.Invoke("导出成功",
                 $"采购收货单已生成并保存在【我的文档】！\n\n" +
                 $"文件路径：\n{exportedPath}\n\n" +

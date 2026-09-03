@@ -36,6 +36,11 @@ namespace WanKePos.WinUI
                 }
                 // 窗口居中并设为1200x800
                 appWindow.Resize(new Windows.Graphics.SizeInt32(1200, 800));
+
+                if (appWindow.Presenter is OverlappedPresenter presenter)
+                {
+                    presenter.IsAlwaysOnTop = true;
+                }
             }
 
             // 注册全局功能快捷键 (F1~F6) 监听：使用 PreviewKeyDown 保证在任何输入焦点下均能优先拦截
@@ -170,6 +175,47 @@ namespace WanKePos.WinUI
                 case "Settings":
                     ContentFrame.Content = App.Services.GetRequiredService<SettingsPage>();
                     break;
+            }
+        }
+
+        private void AlwaysOnTopCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            SetAlwaysOnTop(true);
+        }
+
+        private void AlwaysOnTopCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SetAlwaysOnTop(false);
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
+        public void SetAlwaysOnTop(bool isAlwaysOnTop)
+        {
+            var hwnd = WindowNative.GetWindowHandle(this);
+            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+            var appWindow = AppWindow.GetFromWindowId(windowId);
+            if (appWindow?.Presenter is OverlappedPresenter presenter)
+            {
+                presenter.IsAlwaysOnTop = isAlwaysOnTop;
+            }
+
+            SetWindowPos(hwnd, isAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+            if (isAlwaysOnTop)
+            {
+                SetForegroundWindow(hwnd);
             }
         }
     }

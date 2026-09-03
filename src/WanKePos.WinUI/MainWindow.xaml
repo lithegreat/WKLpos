@@ -64,11 +64,19 @@
                            VerticalAlignment="Center" 
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
-                <TextBlock Grid.Column="2" 
-                           Text="{x:Bind MainViewModel.CurrentTime, Mode=OneWay}" 
-                           FontSize="12" 
-                           VerticalAlignment="Center" 
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                    <CheckBox x:Name="AlwaysOnTopCheckBox" 
+                              Content="窗口置顶" 
+                              IsChecked="True" 
+                              FontSize="12" 
+                              Checked="AlwaysOnTopCheckBox_Checked" 
+                              Unchecked="AlwaysOnTopCheckBox_Unchecked"
+                              ToolTipService.ToolTip="保持软件窗口始终在浏览器与其他窗口上方"/>
+                    <TextBlock Text="{x:Bind MainViewModel.CurrentTime, Mode=OneWay}" 
+                               FontSize="12" 
+                               VerticalAlignment="Center" 
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
             </Grid>
         </Border>
     </Grid>

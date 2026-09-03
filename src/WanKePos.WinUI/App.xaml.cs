@@ -39,6 +39,18 @@ namespace WanKePos.WinUI
         public static IServiceProvider Services => _host.Services;
         public static MainWindow? MainWindowInstance { get; set; }
 
+        public static void EnsureMainWindowOnTop()
+        {
+            if (MainWindowInstance != null)
+            {
+                MainWindowInstance.DispatcherQueue?.TryEnqueue(() =>
+                {
+                    MainWindowInstance.SetAlwaysOnTop(true);
+                    MainWindowInstance.Activate();
+                });
+            }
+        }
+
         public App()
         {
             this.InitializeComponent();
