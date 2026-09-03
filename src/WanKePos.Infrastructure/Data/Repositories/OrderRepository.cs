@@ -25,8 +25,7 @@ namespace WanKePos.Infrastructure.Data.Repositories
         {
             if (string.IsNullOrWhiteSpace(order.OrderNo))
             {
-                var random = new Random();
-                order.OrderNo = DateTime.Now.ToString("yyyyMMddHHmmss") + random.Next(1000, 9999).ToString();
+                order.OrderNo = DateTime.Now.ToString("yyyyMMddHHmmss") + Random.Shared.Next(1000, 9999).ToString("D4");
             }
             order.CreatedAt = DateTime.Now;
 
@@ -76,17 +75,14 @@ namespace WanKePos.Infrastructure.Data.Repositories
         public async Task<(decimal totalSales, int orderCount, decimal totalProfit)> GetDailySummaryAsync(DateTime date)
         {
             var nextDay = date.Date.AddDays(1);
-            var orders = await _context.Orders
-                .Include(o => o.Items)
-                    .ThenInclude(i => i.Product)
-                .Where(o => o.CreatedAt >= date.Date && o.CreatedAt < nextDay && o.Status == OrderStatus.Normal)
-                .ToListAsync();
+            var query = _context.Orders
+                .Where(o => o.CreatedAt >= date.Date && o.CreatedAt < nextDay && o.Status == OrderStatus.Normal);
 
-            var totalSales = orders.Sum(o => o.PayableAmount);
-            var orderCount = orders.Count;
-            var totalProfit = orders
+            var totalSales = await query.SumAsync(o => o.PayableAmount);
+            var orderCount = await query.CountAsync();
+            var totalProfit = await query
                 .SelectMany(o => o.Items)
-                .Sum(i => (i.ActualPrice - (i.Product?.CostPrice ?? 0)) * i.Quantity);
+                .SumAsync(i => (i.ActualPrice - i.CostPrice) * i.Quantity);
 
             return (totalSales, orderCount, totalProfit);
         }

@@ -36,6 +36,11 @@ public class OrderItem
     public decimal? MemberPrice { get; set; }
     
     /// <summary>
+    /// 下单时的进货价快照 (用于历史利润计算)
+    /// </summary>
+    public decimal CostPrice { get; set; }
+    
+    /// <summary>
     /// 实际售价
     /// </summary>
     public decimal ActualPrice { get; set; }

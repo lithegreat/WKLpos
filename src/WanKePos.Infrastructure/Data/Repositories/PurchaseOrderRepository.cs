@@ -40,6 +40,7 @@ public class PurchaseOrderRepository : IPurchaseOrderRepository
     {
         return await _dbContext.PurchaseOrders
             .Include(po => po.Items)
+                .ThenInclude(poi => poi.Product)
             .OrderByDescending(po => po.CreatedAt)
             .ToListAsync();
     }
@@ -48,6 +49,7 @@ public class PurchaseOrderRepository : IPurchaseOrderRepository
     {
         return await _dbContext.PurchaseOrders
             .Include(po => po.Items)
+                .ThenInclude(poi => poi.Product)
             .FirstOrDefaultAsync(po => po.Id == id);
     }
 
@@ -55,6 +57,7 @@ public class PurchaseOrderRepository : IPurchaseOrderRepository
     {
         return await _dbContext.PurchaseOrders
             .Include(po => po.Items)
+                .ThenInclude(poi => poi.Product)
             .Where(po => po.Status == status)
             .OrderByDescending(po => po.CreatedAt)
             .ToListAsync();
@@ -71,11 +74,16 @@ public class PurchaseOrderRepository : IPurchaseOrderRepository
             return false;
         }
 
+        // 批量预取涉及的商品
+        var productIds = order.Items.Select(i => i.ProductId).ToList();
+        var products = await _dbContext.Products
+            .Where(p => productIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id);
+
         // 累加商品库存并更新商品当前进货价
         foreach (var item in order.Items)
         {
-            var product = await _dbContext.Products.FindAsync(item.ProductId);
-            if (product != null)
+            if (products.TryGetValue(item.ProductId, out var product))
             {
                 product.Stock += item.Quantity;
                 if (item.CostPrice > 0)

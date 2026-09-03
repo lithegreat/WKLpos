@@ -20,6 +20,11 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# 清理发布目录下的临时锁文件与运行时日志，避免将其打入安装包
+Remove-Item -Path "$rootDir\publish_winui\*.db-shm" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$rootDir\publish_winui\*.db-wal" -Force -ErrorAction SilentlyContinue
+Remove-Item -Path "$rootDir\publish_winui\*.log" -Force -ErrorAction SilentlyContinue
+
 # 3. 定位 Inno Setup 编译器 ISCC.exe
 Write-Host "`n[2/3] 正在查找 Inno Setup 编译器..." -ForegroundColor Yellow
 $isccPaths = @(

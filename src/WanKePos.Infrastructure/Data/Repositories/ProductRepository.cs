@@ -44,7 +44,7 @@ namespace WanKePos.Infrastructure.Data.Repositories
 
         public async Task<List<Product>> GetByCategoryAsync(string category)
         {
-            if (string.IsNullOrWhiteSpace(category) || category == "全部")
+            if (string.IsNullOrWhiteSpace(category) || category == WanKePos.Domain.CategoryConstants.All)
                 return await _context.Products.ToListAsync();
 
             return await _context.Products
@@ -67,30 +67,11 @@ namespace WanKePos.Infrastructure.Data.Repositories
             var existing = await _context.Products.FirstOrDefaultAsync(p => p.Barcode == product.Barcode);
             if (existing != null)
             {
-                existing.Name = product.Name;
-                existing.ProductType = product.ProductType;
-                existing.Stock = product.Stock;
-                existing.RetailPrice = product.RetailPrice;
-                existing.CostPrice = product.CostPrice;
-                existing.MemberPrice = product.MemberPrice;
-                existing.SaleMethod = product.SaleMethod;
-                existing.SystemCategory = product.SystemCategory;
-                existing.StoreCategory = product.StoreCategory;
-                existing.ArticleNumber = product.ArticleNumber;
-                existing.Brand = product.Brand;
-                existing.SaleUnit = product.SaleUnit;
-                existing.Specification = product.Specification;
-                existing.SpecUnit = product.SpecUnit;
-                existing.IsPointsEligible = product.IsPointsEligible;
-                existing.ShelfStatus = product.ShelfStatus;
-                existing.Supplier = product.Supplier;
-                existing.ImageUrl = product.ImageUrl;
-                existing.LastModified = DateTime.Now;
+                _context.Entry(existing).CurrentValues.SetValues(product);
+                existing.Id = existing.Id; // preserve PK
             }
             else
             {
-                product.CreatedAt = DateTime.Now;
-                product.LastModified = DateTime.Now;
                 await _context.Products.AddAsync(product);
             }
             await _context.SaveChangesAsync();
@@ -107,44 +88,67 @@ namespace WanKePos.Infrastructure.Data.Repositories
             }
         }
 
-        public async Task<int> ImportFromListAsync(List<Product> products)
+        public async Task BatchUpdateStockAsync(Dictionary<int, decimal> stockChanges)
         {
-            int count = 0;
+            var productIds = stockChanges.Keys.ToList();
+            var products = await _context.Products
+                .Where(p => productIds.Contains(p.Id))
+                .ToListAsync();
+
             foreach (var product in products)
             {
-                var existing = await _context.Products.FirstOrDefaultAsync(p => p.Barcode == product.Barcode);
-                if (existing != null)
+                if (stockChanges.TryGetValue(product.Id, out var change))
                 {
-                    existing.Name = product.Name;
-                    existing.ProductType = product.ProductType;
-                    existing.Stock = product.Stock;
-                    existing.RetailPrice = product.RetailPrice;
-                    existing.CostPrice = product.CostPrice;
-                    existing.MemberPrice = product.MemberPrice;
-                    existing.SaleMethod = product.SaleMethod;
-                    existing.SystemCategory = product.SystemCategory;
-                    existing.StoreCategory = product.StoreCategory;
-                    existing.ArticleNumber = product.ArticleNumber;
-                    existing.Brand = product.Brand;
-                    existing.SaleUnit = product.SaleUnit;
-                    existing.Specification = product.Specification;
-                    existing.SpecUnit = product.SpecUnit;
-                    existing.IsPointsEligible = product.IsPointsEligible;
-                    existing.ShelfStatus = product.ShelfStatus;
-                    existing.Supplier = product.Supplier;
-                    existing.ImageUrl = product.ImageUrl;
-                    existing.LastModified = DateTime.Now;
+                    product.Stock += change;
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<int> ImportFromListAsync(List<Product> products)
+        {
+            var barcodes = products.Where(p => !string.IsNullOrWhiteSpace(p.Barcode)).Select(p => p.Barcode).ToList();
+            var existingDict = await _context.Products
+                .Where(p => barcodes.Contains(p.Barcode))
+                .ToDictionaryAsync(p => p.Barcode);
+
+            foreach (var product in products)
+            {
+                if (existingDict.TryGetValue(product.Barcode, out var existing))
+                {
+                    var existingId = existing.Id;
+                    _context.Entry(existing).CurrentValues.SetValues(product);
+                    existing.Id = existingId;
                 }
                 else
                 {
-                    product.CreatedAt = DateTime.Now;
-                    product.LastModified = DateTime.Now;
                     await _context.Products.AddAsync(product);
                 }
-                count++;
             }
             await _context.SaveChangesAsync();
-            return count;
+            return products.Count;
+        }
+
+        public async Task DeleteAsync(int productId)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if (product != null)
+            {
+                var hasOrderItems = await _context.OrderItems.AnyAsync(oi => oi.ProductId == productId);
+                if (hasOrderItems)
+                {
+                    throw new InvalidOperationException("该商品存在历史销售订单记录，不可直接删除！建议将状态设为下架。");
+                }
+
+                var hasPurchaseItems = await _context.PurchaseOrderItems.AnyAsync(poi => poi.ProductId == productId);
+                if (hasPurchaseItems)
+                {
+                    throw new InvalidOperationException("该商品存在历史采购单据记录，不可直接删除！");
+                }
+
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

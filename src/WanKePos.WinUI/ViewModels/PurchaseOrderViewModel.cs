@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -8,6 +9,7 @@ using WanKePos.Domain.Entities;
 using WanKePos.Domain.Enums;
 using WanKePos.Domain.Interfaces;
 using WanKePos.Infrastructure.Export;
+using WanKePos.WinUI.Messages;
 
 namespace WanKePos.WinUI.ViewModels;
 
@@ -76,6 +78,28 @@ public partial class PurchaseOrderViewModel : ObservableObject
         _productRepo = productRepo;
         _settingsRepo = settingsRepo;
         _exporter = exporter;
+
+        WeakReferenceMessenger.Default.Register<ProductsChangedMessage>(this, async (r, m) =>
+        {
+            if (m.DeletedProductId.HasValue)
+            {
+                var toRemove = AvailableProducts.FirstOrDefault(p => p.Id == m.DeletedProductId.Value);
+                if (toRemove != null)
+                {
+                    AvailableProducts.Remove(toRemove);
+                }
+                var cartToRemove = CartItems.FirstOrDefault(c => c.ProductId == m.DeletedProductId.Value);
+                if (cartToRemove != null)
+                {
+                    CartItems.Remove(cartToRemove);
+                    RecalculateDraftTotals();
+                }
+            }
+            if (_isInitialized)
+            {
+                await SearchProductsAsync();
+            }
+        });
     }
 
     private bool _isInitialized;
@@ -232,6 +256,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
         {
             ShowMessage?.Invoke("入库成功", $"采购单 {order.PurchaseOrderNo} 已完成入库，商品库存已自动更新！");
             await LoadOrdersAsync();
+            WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
         }
         else
         {
@@ -246,7 +271,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
 
         try
         {
-            var defaultFileName = $"采购订单_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
+            var defaultFileName = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
             string? savePath = null;
 
             if (RequestSaveFileDialog != null)
@@ -257,7 +282,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
 
             var settings = await _settingsRepo.GetSettingsAsync();
             var exportedPath = await _exporter.ExportToExcelAsync(order, settings, savePath);
-            ShowMessage?.Invoke("导出成功", $"采购单 Excel 文件已成功导出至：\n{exportedPath}\n可以随时通过微信或邮件发送给供货商。");
+            ShowMessage?.Invoke("导出成功", $"采购单已基于【zggj_门店商品-批量收货】模板成功导出至：\n{exportedPath}\n支持直接导入收货平台或发给供货商。");
         }
         catch (Exception ex)
         {

@@ -54,25 +54,12 @@ namespace WanKePos.Infrastructure.Data.Repositories
             var existing = await _context.Members.FirstOrDefaultAsync(m => m.MemberNo == member.MemberNo);
             if (existing != null)
             {
-                existing.Phone = member.Phone;
-                existing.Name = member.Name;
-                existing.Gender = member.Gender;
-                existing.Birthday = member.Birthday;
-                existing.StoreName = member.StoreName;
-                existing.TotalPoints = member.TotalPoints;
-                existing.Balance = member.Balance;
-                existing.TotalSpent = member.TotalSpent;
-                existing.Status = member.Status;
-                existing.Identity = member.Identity;
-                existing.Address = member.Address;
-                existing.GuidePin = member.GuidePin;
-                existing.GuideName = member.GuideName;
-                existing.LastModified = DateTime.Now;
+                var existingId = existing.Id;
+                _context.Entry(existing).CurrentValues.SetValues(member);
+                existing.Id = existingId;
             }
             else
             {
-                member.CreatedAt = DateTime.Now;
-                member.LastModified = DateTime.Now;
                 await _context.Members.AddAsync(member);
             }
             await _context.SaveChangesAsync();
@@ -117,37 +104,26 @@ namespace WanKePos.Infrastructure.Data.Repositories
 
         public async Task<int> ImportFromListAsync(List<Member> members)
         {
-            int count = 0;
+            var memberNos = members.Where(m => !string.IsNullOrWhiteSpace(m.MemberNo)).Select(m => m.MemberNo).ToList();
+            var existingDict = await _context.Members
+                .Where(m => memberNos.Contains(m.MemberNo))
+                .ToDictionaryAsync(m => m.MemberNo);
+
             foreach (var member in members)
             {
-                var existing = await _context.Members.FirstOrDefaultAsync(m => m.MemberNo == member.MemberNo);
-                if (existing != null)
+                if (existingDict.TryGetValue(member.MemberNo, out var existing))
                 {
-                    existing.Phone = member.Phone;
-                    existing.Name = member.Name;
-                    existing.Gender = member.Gender;
-                    existing.Birthday = member.Birthday;
-                    existing.StoreName = member.StoreName;
-                    existing.TotalPoints = member.TotalPoints;
-                    existing.Balance = member.Balance;
-                    existing.TotalSpent = member.TotalSpent;
-                    existing.Status = member.Status;
-                    existing.Identity = member.Identity;
-                    existing.Address = member.Address;
-                    existing.GuidePin = member.GuidePin;
-                    existing.GuideName = member.GuideName;
-                    existing.LastModified = DateTime.Now;
+                    var existingId = existing.Id;
+                    _context.Entry(existing).CurrentValues.SetValues(member);
+                    existing.Id = existingId;
                 }
                 else
                 {
-                    member.CreatedAt = DateTime.Now;
-                    member.LastModified = DateTime.Now;
                     await _context.Members.AddAsync(member);
                 }
-                count++;
             }
             await _context.SaveChangesAsync();
-            return count;
+            return members.Count;
         }
     }
 }

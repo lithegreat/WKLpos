@@ -3,153 +3,257 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using WanKePos.Domain.Entities;
+using WanKePos.Domain.Interfaces;
 
 namespace WanKePos.Infrastructure.Export;
 
 /// <summary>
-/// 采购订单 Excel 导出服务 (发给供货商)
+/// 采购订单 Excel 导出服务 (基于 zggj_门店商品-批量收货.xlsx 模板)
 /// </summary>
 public class PurchaseOrderExporter
 {
+    public const string UserDownloadsTemplatePath = @"C:\Users\WKL\Downloads\zggj_门店商品-批量收货.xlsx";
+
+    private readonly IProductRepository? _productRepo;
+
+    public PurchaseOrderExporter(IProductRepository? productRepo = null)
+    {
+        _productRepo = productRepo;
+    }
+
+    /// <summary>
+    /// 定位收货模板路径：优先用户指定下载目录，其次当前程序安装目录下的 Templates 目录，再次通用 Downloads 目录
+    /// </summary>
+    public static string? ResolveTemplatePath()
+    {
+        // 1. 用户指定目录
+        if (File.Exists(UserDownloadsTemplatePath))
+            return UserDownloadsTemplatePath;
+
+        // 2. 程序安装目录内附带的模板
+        var localTemplate = Path.Combine(AppContext.BaseDirectory, "Templates", "zggj_门店商品-批量收货.xlsx");
+        if (File.Exists(localTemplate))
+            return localTemplate;
+
+        // 3. 当前用户通用下载目录
+        var userDownloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "zggj_门店商品-批量收货.xlsx");
+        if (File.Exists(userDownloads))
+            return userDownloads;
+
+        return null;
+    }
+
     public async Task<string> ExportToExcelAsync(PurchaseOrder order, StoreSettings? storeSettings, string? targetFilePath = null)
     {
         if (string.IsNullOrWhiteSpace(targetFilePath))
         {
             var downloadsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
-            var fileName = $"采购订单_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
+            var fileName = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
             targetFilePath = Path.Combine(downloadsFolder, fileName);
+        }
+
+        // 确保所有明细项的商品详情均已加载
+        if (_productRepo != null)
+        {
+            foreach (var item in order.Items)
+            {
+                if (item.Product == null)
+                {
+                    var p = await _productRepo.GetByBarcodeAsync(item.Barcode);
+                    if (p != null) item.Product = p;
+                }
+            }
         }
 
         await Task.Run(() =>
         {
-            using var workbook = new XLWorkbook();
-            var ws = workbook.Worksheets.Add("采购订单");
-
-            // 1. 大标题
-            var storeName = storeSettings?.StoreName ?? "万客隆美发用品专卖";
-            ws.Cell("A1").Value = $"{storeName} - 商品采购订货单";
-            ws.Range("A1:G1").Merge().Style
-                .Font.SetBold(true)
-                .Font.SetFontSize(16)
-                .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
-                .Fill.SetBackgroundColor(XLColor.FromHtml("#1F4E78"))
-                .Font.SetFontColor(XLColor.White);
-            ws.Row(1).Height = 35;
-
-            // 2. 基础单据信息
-            ws.Cell("A2").Value = "采购单号:";
-            ws.Cell("B2").Value = order.PurchaseOrderNo;
-            ws.Cell("D2").Value = "制单日期:";
-            ws.Cell("E2").Value = order.CreatedAt.ToString("yyyy-MM-dd HH:mm");
-
-            ws.Cell("A3").Value = "供货商:";
-            ws.Cell("B3").Value = string.IsNullOrEmpty(order.Supplier) ? "未指定" : order.Supplier;
-            ws.Cell("D3").Value = "联系电话:";
-            ws.Cell("E3").Value = storeSettings?.StorePhone ?? "";
-
-            ws.Cell("A4").Value = "收货地址:";
-            ws.Cell("B4").Value = storeSettings?.StoreAddress ?? "";
-            ws.Range("B4:G4").Merge();
-
-            ws.Cell("A5").Value = "采购备注:";
-            ws.Cell("B5").Value = string.IsNullOrEmpty(order.Remark) ? "无" : order.Remark;
-            ws.Range("B5:G5").Merge();
-
-            // 格式化表头信息区
-            ws.Range("A2:G5").Style.Font.SetFontSize(10);
-            ws.Range("A2:A5").Style.Font.SetBold(true);
-            ws.Range("D2:D3").Style.Font.SetBold(true);
-
-            // 3. 商品明细表头
-            int startRow = 7;
-            ws.Cell(startRow, 1).Value = "序号";
-            ws.Cell(startRow, 2).Value = "商品条码";
-            ws.Cell(startRow, 3).Value = "商品名称";
-            ws.Cell(startRow, 4).Value = "规格";
-            ws.Cell(startRow, 5).Value = "单位";
-            ws.Cell(startRow, 6).Value = "采购单价 (元)";
-            ws.Cell(startRow, 7).Value = "采购数量";
-            ws.Cell(startRow, 8).Value = "小计金额 (元)";
-
-            var headerRange = ws.Range(startRow, 1, startRow, 8);
-            headerRange.Style
-                .Font.SetBold(true)
-                .Font.SetFontSize(11)
-                .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center)
-                .Fill.SetBackgroundColor(XLColor.FromHtml("#D9E1F2"))
-                .Border.SetOutsideBorder(XLBorderStyleValues.Thin)
-                .Border.SetInsideBorder(XLBorderStyleValues.Thin);
-            ws.Row(startRow).Height = 24;
-
-            // 4. 明细数据填充
-            int currentRow = startRow + 1;
-            int seq = 1;
-            foreach (var item in order.Items)
-            {
-                ws.Cell(currentRow, 1).Value = seq++;
-                ws.Cell(currentRow, 1).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
-
-                ws.Cell(currentRow, 2).SetValue(item.Barcode);
-                ws.Cell(currentRow, 2).Style.NumberFormat.Format = "@";
-
-                ws.Cell(currentRow, 3).Value = item.ProductName;
-                ws.Cell(currentRow, 4).Value = item.Specification ?? "-";
-                ws.Cell(currentRow, 5).Value = item.SaleUnit ?? "件";
-                ws.Cell(currentRow, 5).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
-
-                ws.Cell(currentRow, 6).Value = item.CostPrice;
-                ws.Cell(currentRow, 6).Style.NumberFormat.Format = "¥#,##0.00";
-
-                ws.Cell(currentRow, 7).Value = item.Quantity;
-                ws.Cell(currentRow, 7).Style.NumberFormat.Format = "#,##0";
-
-                ws.Cell(currentRow, 8).Value = item.Subtotal;
-                ws.Cell(currentRow, 8).Style.NumberFormat.Format = "¥#,##0.00";
-
-                ws.Row(currentRow).Height = 20;
-                currentRow++;
-            }
-
-            // 5. 合计行
-            ws.Cell(currentRow, 1).Value = "合计";
-            ws.Range(currentRow, 1, currentRow, 6).Merge().Style
-                .Font.SetBold(true)
-                .Alignment.SetHorizontal(XLAlignmentHorizontalValues.Center);
-
-            ws.Cell(currentRow, 7).Value = order.TotalQuantity;
-            ws.Cell(currentRow, 7).Style.Font.SetBold(true).NumberFormat.Format = "#,##0";
-
-            ws.Cell(currentRow, 8).Value = order.TotalAmount;
-            ws.Cell(currentRow, 8).Style.Font.SetBold(true).NumberFormat.Format = "¥#,##0.00";
-
-            var dataRange = ws.Range(startRow, 1, currentRow, 8);
-            dataRange.Style.Border.SetOutsideBorder(XLBorderStyleValues.Thin);
-            dataRange.Style.Border.SetInsideBorder(XLBorderStyleValues.Thin);
-
-            // 6. 底部签字区
-            currentRow += 2;
-            ws.Cell(currentRow, 2).Value = "采购人签名: ______________";
-            ws.Cell(currentRow, 6).Value = "供货商确认: ______________";
-            ws.Range(currentRow, 1, currentRow, 8).Style.Font.SetFontSize(10);
-
-            // 自动调整列宽
-            ws.Columns().AdjustToContents();
-            ws.Column(1).Width = 8;
-            ws.Column(2).Width = 18;
-            ws.Column(3).Width = 32;
-            ws.Column(6).Width = 16;
-            ws.Column(7).Width = 14;
-            ws.Column(8).Width = 16;
-
             var dir = Path.GetDirectoryName(targetFilePath);
             if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }
 
-            workbook.SaveAs(targetFilePath);
+            var templatePath = ResolveTemplatePath();
+            if (!string.IsNullOrEmpty(templatePath) && File.Exists(templatePath))
+            {
+                // 使用 FileShare.ReadWrite 读取模板并复制到目标文件，杜绝文件锁冲突与已关闭文件访问错误
+                using (var src = new FileStream(templatePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var dst = new FileStream(targetFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    src.CopyTo(dst);
+                }
+
+                using var workbook = new XLWorkbook(targetFilePath);
+                var ws = workbook.Worksheet(1);
+
+                // 清除模板中的原有示例行内容 (行 2 及以下，保留表头样式与数据验证规则)
+                int lastRow = ws.LastRowUsed()?.RowNumber() ?? 1;
+                for (int r = 2; r <= lastRow; r++)
+                {
+                    ws.Row(r).Clear(XLClearOptions.Contents);
+                }
+
+                // 填充当前采购单明细数据
+                FillOrderData(ws, order);
+
+                workbook.Save();
+            }
+            else
+            {
+                // 若模板文件在任何地方均不存在，动态构建具备相同规范的工作簿作为兜底
+                using var workbook = CreateDefaultZggjWorkbook();
+                var ws = workbook.Worksheet(1);
+                FillOrderData(ws, order);
+                workbook.SaveAs(targetFilePath);
+            }
         });
 
         return targetFilePath;
+    }
+
+    private static void FillOrderData(IXLWorksheet ws, PurchaseOrder order)
+    {
+        int currentRow = 2;
+        foreach (var item in order.Items)
+        {
+            var product = item.Product;
+
+            // Col A: 商品类型（必填） - 标品 / 非标品
+            var prodType = !string.IsNullOrWhiteSpace(product?.ProductType) ? product.ProductType : "标品";
+            ws.Cell(currentRow, 1).SetValue(prodType);
+
+            // Col B: 条形码/简码(标品必填，多个条码用","隔开) - 文本格式保证条码不被转换为科学记数法
+            var barcodeCell = ws.Cell(currentRow, 2);
+            barcodeCell.SetValue(item.Barcode ?? "");
+            barcodeCell.Style.NumberFormat.Format = "@";
+
+            // Col C: 商品名称（必填）
+            ws.Cell(currentRow, 3).SetValue(item.ProductName ?? product?.Name ?? "");
+
+            // Col D: 入库数量（必填，新增加的商品数量）
+            ws.Cell(currentRow, 4).SetValue(item.Quantity);
+            ws.Cell(currentRow, 4).Style.NumberFormat.Format = "#,##0";
+
+            // Col E: 门店零售价(选填)
+            if (product != null && product.RetailPrice > 0)
+            {
+                ws.Cell(currentRow, 5).SetValue(product.RetailPrice);
+                ws.Cell(currentRow, 5).Style.NumberFormat.Format = "0.00";
+            }
+
+            // Col F: 入库进货价(选填)
+            ws.Cell(currentRow, 6).SetValue(item.CostPrice);
+            ws.Cell(currentRow, 6).Style.NumberFormat.Format = "0.00";
+
+            // Col G: 售卖方式（非标品商品必填） - 按件 / 称重
+            var saleMethod = !string.IsNullOrWhiteSpace(product?.SaleMethod) ? product.SaleMethod : "按件";
+            ws.Cell(currentRow, 7).SetValue(saleMethod);
+
+            // Col H: 系统末级品类
+            if (!string.IsNullOrWhiteSpace(product?.SystemCategory))
+            {
+                ws.Cell(currentRow, 8).SetValue(product.SystemCategory);
+            }
+
+            // Col I: 店内末级品类
+            if (!string.IsNullOrWhiteSpace(product?.StoreCategory))
+            {
+                ws.Cell(currentRow, 9).SetValue(product.StoreCategory);
+            }
+
+            // Col L: 货号(选填，一码多品必填)
+            if (!string.IsNullOrWhiteSpace(product?.ArticleNumber))
+            {
+                ws.Cell(currentRow, 12).SetValue(product.ArticleNumber);
+            }
+
+            // Col M: 门店会员价(选填)
+            if (product?.MemberPrice.HasValue == true && product.MemberPrice.Value > 0)
+            {
+                ws.Cell(currentRow, 13).SetValue(product.MemberPrice.Value);
+                ws.Cell(currentRow, 13).Style.NumberFormat.Format = "0.00";
+            }
+
+            // Col N: 图片(选填)
+            if (!string.IsNullOrWhiteSpace(product?.ImageUrl))
+            {
+                ws.Cell(currentRow, 14).SetValue(product.ImageUrl);
+            }
+
+            // Col O: 商品品牌(选填)
+            if (!string.IsNullOrWhiteSpace(product?.Brand))
+            {
+                ws.Cell(currentRow, 15).SetValue(product.Brand);
+            }
+
+            // Col R: 销售单位(选填)
+            var unit = !string.IsNullOrWhiteSpace(item.SaleUnit) ? item.SaleUnit : (product?.SaleUnit ?? "件");
+            ws.Cell(currentRow, 18).SetValue(unit);
+
+            // Col S: 规格(选填)
+            var spec = !string.IsNullOrWhiteSpace(item.Specification) ? item.Specification : (product?.Specification ?? "");
+            if (!string.IsNullOrWhiteSpace(spec))
+            {
+                ws.Cell(currentRow, 19).SetValue(spec);
+            }
+
+            // Col X: 供应商(选填，不可填写为掌柜宝)
+            var supplier = !string.IsNullOrWhiteSpace(order.Supplier)
+                ? order.Supplier
+                : (!string.IsNullOrWhiteSpace(product?.Supplier) ? product.Supplier : "第三方");
+            ws.Cell(currentRow, 24).SetValue(supplier);
+
+            // Col Y: 生产日期(天)(选填)
+            ws.Cell(currentRow, 25).SetValue(order.CreatedAt.ToString("yyyy-MM-dd"));
+
+            currentRow++;
+        }
+    }
+
+    private static XLWorkbook CreateDefaultZggjWorkbook()
+    {
+        var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("Sheet1");
+
+        string[] headers =
+        {
+            "商品类型\n（必填）",
+            "条形码/简码(标品必填，多个条码用\",\"隔开)",
+            "商品名称（必填）",
+            "入库数量（必填，新增加的商品数量）",
+            "门店零售价(选填)",
+            "入库进货价(选填)",
+            "售卖方式（非标品商品必填）",
+            "系统末级品类",
+            "店内末级品类",
+            "毛重",
+            "",
+            "货号(选填，一码多品必填)",
+            "门店会员价(选填)",
+            "图片(选填)",
+            "商品品牌(选填)",
+            "保质期(天)(选填)",
+            "产地(选填)",
+            "销售单位(选填)",
+            "规格(选填)",
+            "",
+            "长(mm)(选填)",
+            "宽(mm)(选填)",
+            "高(mm)(选填)",
+            "供应商(选填，不可填写为掌柜宝)",
+            "生产日期(天)(选填)"
+        };
+
+        for (int i = 0; i < headers.Length; i++)
+        {
+            ws.Cell(1, i + 1).SetValue(headers[i]);
+        }
+
+        var headerRow = ws.Row(1);
+        headerRow.Height = 28;
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+        return workbook;
     }
 }

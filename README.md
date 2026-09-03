@@ -47,12 +47,12 @@
 ```
 c:\Users\WKL\POS\
 ├── src\
-│   ├── WanKePos.Domain\            # 领域层 (Entities, Enums, 仓储接口) - 100% 共享复用
+│   ├── WanKePos.Domain\            # 领域层 (Entities, Enums, 仓储接口)
 │   ├── WanKePos.Infrastructure\    # 基础设施层 (EF Core SQLite, ClosedXML 导入导出, ESC/POS 硬件驱动, API 同步)
-│   ├── WanKePos.WinUI\             # WinUI 3 原生表现层 (Windows App SDK 1.6, Mica 材质, 极致性能)
-│   └── WanKePos.App\               # WPF 表现层 (WPF-UI Fluent 界面)
-├── publish_winui\                  # WinUI 3 独立分发可执行程序
-├── publish\                        # WPF 单文件独立分发可执行程序
+│   └── WanKePos.WinUI\             # WinUI 3 原生表现层 (Windows App SDK 1.6, Mica 材质, 极致性能)
+├── publish_winui\                  # WinUI 3 独立分发可执行程序目录
+├── output_installer\               # Windows Setup 安装包输出目录
+├── installer\                      # Inno Setup 打包脚本与流水线
 └── WanKePos.sln                    # 完整解决方案
 ```
 
@@ -61,8 +61,7 @@ c:\Users\WKL\POS\
 ## 🛠️ 技术选型
 
 - **开发框架**: .NET 8 (`net8.0`, `net8.0-windows10.0.19041.0`)
-- **现代前端 1**: Windows App SDK 1.6 (WinUI 3 原生 XAML + Unpackaged 独立运行)
-- **现代前端 2**: WPF-UI (Fluent Design System)
+- **现代前端**: Windows App SDK 1.6 (WinUI 3 原生 XAML + Unpackaged 独立免安装/打包)
 - **MVVM 框架**: CommunityToolkit.Mvvm 8.3.2
 - **依赖注入**: Microsoft.Extensions.DependencyInjection + Microsoft.Extensions.Hosting
 - **本地数据库**: Entity Framework Core 8.0 + SQLite (`pos.db`)
@@ -77,43 +76,30 @@ c:\Users\WKL\POS\
 - Windows 10 (Build 19041+) 或 Windows 11
 - .NET 8.0 SDK
 
-### 1. 克隆或打开工程
-```bash
-cd c:\Users\WKL\POS
-```
-
-### 2. 编译整个解决方案
+### 1. 编译整个解决方案
 ```powershell
 dotnet build WanKePos.sln
 ```
 
-### 3. 运行 WinUI 3 现代版本
+### 2. 启动 WinUI 3 现代前台
 ```powershell
 dotnet run --project src\WanKePos.WinUI\WanKePos.WinUI.csproj
 ```
 
-### 4. 运行 WPF 版本
-```powershell
-dotnet run --project src\WanKePos.App\WanKePos.App.csproj
-```
-
 ---
 
-## 📦 独立发布与部署 (Standalone Executable)
+## 📦 独立发布与安装包制作
 
-系统已配置免安装独立运行包（无需目标机器预装 .NET 运行库或 MSIX 证书）：
-
-- **WinUI 3 独立程序**: [`publish_winui\WanKePos.WinUI.exe`](file:///c:/Users/WKL/POS/publish_winui/WanKePos.WinUI.exe)
-- **WPF 单文件独立程序**: [`publish\WanKePos.exe`](file:///c:/Users/WKL/POS/publish/WanKePos.exe)
-
-若需重新发布：
+### 1. 独立程序发布 (免依赖运行)
 ```powershell
-# 发布 WinUI 3 独立版本
 dotnet publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui
-
-# 发布 WPF 单文件独立版本
-dotnet publish src\WanKePos.App\WanKePos.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 ```
+
+### 2. 生成 Windows Setup 安装包
+```powershell
+powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
+```
+生成的安装包将存放在 `output_installer\WanKePos_Setup_v1.0.0.exe`。
 
 ---
 

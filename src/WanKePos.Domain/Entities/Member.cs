@@ -1,12 +1,14 @@
 using System;
 using WanKePos.Domain.Enums;
 
+using WanKePos.Domain.Interfaces;
+
 namespace WanKePos.Domain.Entities;
 
 /// <summary>
 /// 会员实体
 /// </summary>
-public class Member
+public class Member : IAuditableEntity
 {
     public int Id { get; set; }
     

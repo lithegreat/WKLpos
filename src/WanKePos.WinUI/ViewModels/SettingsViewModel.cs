@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
@@ -8,6 +9,7 @@ using WanKePos.Domain.Entities;
 using WanKePos.Domain.Interfaces;
 using WanKePos.Infrastructure.Hardware;
 using WanKePos.Infrastructure.Import;
+using WanKePos.WinUI.Messages;
 
 namespace WanKePos.WinUI.ViewModels;
 
@@ -150,6 +152,7 @@ public partial class SettingsViewModel : ObservableObject
                     var products = await _excelImporter.ImportProductsAsync(filePath);
                     await _productRepository.ImportFromListAsync(products);
                     ShowMessage?.Invoke("导入成功", $"成功导入 {products.Count} 个商品。");
+                    WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
                 }
                 catch (Exception ex)
                 {

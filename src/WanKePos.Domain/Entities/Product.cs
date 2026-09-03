@@ -1,12 +1,14 @@
 using System;
 using WanKePos.Domain.Enums;
 
+using WanKePos.Domain.Interfaces;
+
 namespace WanKePos.Domain.Entities;
 
 /// <summary>
 /// 商品实体
 /// </summary>
-public class Product
+public class Product : IAuditableEntity
 {
     public int Id { get; set; }
     

@@ -9,7 +9,7 @@
     mc:Ignorable="d"
     Title="万客隆 POS 收银系统 (WinUI 3 现代架构版)">
 
-    <Grid>
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="32"/>
@@ -28,10 +28,10 @@
                 <NavigationViewItem Content="商品管理 (F2)" Tag="Products" Icon="BrowsePhotos"/>
                 <NavigationViewItem Content="会员管理 (F3)" Tag="Members" Icon="People"/>
                 <NavigationViewItem Content="销售记录 (F4)" Tag="Orders" Icon="Document"/>
-                <NavigationViewItem Content="采购进货 (F6)" Tag="Purchase" Icon="AllApps"/>
+                <NavigationViewItem Content="采购进货 (F5)" Tag="Purchase" Icon="AllApps"/>
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem Content="系统设置 (F5)" Tag="Settings" Icon="Setting"/>
+                <NavigationViewItem Content="系统设置 (F6)" Tag="Settings" Icon="Setting"/>
             </NavigationView.FooterMenuItems>
 
             <Frame x:Name="ContentFrame"/>

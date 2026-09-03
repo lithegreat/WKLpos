@@ -1,13 +1,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using WanKePos.Domain;
 using WanKePos.Domain.Entities;
 using WanKePos.Domain.Enums;
 using WanKePos.Domain.Interfaces;
 using WanKePos.Infrastructure.Hardware;
+using WanKePos.WinUI.Messages;
 
 namespace WanKePos.WinUI.ViewModels
 {
@@ -97,14 +101,62 @@ namespace WanKePos.WinUI.ViewModels
             _orderRepo = orderRepo;
             _settingsRepo = settingsRepo;
             _printer = printer;
+
+            // 监听商品变更消息，实现跨页面毫秒级响应式同步
+            WeakReferenceMessenger.Default.Register<ProductsChangedMessage>(this, async (r, m) =>
+            {
+                if (m.DeletedProductId.HasValue)
+                {
+                    var toRemove = DisplayProducts.FirstOrDefault(p => p.Id == m.DeletedProductId.Value);
+                    if (toRemove != null)
+                    {
+                        DisplayProducts.Remove(toRemove);
+                    }
+                    var cartToRemove = CartItems.FirstOrDefault(c => c.ProductId == m.DeletedProductId.Value);
+                    if (cartToRemove != null)
+                    {
+                        CartItems.Remove(cartToRemove);
+                        RecalculateTotals();
+                    }
+                }
+
+                if (_isInitialized)
+                {
+                    await LoadCategoriesAsync();
+                    await LoadProductsAsync();
+                }
+                else
+                {
+                    _needsRefresh = true;
+                }
+            });
+
+            // 监听会员变更消息 (注销/删除会员时自动清空收银台关联)
+            WeakReferenceMessenger.Default.Register<MembersChangedMessage>(this, (r, m) =>
+            {
+                if (m.DeletedMemberId.HasValue && CurrentMember?.Id == m.DeletedMemberId.Value)
+                {
+                    ClearMember();
+                }
+            });
         }
 
         private bool _isInitialized;
+        private bool _needsRefresh;
 
         [RelayCommand]
         public async Task InitializeAsync()
         {
-            if (_isInitialized) return;
+            if (_isInitialized)
+            {
+                if (_needsRefresh)
+                {
+                    _needsRefresh = false;
+                    await LoadCategoriesAsync();
+                    await LoadProductsAsync();
+                }
+                return;
+            }
             _isInitialized = true;
             await LoadCategoriesAsync();
             await LoadProductsAsync();
@@ -114,15 +166,15 @@ namespace WanKePos.WinUI.ViewModels
         {
             var categories = await _productRepo.GetCategoriesAsync();
             Categories.Clear();
-            Categories.Add("全部");
+            Categories.Add(CategoryConstants.All);
             foreach (var cat in categories)
                 Categories.Add(cat);
-            SelectedCategory = "全部";
+            SelectedCategory = CategoryConstants.All;
         }
 
         public async Task LoadProductsAsync()
         {
-            var products = string.IsNullOrWhiteSpace(SelectedCategory) || SelectedCategory == "全部"
+            var products = string.IsNullOrWhiteSpace(SelectedCategory) || SelectedCategory == CategoryConstants.All
                 ? await _productRepo.GetAllAsync()
                 : await _productRepo.GetByCategoryAsync(SelectedCategory);
 
@@ -220,7 +272,7 @@ namespace WanKePos.WinUI.ViewModels
             if (string.IsNullOrWhiteSpace(MemberPhoneInput)) return;
 
             var member = await _memberRepo.GetByPhoneAsync(MemberPhoneInput.Trim());
-            if (member != null && member.Status == "正常")
+            if (member != null && member.Status == MemberStatusConstants.Normal)
             {
                 CurrentMember = member;
                 foreach (var item in CartItems)
@@ -232,7 +284,7 @@ namespace WanKePos.WinUI.ViewModels
             }
             else
             {
-                ShowMessage?.Invoke("提示", member?.Status == "禁用" ? "该会员已被禁用" : "未找到该会员");
+                ShowMessage?.Invoke("提示", member?.Status == MemberStatusConstants.Disabled ? "该会员已被禁用" : "未找到该会员");
             }
         }
 
@@ -316,6 +368,16 @@ namespace WanKePos.WinUI.ViewModels
                 pointsEarned = Math.Floor(PayableAmount / settings.PointsPerYuan);
             }
 
+            // 获取商品当前进货价用于快照
+            var productIds = CartItems.Select(ci => ci.ProductId).ToList();
+            var costPriceMap = new Dictionary<int, decimal>();
+            foreach (var ci in CartItems)
+            {
+                var product = await _productRepo.GetByBarcodeAsync(ci.Barcode);
+                if (product != null)
+                    costPriceMap[ci.ProductId] = product.CostPrice;
+            }
+
             var order = new Order
             {
                 MemberId = CurrentMember?.Id,
@@ -338,6 +400,7 @@ namespace WanKePos.WinUI.ViewModels
                     Quantity = ci.Quantity,
                     UnitPrice = ci.UnitPrice,
                     MemberPrice = ci.MemberPrice > 0 ? ci.MemberPrice : null,
+                    CostPrice = costPriceMap.GetValueOrDefault(ci.ProductId),
                     ActualPrice = ci.ActualPrice,
                     Subtotal = ci.Subtotal,
                     SaleUnit = ci.SaleUnit
@@ -346,16 +409,14 @@ namespace WanKePos.WinUI.ViewModels
 
             await _orderRepo.CreateAsync(order);
 
-            foreach (var item in CartItems)
-            {
-                await _productRepo.UpdateStockAsync(item.ProductId, -item.Quantity);
-            }
+            // 批量扣减库存
+            var stockChanges = CartItems.ToDictionary(ci => ci.ProductId, ci => -ci.Quantity);
+            await _productRepo.BatchUpdateStockAsync(stockChanges);
 
             if (CurrentMember != null && pointsEarned > 0)
             {
                 await _memberRepo.UpdatePointsAsync(CurrentMember.Id, pointsEarned);
                 CurrentMember.TotalPoints += pointsEarned;
-                await _memberRepo.AddOrUpdateAsync(CurrentMember);
             }
 
             try

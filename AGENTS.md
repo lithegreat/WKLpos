@@ -9,9 +9,7 @@
 本工程严格遵循 **Clean Architecture (清晰分层架构)** 与 **MVVM 模式**：
 
 ```
-[WanKePos.WinUI] (WinUI 3)  \
-                             --> [WanKePos.Infrastructure] --> [WanKePos.Domain]
-[WanKePos.App]   (WPF)      /
+[WanKePos.WinUI] (WinUI 3 表现层) --> [WanKePos.Infrastructure] --> [WanKePos.Domain]
 ```
 
 ### 分层约束：
@@ -25,8 +23,8 @@
    - 包含：`PosDbContext`、仓储实现 (`Repositories`)、Excel 导入导出 (`Import/Export`，基于 ClosedXML)、硬件打印通信 (`Hardware/ReceiptPrinter.cs`)、网络同步适配 (`Sync/ApiSyncService.cs`)。
    - 必须通过接口向外部暴露能力，所有数据库读写均使用 `async/await` 异步方法。
 
-3. **表现层 (`WanKePos.WinUI` 与 `WanKePos.App`)**：
-   - 两套 UI 共享底层 100% 的业务代码与数据库。
+3. **表现层 (`WanKePos.WinUI`)**：
+   - 采用 Windows App SDK 1.6 原生 WinUI 3 现代设计（Mica 材质、原生控件与流畅交互）。
    - 页面与 ViewModel 必须遵循 MVVM 解耦原则，使用 `CommunityToolkit.Mvvm` 库（`[ObservableProperty]`, `[RelayCommand]`）。
    - **禁止在表现层直接操作数据库连接或执行原生 SQL 拼接**，必须经由仓储接口（如 `IProductRepository`, `IPurchaseOrderRepository`）进行操作。
 
@@ -65,27 +63,43 @@
 
 ---
 
-## 5. 常用命令与操作指南
+## 5. 持续交付与自动打包规范 (CI/CD & Delivery)
 
-### 编译
+**核心约束与强制要求 (Mandatory Rule for AI Agents)**：
+- **每次代码或界面修改验证通过后，必须自动执行打包发布**。
+- 禁止仅执行 `dotnet build` 就结束任务，必须确保生成最终可交付的独立发布文件与 Windows 安装包，保证 `output_installer\` 下始终为最新版本。
+- 执行打包发布命令：
+  ```powershell
+  powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
+  ```
+  该脚本已内置全流程自动化逻辑：
+  1. 自动终止正在运行的 `WanKePos.WinUI` 进程，防止文件占用锁定；
+  2. 执行 WinUI 3 独立免依赖编译发布 (`dotnet publish -c Release -r win-x64 --self-contained true -o publish_winui`)；
+  3. 清理 `publish_winui\` 中的临时锁与日志文件 (`*.db-shm`, `*.db-wal`, `*.log`)；
+  4. 自动定位 Inno Setup 编译器 (或自动安装)，生成单文件安装包 `output_installer\WanKePos_Setup_v1.0.0.exe`。
+
+---
+
+## 6. 常用命令与操作指南
+
+### 编译验证
 ```powershell
 dotnet build WanKePos.sln
 ```
 
-### 独立发布 (Release)
+### 独立发布与生成安装包
 ```powershell
-# 发布 WinUI 3 独立程序
-dotnet publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui
+# 一键自动发布并打包 Windows 安装包 (更改后必须执行)
+powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
 
-# 发布 WPF 单文件独立程序
-dotnet publish src\WanKePos.App\WanKePos.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+# 手动发布 WinUI 3 独立程序 (如需单独发布)
+dotnet publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui
 ```
 
 ### 进程占用排查
 在重新构建或发布前，确保已停止运行中的程序进程：
 ```powershell
 Stop-Process -Name "WanKePos.WinUI" -Force -ErrorAction SilentlyContinue
-Stop-Process -Name "WanKePos" -Force -ErrorAction SilentlyContinue
 ```
 
 ### Git 提交约定

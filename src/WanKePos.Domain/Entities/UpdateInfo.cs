@@ -51,16 +51,4 @@ public class UpdateInfo
     /// 是否存在可更新的新版本
     /// </summary>
     public bool HasUpdate { get; set; }
-
-    /// <summary>
-    /// 格式化后的大小文本 (如 38.5 MB)
-    /// </summary>
-    public string FormattedSize
-    {
-        get
-        {
-            if (AssetSize <= 0) return "未知大小";
-            return $"{AssetSize / (1024.0 * 1024.0):F2} MB";
-        }
-    }
 }

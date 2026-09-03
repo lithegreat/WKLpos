@@ -1,11 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using WanKePos.Domain.Entities;
 using WanKePos.Domain.Interfaces;
 using WanKePos.Infrastructure.Import;
+using WanKePos.WinUI.Messages;
 
 namespace WanKePos.WinUI.ViewModels;
 
@@ -76,6 +78,7 @@ public partial class MemberListViewModel : ObservableObject
                     await _memberRepository.AddOrUpdateAsync(member);
                     ShowMessage?.Invoke("开卡成功", $"新会员【{member.Name}】(手机: {member.Phone}) 已成功开通！");
                     await ReloadAsync();
+                    WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
                 }
                 catch (Exception ex)
                 {
@@ -101,6 +104,7 @@ public partial class MemberListViewModel : ObservableObject
             await _memberRepository.DeleteAsync(member.Id);
             ShowMessage?.Invoke("注销成功", $"会员【{member.Name}】已成功注销。");
             await ReloadAsync();
+            WeakReferenceMessenger.Default.Send(new MembersChangedMessage(member.Id));
         }
         catch (Exception ex)
         {
@@ -122,6 +126,7 @@ public partial class MemberListViewModel : ObservableObject
                     await _memberRepository.ImportFromListAsync(members);
                     ShowMessage?.Invoke("导入成功", $"成功导入 {members.Count} 个会员。");
                     await ReloadAsync();
+                    WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
                 }
                 catch (Exception ex)
                 {

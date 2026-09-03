@@ -31,6 +31,11 @@ namespace WanKePos.WinUI.Views
             };
         }
 
+        public void FocusBarcodeInput()
+        {
+            BarcodeTextBox?.Focus(FocusState.Programmatic);
+        }
+
         private async Task<(bool isConfirmed, decimal paidAmount)> ShowCashCheckoutDialogAsync(decimal payable, string title)
         {
             var dialog = new CheckoutContentDialog(payable, title)

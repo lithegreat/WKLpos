@@ -13,5 +13,7 @@ public interface IProductRepository
     Task<List<string>> GetCategoriesAsync();
     Task AddOrUpdateAsync(Product product);
     Task UpdateStockAsync(int productId, decimal quantityChange);
+    Task BatchUpdateStockAsync(Dictionary<int, decimal> stockChanges);
     Task<int> ImportFromListAsync(List<Product> products);
+    Task DeleteAsync(int productId);
 }

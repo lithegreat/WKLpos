@@ -8,9 +8,9 @@
 
     <Grid Padding="12">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="180"/>
+            <ColumnDefinition Width="160"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="380"/>
+            <ColumnDefinition Width="360"/>
         </Grid.ColumnDefinitions>
 
         <!-- 左栏：商品分类 -->
@@ -73,6 +73,12 @@
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           SelectionMode="None"
                           Padding="0">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -98,8 +104,8 @@
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0" HorizontalAlignment="Right">
-                                        <TextBlock Text="{Binding RetailPrice}" FontSize="17" FontWeight="Bold" Foreground="#FF8C00" HorizontalAlignment="Right"/>
-                                        <TextBlock Text="{Binding MemberPrice}" FontSize="12" Foreground="LightGreen" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding RetailPrice, Converter={StaticResource CurrencyConverter}}" FontSize="17" FontWeight="Bold" Foreground="#FF8C00" HorizontalAlignment="Right"/>
+                                        <TextBlock Text="{Binding MemberPrice, Converter={StaticResource CurrencyConverter}}" FontSize="12" Foreground="LightGreen" HorizontalAlignment="Right"/>
                                     </StackPanel>
 
                                     <Button Grid.Column="2" 
@@ -162,6 +168,12 @@
                           ItemsSource="{Binding CartItems}" 
                           SelectionMode="None"
                           Margin="0,0,0,10">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
@@ -180,7 +192,7 @@
                                     
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="{Binding ProductName}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding ActualPrice}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                        <TextBlock Text="{Binding ActualPrice, Converter={StaticResource CurrencyConverter}}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Spacing="4" Margin="8,0">
@@ -190,7 +202,7 @@
                                     </StackPanel>
 
                                     <TextBlock Grid.Column="2" 
-                                               Text="{Binding Subtotal}" 
+                                               Text="{Binding Subtotal, Converter={StaticResource CurrencyConverter}}" 
                                                FontWeight="Bold" 
                                                FontSize="15"
                                                Foreground="#FF8C00" 
@@ -223,13 +235,13 @@
                             </Grid.ColumnDefinitions>
                             
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="商品小计:" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubTotal}" FontSize="14"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubTotal, Converter={StaticResource CurrencyConverter}}" FontSize="14"/>
                             
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="会员优惠:" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DiscountAmount}" FontSize="14" Foreground="LightGreen"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DiscountAmount, Converter={StaticResource CurrencyConverter}}" FontSize="14" Foreground="LightGreen"/>
                             
                             <TextBlock Grid.Row="2" Grid.Column="0" Text="应付合计:" FontSize="22" FontWeight="Bold" Margin="0,6,0,0"/>
-                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding PayableAmount}" FontSize="24" FontWeight="Bold" Foreground="#FF8C00" Margin="0,6,0,0"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding PayableAmount, Converter={StaticResource CurrencyConverter}}" FontSize="24" FontWeight="Bold" Foreground="#FF8C00" Margin="0,6,0,0"/>
                         </Grid>
                     </Border>
 

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Threading;
+using WanKePos.Domain.Interfaces;
 using System.Threading.Tasks;
 using WanKePos.Domain.Entities;
 using WanKePos.Domain.Enums;
@@ -60,18 +60,18 @@ namespace WanKePos.Infrastructure.Data
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            var entries = ChangeTracker.Entries();
             var utcNow = DateTime.UtcNow;
 
-            foreach (var entry in entries)
+            foreach (var entry in ChangeTracker.Entries<WanKePos.Domain.Interfaces.IAuditableEntity>())
             {
-                if (entry.State == EntityState.Added || entry.State == EntityState.Modified)
+                if (entry.State == EntityState.Added)
                 {
-                    var lastModifiedProp = entry.Entity.GetType().GetProperty("LastModified");
-                    if (lastModifiedProp != null)
-                    {
-                        lastModifiedProp.SetValue(entry.Entity, utcNow);
-                    }
+                    entry.Entity.CreatedAt = utcNow;
+                    entry.Entity.LastModified = utcNow;
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    entry.Entity.LastModified = utcNow;
                 }
             }
 

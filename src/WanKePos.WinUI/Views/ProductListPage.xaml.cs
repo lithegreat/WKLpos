@@ -23,6 +23,7 @@ public sealed partial class ProductListPage : Page
 
         ViewModel.RequestOpenFileDialog = OpenFileDialogAsync;
         ViewModel.RequestAddProductDialog = ShowAddProductDialogAsync;
+        ViewModel.RequestConfirm = ShowConfirmDialogAsync;
         ViewModel.ShowMessage = ShowMessageAsync;
 
         this.Loaded += async (s, e) =>
@@ -43,6 +44,21 @@ public sealed partial class ProductListPage : Page
             return dialog.CreatedProduct;
         }
         return null;
+    }
+
+    private async Task<bool> ShowConfirmDialogAsync(string title, string content)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = content,
+            PrimaryButtonText = "确认删除",
+            CloseButtonText = "取消",
+            DefaultButton = ContentDialogButton.Close,
+            XamlRoot = this.XamlRoot
+        };
+        var result = await dialog.ShowAsync();
+        return result == ContentDialogResult.Primary;
     }
 
     private async Task<string?> OpenFileDialogAsync()
@@ -84,6 +100,14 @@ public sealed partial class ProductListPage : Page
         if (sender is Button btn && btn.Content is string category)
         {
             await ViewModel.FilterByCategoryAsync(category);
+        }
+    }
+
+    private void DeleteProductButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.DataContext is Product product)
+        {
+            ViewModel.DeleteProductCommand.Execute(product);
         }
     }
 }

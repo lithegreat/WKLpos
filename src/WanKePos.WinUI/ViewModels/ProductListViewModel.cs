@@ -1,12 +1,15 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using WanKePos.Domain;
 using WanKePos.Domain.Entities;
 using WanKePos.Domain.Interfaces;
 using WanKePos.Infrastructure.Import;
+using WanKePos.WinUI.Messages;
 
 namespace WanKePos.WinUI.ViewModels;
 
@@ -29,12 +32,22 @@ public partial class ProductListViewModel : ObservableObject
 
     public Func<Task<string?>>? RequestOpenFileDialog { get; set; }
     public Func<Task<Product?>>? RequestAddProductDialog { get; set; }
+    public Func<string, string, Task<bool>>? RequestConfirm { get; set; }
     public Action<string, string>? ShowMessage { get; set; }
 
     public ProductListViewModel(IProductRepository productRepository, ExcelImporter excelImporter)
     {
         _productRepository = productRepository;
         _excelImporter = excelImporter;
+
+        WeakReferenceMessenger.Default.Register<ProductsChangedMessage>(this, async (r, m) =>
+        {
+            // 如果是其他模块导致的商品变更（如采购入库、后台导入等），且当前已初始化，则重新加载
+            if (_isInitialized)
+            {
+                await ReloadAsync();
+            }
+        });
     }
 
     private bool _isInitialized;
@@ -55,7 +68,7 @@ public partial class ProductListViewModel : ObservableObject
         ProductCount = Products.Count;
 
         Categories.Clear();
-        Categories.Add("全部");
+        Categories.Add(CategoryConstants.All);
         var categories = products.Select(p => p.StoreCategory).Distinct().Where(c => !string.IsNullOrEmpty(c));
         foreach (var c in categories) Categories.Add(c!);
     }
@@ -73,7 +86,7 @@ public partial class ProductListViewModel : ObservableObject
     public async Task FilterByCategoryAsync(string category)
     {
         SelectedCategory = category;
-        if (string.IsNullOrEmpty(category) || category == "全部")
+        if (string.IsNullOrEmpty(category) || category == CategoryConstants.All)
         {
             var all = await _productRepository.GetAllAsync();
             Products.Clear();
@@ -100,6 +113,7 @@ public partial class ProductListViewModel : ObservableObject
                     await _productRepository.AddOrUpdateAsync(product);
                     ShowMessage?.Invoke("添加成功", $"商品【{product.Name}】(条码: {product.Barcode}) 已成功保存入库！");
                     await ReloadAsync();
+                    WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
                 }
                 catch (Exception ex)
                 {
@@ -123,12 +137,37 @@ public partial class ProductListViewModel : ObservableObject
                     await _productRepository.ImportFromListAsync(products);
                     ShowMessage?.Invoke("导入成功", $"成功导入 {products.Count} 个商品。");
                     await ReloadAsync();
+                    WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
                 }
                 catch (Exception ex)
                 {
                     ShowMessage?.Invoke("导入失败", $"错误: {ex.Message}");
                 }
             }
+        }
+    }
+
+    [RelayCommand]
+    public async Task DeleteProductAsync(Product product)
+    {
+        if (product == null) return;
+
+        if (RequestConfirm != null)
+        {
+            var confirm = await RequestConfirm.Invoke("确认删除商品", $"确认删除商品【{product.Name}】(条码: {product.Barcode}, 当前库存: {product.Stock}) 吗？\n删除后该商品数据将永久清除。");
+            if (!confirm) return;
+        }
+
+        try
+        {
+            await _productRepository.DeleteAsync(product.Id);
+            ShowMessage?.Invoke("删除成功", $"商品【{product.Name}】已成功删除。");
+            await ReloadAsync();
+            WeakReferenceMessenger.Default.Send(new ProductsChangedMessage(product.Id, product.Barcode));
+        }
+        catch (Exception ex)
+        {
+            ShowMessage?.Invoke("删除失败", $"错误: {ex.Message}");
         }
     }
 }

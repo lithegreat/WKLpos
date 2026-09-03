@@ -29,7 +29,7 @@
                     Padding="16,12">
                 <StackPanel Spacing="4">
                     <TextBlock Text="今日销售总额" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <TextBlock Text="{Binding TodayTotalSales}" FontSize="24" FontWeight="Bold" Foreground="#28A745"/>
+                    <TextBlock Text="{Binding TodayTotalSales, Converter={StaticResource CurrencyConverter}}" FontSize="24" FontWeight="Bold" Foreground="#28A745"/>
                 </StackPanel>
             </Border>
 
@@ -53,7 +53,7 @@
                     Padding="16,12">
                 <StackPanel Spacing="4">
                     <TextBlock Text="今日预估毛利" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <TextBlock Text="{Binding TodayProfit}" FontSize="24" FontWeight="Bold" Foreground="#FF8C00"/>
+                    <TextBlock Text="{Binding TodayProfit, Converter={StaticResource CurrencyConverter}}" FontSize="24" FontWeight="Bold" Foreground="#FF8C00"/>
                 </StackPanel>
             </Border>
 
@@ -76,15 +76,15 @@
             <Border Grid.Row="0" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="200"/>
-                        <ColumnDefinition Width="170"/>
-                        <ColumnDefinition Width="120"/>
-                        <ColumnDefinition Width="130"/>
-                        <ColumnDefinition Width="110"/>
-                        <ColumnDefinition Width="110"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="90"/>
+                        <ColumnDefinition Width="1.5*"/>
+                        <ColumnDefinition Width="140"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="105"/>
+                        <ColumnDefinition Width="85"/>
+                        <ColumnDefinition Width="85"/>
                         <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="70"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="订单号" FontWeight="Bold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="交易时间" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -107,26 +107,33 @@
                       BorderThickness="1,0,1,1"
                       CornerRadius="0,0,8,8"
                       Padding="0">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="MinHeight" Value="40"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid Padding="14,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="200"/>
-                                <ColumnDefinition Width="170"/>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="130"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="90"/>
+                                <ColumnDefinition Width="1.5*"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="105"/>
+                                <ColumnDefinition Width="85"/>
+                                <ColumnDefinition Width="85"/>
                                 <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="70"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding OrderNo}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="0" Text="{Binding OrderNo}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                             <TextBlock Grid.Column="1" Text="{Binding CreatedAt}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <TextBlock Grid.Column="2" Text="{Binding MemberName}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="{Binding MemberPhone}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <TextBlock Grid.Column="4" Text="{Binding PayableAmount}" FontWeight="Bold" Foreground="#FF8C00" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="5" Text="{Binding PaidAmount}" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="{Binding MemberName}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="3" Text="{Binding MemberPhone}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="4" Text="{Binding PayableAmount, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="#FF8C00" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="5" Text="{Binding PaidAmount, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="6" Text="{Binding PaymentMethod}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="7" Text="{Binding PointsEarned}" Foreground="LightGreen" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="8" Text="{Binding Status}" VerticalAlignment="Center"/>

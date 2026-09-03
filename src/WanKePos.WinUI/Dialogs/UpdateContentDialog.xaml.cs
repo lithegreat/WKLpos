@@ -22,7 +22,7 @@ public sealed partial class UpdateContentDialog : ContentDialog
 
         VersionTextBlock.Text = $"v{updateInfo.LatestVersion}";
         CurrentVersionTextBlock.Text = $"(当前版本: v{updateInfo.CurrentVersion})";
-        SizeTextBlock.Text = updateInfo.FormattedSize;
+        SizeTextBlock.Text = updateInfo.AssetSize > 0 ? $"{updateInfo.AssetSize / (1024.0 * 1024.0):F2} MB" : "未知大小";
         DateTextBlock.Text = updateInfo.PublishedAt?.ToString("yyyy-MM-dd HH:mm") ?? "最近发布";
         NotesTextBlock.Text = string.IsNullOrWhiteSpace(updateInfo.ReleaseNotes) ? "优化系统性能与多项细节体验。" : updateInfo.ReleaseNotes;
     }

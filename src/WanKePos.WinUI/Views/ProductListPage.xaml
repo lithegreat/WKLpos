@@ -8,7 +8,7 @@
 
     <Grid Padding="16">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="180"/>
+            <ColumnDefinition Width="160"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
@@ -54,9 +54,14 @@
             
             <!-- 搜索与操作栏 -->
             <Grid Grid.Row="0" Margin="0,0,0,12">
-                <StackPanel Orientation="Horizontal" Spacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
                     <TextBox PlaceholderText="🔍 搜索商品名称或条码 (回车)" 
-                             Width="280" 
+                             Width="250" 
                              Text="{Binding SearchKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                              KeyDown="SearchTextBox_KeyDown"/>
                     <Button Content="搜索" Command="{Binding SearchCommand}"/>
@@ -66,7 +71,7 @@
                     </StackPanel>
                 </StackPanel>
 
-                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Right">
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
                     <Button Content="➕ 新增商品" 
                             Command="{Binding AddProductCommand}" 
                             Style="{StaticResource AccentButtonStyle}"
@@ -84,16 +89,17 @@
             <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="260"/>
-                        <ColumnDefinition Width="120"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="100"/>
-                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="2*"/>
+                        <ColumnDefinition Width="75"/>
                         <ColumnDefinition Width="70"/>
-                        <ColumnDefinition Width="80"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="70"/>
+                        <ColumnDefinition Width="60"/>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="50"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="80"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="条码" FontWeight="Bold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="商品名称" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -105,6 +111,7 @@
                     <TextBlock Grid.Column="7" Text="单位" FontWeight="Bold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="8" Text="状态" FontWeight="Bold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="9" Text="供应商" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="10" Text="操作" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
@@ -117,31 +124,47 @@
                       BorderThickness="1,0,1,1"
                       CornerRadius="0,0,8,8"
                       Padding="0">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="MinHeight" Value="40"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid Padding="14,10">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="150"/>
-                                <ColumnDefinition Width="260"/>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="100"/>
-                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="110"/>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="75"/>
                                 <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="80"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="60"/>
+                                <ColumnDefinition Width="40"/>
+                                <ColumnDefinition Width="50"/>
                                 <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="80"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding Barcode}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="0" Text="{Binding Barcode}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
                             <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="2" Text="{Binding StoreCategory}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="{Binding RetailPrice}" FontWeight="Bold" Foreground="#FF8C00" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Text="{Binding CostPrice}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <TextBlock Grid.Column="5" Text="{Binding MemberPrice}" Foreground="LightGreen" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="2" Text="{Binding StoreCategory}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Grid.Column="3" Text="{Binding RetailPrice, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="#FF8C00" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="4" Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Grid.Column="5" Text="{Binding MemberPrice, Converter={StaticResource CurrencyConverter}}" Foreground="LightGreen" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="6" Text="{Binding Stock}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="7" Text="{Binding SaleUnit}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="8" Text="{Binding ShelfStatus}" VerticalAlignment="Center"/>
                             <TextBlock Grid.Column="9" Text="{Binding Supplier}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
+                            <!-- 操作按钮 -->
+                            <Button Grid.Column="10" 
+                                    Content="🗑️ 删除" 
+                                    Click="DeleteProductButton_Click"
+                                    Height="32" 
+                                    Padding="10,0" 
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"/>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

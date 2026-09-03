@@ -7,7 +7,7 @@ using WanKePos.Domain.Enums;
 
 namespace WanKePos.Infrastructure.Hardware
 {
-    public class ReceiptPrinter
+    public class ReceiptPrinter : IDisposable
     {
         public string PortName { get; set; } = "COM1";
         public int BaudRate { get; set; } = 9600;
@@ -37,6 +37,13 @@ namespace WanKePos.Infrastructure.Hardware
                 _serialPort.Close();
                 IsConnected = false;
             }
+        }
+
+        public void Dispose()
+        {
+            Disconnect();
+            _serialPort?.Dispose();
+            _serialPort = null;
         }
 
         public void PrintReceipt(Order order, StoreSettings settings)
