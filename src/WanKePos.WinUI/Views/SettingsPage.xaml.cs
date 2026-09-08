@@ -50,7 +50,8 @@ namespace WanKePos.WinUI.Views
             var updateService = App.Services.GetRequiredService<IUpdateService>();
             var dialog = new UpdateContentDialog(updateInfo, updateService)
             {
-                XamlRoot = this.XamlRoot
+                XamlRoot = this.XamlRoot,
+                RequestedTheme = this.ActualTheme
             };
             await dialog.ShowAsync();
         }
@@ -62,7 +63,8 @@ namespace WanKePos.WinUI.Views
                 Title = title,
                 Content = content,
                 CloseButtonText = "确定",
-                XamlRoot = this.XamlRoot
+                XamlRoot = this.XamlRoot,
+                RequestedTheme = this.ActualTheme
             };
             await dialog.ShowAsync();
         }

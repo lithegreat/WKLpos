@@ -54,7 +54,8 @@ namespace WanKePos.Infrastructure.Data
             modelBuilder.Entity<StoreSettings>().HasData(new StoreSettings
             {
                 Id = 1,
-                StoreName = "万客隆美发用品专卖西门店"
+                StoreName = "万客隆美发用品专卖西门店",
+                AppTheme = "Default"
             });
         }
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
 using System;
 using WanKePos.Infrastructure;
+using WanKePos.WinUI.Services;
 using WanKePos.WinUI.ViewModels;
 using WanKePos.WinUI.Views;
 
@@ -15,6 +16,9 @@ namespace WanKePos.WinUI
             {
                 // 注册基础设施层服务 (数据库、仓储、硬件与工具)
                 services.AddPosInfrastructure();
+
+                // Theme Service (主题服务)
+                services.AddSingleton<IThemeService, ThemeService>();
 
                 // ViewModels (单例模式保证毫秒级切换)
                 services.AddSingleton<MainViewModel>();
@@ -37,6 +41,7 @@ namespace WanKePos.WinUI
             .Build();
 
         public static IServiceProvider Services => _host.Services;
+        public static IThemeService ThemeService => Services.GetRequiredService<IThemeService>();
         public static MainWindow? MainWindowInstance { get; set; }
 
         public static void EnsureMainWindowOnTop()
@@ -80,6 +85,10 @@ namespace WanKePos.WinUI
                 await Services.EnsurePosDatabaseCreatedAsync();
 
                 MainWindowInstance = Services.GetRequiredService<MainWindow>();
+
+                // 初始化并应用客户端主题 (深色/浅色/跟随系统)
+                await ThemeService.InitializeAsync(MainWindowInstance);
+
                 MainWindowInstance.Activate();
             }
             catch (Exception ex)

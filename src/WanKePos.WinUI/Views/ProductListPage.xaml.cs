@@ -36,7 +36,8 @@ public sealed partial class ProductListPage : Page
     {
         var dialog = new AddProductContentDialog(ViewModel.Categories)
         {
-            XamlRoot = this.XamlRoot
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
         };
         var result = await dialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
@@ -55,7 +56,8 @@ public sealed partial class ProductListPage : Page
             PrimaryButtonText = "确认删除",
             CloseButtonText = "取消",
             DefaultButton = ContentDialogButton.Close,
-            XamlRoot = this.XamlRoot
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
         };
         var result = await dialog.ShowAsync();
         return result == ContentDialogResult.Primary;
@@ -82,7 +84,8 @@ public sealed partial class ProductListPage : Page
             Title = title,
             Content = content,
             CloseButtonText = "确定",
-            XamlRoot = this.XamlRoot
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
         };
         await dialog.ShowAsync();
     }

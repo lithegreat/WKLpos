@@ -40,7 +40,8 @@ namespace WanKePos.WinUI.Views
         {
             var dialog = new CheckoutContentDialog(payable, title)
             {
-                XamlRoot = this.XamlRoot
+                XamlRoot = this.XamlRoot,
+                RequestedTheme = this.ActualTheme
             };
             var result = await dialog.ShowAsync();
             return (result == ContentDialogResult.Primary && dialog.IsConfirmed, dialog.PaidAmount);
@@ -55,7 +56,8 @@ namespace WanKePos.WinUI.Views
                 PrimaryButtonText = "确认",
                 CloseButtonText = "取消",
                 DefaultButton = ContentDialogButton.Primary,
-                XamlRoot = this.XamlRoot
+                XamlRoot = this.XamlRoot,
+                RequestedTheme = this.ActualTheme
             };
             var result = await dialog.ShowAsync();
             return result == ContentDialogResult.Primary;
@@ -68,7 +70,8 @@ namespace WanKePos.WinUI.Views
                 Title = title,
                 Content = content,
                 CloseButtonText = "确定",
-                XamlRoot = this.XamlRoot
+                XamlRoot = this.XamlRoot,
+                RequestedTheme = this.ActualTheme
             };
             await dialog.ShowAsync();
         }

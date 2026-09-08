@@ -46,4 +46,9 @@ public class StoreSettings
     /// 小票尾部文字
     /// </summary>
     public string? ReceiptFooter { get; set; }
+
+    /// <summary>
+    /// 主题模式: "Default" (跟随系统, 默认), "Light" (浅色), "Dark" (深色)
+    /// </summary>
+    public string AppTheme { get; set; } = "Default";
 }

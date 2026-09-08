@@ -35,8 +35,12 @@ namespace WanKePos.Infrastructure.Data.Repositories
                 existing.StoreName = settings.StoreName;
                 existing.StoreAddress = settings.StoreAddress;
                 existing.StorePhone = settings.StorePhone;
+                existing.PointsPerYuan = settings.PointsPerYuan;
+                existing.PrinterPort = settings.PrinterPort;
+                existing.PrinterBaudRate = settings.PrinterBaudRate;
                 existing.ReceiptHeader = settings.ReceiptHeader;
                 existing.ReceiptFooter = settings.ReceiptFooter;
+                existing.AppTheme = settings.AppTheme;
                 _context.StoreSettings.Update(existing);
             }
             else

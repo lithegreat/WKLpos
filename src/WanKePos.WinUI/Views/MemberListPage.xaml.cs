@@ -36,7 +36,8 @@ public sealed partial class MemberListPage : Page
     {
         var dialog = new AddMemberContentDialog
         {
-            XamlRoot = this.XamlRoot
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
         };
         var result = await dialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
@@ -55,7 +56,8 @@ public sealed partial class MemberListPage : Page
             PrimaryButtonText = "确认注销",
             CloseButtonText = "取消",
             DefaultButton = ContentDialogButton.Close,
-            XamlRoot = this.XamlRoot
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
         };
         var result = await dialog.ShowAsync();
         return result == ContentDialogResult.Primary;
@@ -82,7 +84,8 @@ public sealed partial class MemberListPage : Page
             Title = title,
             Content = content,
             CloseButtonText = "确定",
-            XamlRoot = this.XamlRoot
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
         };
         await dialog.ShowAsync();
     }

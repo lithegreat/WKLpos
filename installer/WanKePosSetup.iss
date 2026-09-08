@@ -2,7 +2,7 @@
 ; Documentation: https://jrsoftware.org/isinfo.php
 
 #ifndef MyAppVersion
-  #define MyAppVersion "1.0.0"
+  #define MyAppVersion "1.1.0"
 #endif
 
 #ifndef OutputBaseFilename
@@ -18,6 +18,7 @@
 AppId={{C8A53E2B-914F-4C8E-98DF-B3F78652D819}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
+AppVerName={#MyAppName} v{#MyAppVersion}
 AppPublisher={#MyAppPublisher}
 DefaultDirName={autopf}\WanKePos
 DefaultGroupName={#MyAppName}
@@ -25,23 +26,30 @@ AllowNoIcons=yes
 OutputDir=..\output_installer
 OutputBaseFilename={#OutputBaseFilename}
 SetupIconFile=pos_icon.ico
+UninstallDisplayIcon={app}\Assets\pos_icon.ico
 Compression=lzma2/ultra64
 SolidCompression=yes
+
+; 现代化 UI 向导设置
 WizardStyle=modern
+WizardSizePercent=100
+DisableWelcomePage=no
+DisableProgramGroupPage=yes
+DisableReadyPage=yes
+
 ArchitecturesInstallIn64BitMode=x64compatible
 ArchitecturesAllowed=x64compatible
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
-DisableProgramGroupPage=yes
 
 ; 界面语言与显示
 ShowLanguageDialog=no
 
 [Languages]
-Name: "chinesesimp"; MessagesFile: "compiler:Default.isl"
+Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "创建桌面快捷方式 (&D)"; GroupDescription: "附加快捷方式:"; Flags: checkedonce
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
 
 [Files]
 ; 打包 publish_winui 目录下的所有程序文件及运行依赖，排除运行时生成的日志与数据库临时锁文件
@@ -53,4 +61,4 @@ Name: "{group}\卸载 {#MyAppName}"; Filename: "{uninstallexe}"; IconFilename: "
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\Assets\pos_icon.ico"; Tasks: desktopicon; WorkingDir: "{app}"
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Description: "立即启动 {#MyAppName}"; Flags: nowait postinstall skipifsilent; WorkingDir: "{app}"
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent; WorkingDir: "{app}"

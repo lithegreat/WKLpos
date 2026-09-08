@@ -7,9 +7,9 @@
     xmlns:views="using:WanKePos.WinUI.Views"
     xmlns:vm="using:WanKePos.WinUI.ViewModels"
     mc:Ignorable="d"
-    Title="万客隆 POS 收银系统 (WinUI 3 现代架构版)">
+    Title="万客隆 POS 收银系统">
 
-    <Grid x:Name="RootGrid">
+    <Grid x:Name="RootGrid" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="32"/>
@@ -64,7 +64,27 @@
                            VerticalAlignment="Center" 
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
+                    <!-- 主题切换下拉菜单 -->
+                    <DropDownButton x:Name="ThemeDropDownButton" 
+                                    Padding="8,2" 
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="快速切换主题：跟随系统 / 浅色 / 黑暗模式">
+                        <DropDownButton.Content>
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <FontIcon x:Name="ThemeButtonIcon" Glyph="&#xE790;" FontSize="12"/>
+                                <TextBlock x:Name="ThemeButtonText" Text="跟随系统" FontSize="12"/>
+                            </StackPanel>
+                        </DropDownButton.Content>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout Placement="Top">
+                                <MenuFlyoutItem Text="💻 跟随系统 (默认)" Tag="Default" Click="ThemeMenuItem_Click"/>
+                                <MenuFlyoutItem Text="☀️ 浅色模式" Tag="Light" Click="ThemeMenuItem_Click"/>
+                                <MenuFlyoutItem Text="🌙 黑暗模式" Tag="Dark" Click="ThemeMenuItem_Click"/>
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
                     <CheckBox x:Name="AlwaysOnTopCheckBox" 
                               Content="窗口置顶" 
                               IsChecked="True" 

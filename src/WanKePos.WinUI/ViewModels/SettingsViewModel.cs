@@ -10,6 +10,7 @@ using WanKePos.Domain.Interfaces;
 using WanKePos.Infrastructure.Hardware;
 using WanKePos.Infrastructure.Import;
 using WanKePos.WinUI.Messages;
+using WanKePos.WinUI.Services;
 
 namespace WanKePos.WinUI.ViewModels;
 
@@ -21,9 +22,13 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IMemberRepository _memberRepository;
     private readonly ExcelImporter _excelImporter;
     private readonly IUpdateService _updateService;
+    private readonly IThemeService _themeService;
 
     [ObservableProperty]
     private StoreSettings _settings = new();
+
+    [ObservableProperty]
+    private int _selectedThemeIndex = 0; // 0: 跟随系统 (默认), 1: 浅色模式, 2: 黑暗模式
 
     [ObservableProperty]
     private string _appVersion = GetCurrentAppVersion();
@@ -49,7 +54,8 @@ public partial class SettingsViewModel : ObservableObject
         IProductRepository productRepository,
         IMemberRepository memberRepository,
         ExcelImporter excelImporter,
-        IUpdateService updateService)
+        IUpdateService updateService,
+        IThemeService themeService)
     {
         _settingsRepository = settingsRepository;
         _receiptPrinter = receiptPrinter;
@@ -57,6 +63,21 @@ public partial class SettingsViewModel : ObservableObject
         _memberRepository = memberRepository;
         _excelImporter = excelImporter;
         _updateService = updateService;
+        _themeService = themeService;
+
+        _themeService.ThemeChanged += (s, themeName) =>
+        {
+            var idx = themeName switch
+            {
+                "Light" => 1,
+                "Dark" => 2,
+                _ => 0
+            };
+            if (SelectedThemeIndex != idx)
+            {
+                SelectedThemeIndex = idx;
+            }
+        };
     }
 
     private bool _isInitialized;
@@ -68,16 +89,45 @@ public partial class SettingsViewModel : ObservableObject
         _isInitialized = true;
 
         Settings = await _settingsRepository.GetSettingsAsync() ?? new StoreSettings();
+        SelectedThemeIndex = Settings.AppTheme switch
+        {
+            "Light" => 1,
+            "Dark" => 2,
+            _ => 0
+        };
         
         AvailablePorts.Clear();
         var ports = SerialPort.GetPortNames();
         foreach (var p in ports) AvailablePorts.Add(p);
     }
 
+    partial void OnSelectedThemeIndexChanged(int value)
+    {
+        var theme = value switch
+        {
+            1 => "Light",
+            2 => "Dark",
+            _ => "Default"
+        };
+
+        if (Settings.AppTheme != theme)
+        {
+            Settings.AppTheme = theme;
+            _ = _themeService.SetThemeAsync(theme);
+        }
+    }
+
     [RelayCommand]
     public async Task SaveSettingsAsync()
     {
+        Settings.AppTheme = SelectedThemeIndex switch
+        {
+            1 => "Light",
+            2 => "Dark",
+            _ => "Default"
+        };
         await _settingsRepository.SaveSettingsAsync(Settings);
+        await _themeService.SetThemeAsync(Settings.AppTheme);
         ShowMessage?.Invoke("提示", "设置已成功保存！");
     }
 
@@ -189,7 +239,7 @@ public partial class SettingsViewModel : ObservableObject
         var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         if (ver == null || (ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
         {
-            return "1.0.0";
+            return "1.1.0";
         }
         return ver.Build >= 0 ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : $"{ver.Major}.{ver.Minor}.0";
     }

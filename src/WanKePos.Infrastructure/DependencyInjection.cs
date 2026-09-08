@@ -104,5 +104,16 @@ public static class DependencyInjection
         using var scope = services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PosDbContext>();
         await dbContext.Database.EnsureCreatedAsync();
+
+        // 确保已有数据库平滑升级增加 AppTheme 字段，保持向后兼容
+        try
+        {
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE StoreSettings ADD COLUMN AppTheme TEXT DEFAULT 'Default';");
+        }
+        catch
+        {
+            // 列已存在时 SQLite 会抛出异常，忽略即可
+        }
     }
 }

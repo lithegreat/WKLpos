@@ -28,7 +28,7 @@ namespace WanKePos.WinUI
             var appWindow = AppWindow.GetFromWindowId(windowId);
             if (appWindow != null)
             {
-                appWindow.Title = "万客隆 POS 收银系统 (WinUI 3 现代架构版)";
+                appWindow.Title = "万客隆 POS 收银系统";
                 var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "pos_icon.ico");
                 if (System.IO.File.Exists(iconPath))
                 {
@@ -53,6 +53,10 @@ namespace WanKePos.WinUI
 
             // 在 UI 线程启动时钟
             MainViewModel.StartClock();
+
+            // 监听全局主题变更并同步更新状态栏按钮
+            App.ThemeService.ThemeChanged += (s, themeName) => UpdateThemeUI(themeName);
+            UpdateThemeUI(App.ThemeService.CurrentTheme);
         }
 
         private void RootGrid_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
@@ -217,6 +221,36 @@ namespace WanKePos.WinUI
             {
                 SetForegroundWindow(hwnd);
             }
+        }
+
+        private async void ThemeMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuFlyoutItem item && item.Tag is string themeTag)
+            {
+                await App.ThemeService.SetThemeAsync(themeTag);
+            }
+        }
+
+        private void UpdateThemeUI(string themeName)
+        {
+            DispatcherQueue?.TryEnqueue(() =>
+            {
+                switch (themeName)
+                {
+                    case "Light":
+                        ThemeButtonIcon.Glyph = "\uE706";
+                        ThemeButtonText.Text = "浅色模式";
+                        break;
+                    case "Dark":
+                        ThemeButtonIcon.Glyph = "\uE708";
+                        ThemeButtonText.Text = "黑暗模式";
+                        break;
+                    default:
+                        ThemeButtonIcon.Glyph = "\uE790";
+                        ThemeButtonText.Text = "跟随系统";
+                        break;
+                }
+            });
         }
     }
 }
