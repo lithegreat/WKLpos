@@ -272,4 +272,65 @@ items:
         Assert.Equal(10m, result.Items[0].Quantity);
         Assert.Equal(220.0m, result.Items[0].Subtotal);
     }
+
+    [Fact]
+    public void RecommendedPrompt_ShouldContainMultiColumnShadeAndHandwrittenRules()
+    {
+        var prompt = AiPurchaseOrderParser.RecommendedPrompt;
+        Assert.NotNull(prompt);
+        Assert.Contains("分类多栏并排手写单据", prompt);
+        Assert.Contains("斜杠色号", prompt);
+        Assert.Contains("涂改", prompt);
+        Assert.Contains("圈出总金额", prompt);
+    }
+
+    [Fact]
+    public void Parse_MultiColumnSalonOrderJson_ShouldExtractAllShadesCorrectly()
+    {
+        var salonJson = @"
+{
+  ""supplier"": ""广州博美美发用品有限公司"",
+  ""orderDate"": ""2026-09-12"",
+  ""remark"": ""真实手写单据识别测试"",
+  ""totalQuantity"": 200,
+  ""totalAmount"": 590.00,
+  ""items"": [
+    {
+      ""name"": ""新发芯单支染膏 607-74"",
+      ""specification"": ""607-74"",
+      ""saleUnit"": ""支"",
+      ""costPrice"": 2.79,
+      ""quantity"": 40,
+      ""subtotal"": 111.60
+    },
+    {
+      ""name"": ""新发芯单支染膏 4/0"",
+      ""specification"": ""4/0"",
+      ""saleUnit"": ""支"",
+      ""costPrice"": 2.79,
+      ""quantity"": 120,
+      ""subtotal"": 334.80
+    },
+    {
+      ""name"": ""汇纯单支染膏 4/77"",
+      ""specification"": ""4/77"",
+      ""saleUnit"": ""支"",
+      ""costPrice"": 3.38,
+      ""quantity"": 40,
+      ""subtotal"": 135.20
+    }
+  ]
+}";
+
+        var result = _parser.Parse(salonJson);
+        Assert.NotNull(result);
+        Assert.Equal(3, result.Items.Count);
+        Assert.Equal("新发芯单支染膏 607-74", result.Items[0].Name);
+        Assert.Equal("607-74", result.Items[0].Specification);
+        Assert.Equal("新发芯单支染膏 4/0", result.Items[1].Name);
+        Assert.Equal("4/0", result.Items[1].Specification);
+        Assert.Equal("汇纯单支染膏 4/77", result.Items[2].Name);
+        Assert.Equal(200m, result.TotalQuantity);
+    }
 }
+
