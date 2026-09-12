@@ -239,7 +239,7 @@ public partial class SettingsViewModel : ObservableObject
         var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         if (ver == null || (ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
         {
-            return "1.1.0";
+            return "0.1.0";
         }
         return ver.Build >= 0 ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : $"{ver.Major}.{ver.Minor}.0";
     }

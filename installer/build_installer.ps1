@@ -1,12 +1,12 @@
 ﻿param(
-    [string]$Version = "1.1.0",
+    [string]$Version = "0.1.0",
     [bool]$RunInstaller = $true
 )
 
 # 规范化版本号 (移除前导 v 或 V)
 $cleanVersion = $Version.TrimStart('v', 'V')
 if ([string]::IsNullOrWhiteSpace($cleanVersion)) {
-    $cleanVersion = "1.1.0"
+    $cleanVersion = "0.1.0"
 }
 
 # 自动化构建万客隆 POS Windows Setup 安装包脚本

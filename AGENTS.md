@@ -77,7 +77,7 @@
   1. 自动终止正在运行的 `WanKePos.WinUI` 进程，防止文件占用锁定；
   2. 执行 WinUI 3 独立免依赖编译发布 (`dotnet publish -c Release -r win-x64 --self-contained true -o publish_winui`)；
   3. 清理 `publish_winui\` 中的临时锁与日志文件 (`*.db-shm`, `*.db-wal`, `*.log`)；
-  4. 自动定位 Inno Setup 编译器 (或自动安装)，生成单文件安装包 `output_installer\WanKePos_Setup_v1.1.0.exe`；
+  4. 自动定位 Inno Setup 编译器 (或自动安装)，生成单文件安装包 `output_installer\WanKePos_Setup_v0.1.0.exe`；
   5. **自动启动运行生成的 Setup 安装程序并打开应用** (`Start-Process`)。
 
 ---
