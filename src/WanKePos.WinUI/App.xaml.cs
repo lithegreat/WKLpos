@@ -67,15 +67,24 @@ namespace WanKePos.WinUI
             this.UnhandledException += (sender, e) =>
             {
                 var msg = $"[WinUI UnhandledException] {DateTime.Now}: {e.Message}\nException: {e.Exception}\nStackTrace: {e.Exception?.StackTrace}";
-                System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash.log"), msg);
-                System.IO.File.WriteAllText(@"C:\Users\WKL\POS\pos_crash.log", msg);
+                try
+                {
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash.log"), msg);
+                    System.IO.File.WriteAllText(@"C:\Users\WKL\POS\pos_crash.log", msg);
+                }
+                catch { }
+                e.Handled = true;
             };
 
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
                 var msg = $"[AppDomain UnhandledException] {DateTime.Now}: {e.ExceptionObject}";
-                System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_domain.log"), msg);
-                System.IO.File.WriteAllText(@"C:\Users\WKL\POS\pos_crash_domain.log", msg);
+                try
+                {
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_domain.log"), msg);
+                    System.IO.File.WriteAllText(@"C:\Users\WKL\POS\pos_crash_domain.log", msg);
+                }
+                catch { }
             };
         }
 

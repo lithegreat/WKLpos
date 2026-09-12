@@ -109,12 +109,34 @@ public static class DependencyInjection
         // 确保已有数据库平滑升级增加 AppTheme 字段，保持向后兼容
         try
         {
-            await dbContext.Database.ExecuteSqlRawAsync(
-                "ALTER TABLE StoreSettings ADD COLUMN AppTheme TEXT DEFAULT 'Default';");
+            using var conn = dbContext.Database.GetDbConnection();
+            await conn.OpenAsync();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "PRAGMA table_info(StoreSettings);";
+            bool hasAppTheme = false;
+            using (var reader = await cmd.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    var colName = reader.GetString(1);
+                    if (string.Equals(colName, "AppTheme", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasAppTheme = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasAppTheme)
+            {
+                using var alterCmd = conn.CreateCommand();
+                alterCmd.CommandText = "ALTER TABLE StoreSettings ADD COLUMN AppTheme TEXT DEFAULT 'Default';";
+                await alterCmd.ExecuteNonQueryAsync();
+            }
         }
         catch
         {
-            // 列已存在时 SQLite 会抛出异常，忽略即可
+            // 容错忽略
         }
     }
 }

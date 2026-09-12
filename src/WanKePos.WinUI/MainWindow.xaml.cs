@@ -51,6 +51,31 @@ namespace WanKePos.WinUI
             NavView.SelectedItem = NavView.MenuItems[0];
             SwitchToPage("Cashier");
 
+            // 初始化底部状态栏文本
+            StoreNameTextBlock.Text = MainViewModel.CurrentStoreName;
+            SyncStatusTextBlock.Text = MainViewModel.SyncStatusText;
+            ClockTextBlock.Text = MainViewModel.CurrentTime;
+
+            // 监听 ViewModel 属性变更并安全同步到 UI
+            MainViewModel.PropertyChanged += (s, e) =>
+            {
+                DispatcherQueue?.TryEnqueue(() =>
+                {
+                    switch (e?.PropertyName)
+                    {
+                        case nameof(MainViewModel.CurrentStoreName):
+                            StoreNameTextBlock.Text = MainViewModel.CurrentStoreName;
+                            break;
+                        case nameof(MainViewModel.SyncStatusText):
+                            SyncStatusTextBlock.Text = MainViewModel.SyncStatusText;
+                            break;
+                        case nameof(MainViewModel.CurrentTime):
+                            ClockTextBlock.Text = MainViewModel.CurrentTime;
+                            break;
+                    }
+                });
+            };
+
             // 在 UI 线程启动时钟
             MainViewModel.StartClock();
 
