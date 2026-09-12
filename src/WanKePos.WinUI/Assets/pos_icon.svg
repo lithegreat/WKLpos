@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient: Deep Indigo/Blue on Left to Radiant Orange on Right -->
+    <linearGradient id="bgGrad" x1="5%" y1="90%" x2="95%" y2="10%">
+      <stop offset="0%" stop-color="#242886"/>
+      <stop offset="25%" stop-color="#4B237E"/>
+      <stop offset="55%" stop-color="#9A296D"/>
+      <stop offset="80%" stop-color="#E8532B"/>
+      <stop offset="100%" stop-color="#F87E1F"/>
+    </linearGradient>
+
+    <!-- Customer Screen Inside Gradient -->
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9E2F23"/>
+      <stop offset="100%" stop-color="#601815"/>
+    </linearGradient>
+
+    <!-- Operator Display Gradient -->
+    <linearGradient id="scannerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6E2355"/>
+      <stop offset="100%" stop-color="#461438"/>
+    </linearGradient>
+
+    <!-- Drawer Cutout Gradient -->
+    <linearGradient id="drawerGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#25267D"/>
+      <stop offset="100%" stop-color="#55216E"/>
+    </linearGradient>
+
+    <!-- Key Cutouts Gradient -->
+    <linearGradient id="keyRowGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#28246E"/>
+      <stop offset="100%" stop-color="#581F5E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Squircle Background: 464x464 with rx=104 -->
+  <rect x="24" y="24" width="464" height="464" rx="104" ry="104" fill="url(#bgGrad)"/>
+
+  <!-- ================= CASH REGISTER (WHITE SILHOUETTE) ================= -->
+  <!-- Top Hood & Upper Frame -->
+  <path d="
+    M 124 180 
+    C 124 168, 134 158, 146 158 
+    L 236 158 
+    C 240 158, 244 166, 248 174 
+    L 348 174 
+    C 358 174, 366 182, 366 192 
+    L 366 238 
+    C 366 248, 358 256, 348 256 
+    L 134 256 
+    C 126 256, 124 250, 124 242 
+    Z" 
+    fill="#FFFFFF"/>
+
+  <!-- Receipt Slot Cutout -->
+  <rect x="142" y="214" width="94" height="15" rx="7.5" fill="#3D1D5A"/>
+
+  <!-- Receipt Paper -->
+  <path d="
+    M 148 220 
+    L 148 135 
+    C 148 116, 132 106, 116 106 
+    C 124 96, 142 94, 160 94 
+    L 220 94 
+    C 226 94, 230 98, 230 104 
+    L 230 220 
+    Z" 
+    fill="#FFFFFF"/>
+
+  <!-- Paper top-left roll curve -->
+  <path d="
+    M 148 135 
+    C 148 116, 132 106, 116 106 
+    C 134 106, 148 118, 148 135 
+    Z" 
+    fill="#D5D9EA"/>
+
+  <!-- Receipt Text: POS RETAIL -->
+  <text x="189" y="138" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="22" fill="#29286C" text-anchor="middle" letter-spacing="1">POS</text>
+  <text x="189" y="156" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="700" font-size="11" fill="#29286C" text-anchor="middle" letter-spacing="1.5">RETAIL</text>
+  
+  <!-- Receipt Divider Lines -->
+  <line x1="165" y1="167" x2="215" y2="167" stroke="#29286C" stroke-width="3" stroke-linecap="round"/>
+  <line x1="171" y1="175" x2="209" y2="175" stroke="#29286C" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Receipt Checkmark -->
+  <path d="M 178 194 L 187 203 L 205 184" fill="none" stroke="#29286C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Customer Display Screen (Top Right) -->
+  <!-- Screen Support Pole -->
+  <rect x="296" y="152" width="14" height="24" fill="#FFFFFF"/>
+  <!-- Screen Outer Housing -->
+  <rect x="246" y="96" width="114" height="60" rx="14" fill="#FFFFFF"/>
+  <!-- Screen Inner Display -->
+  <rect x="256" y="106" width="94" height="40" rx="6" fill="url(#screenGrad)"/>
+  <!-- Screen Digits: 15.99 -->
+  <text x="303" y="132" font-family="'Consolas', 'Segoe UI', monospace, sans-serif" font-weight="900" font-size="20" fill="#FFFFFF" text-anchor="middle" letter-spacing="1">15.99</text>
+
+  <!-- Operator Scanner / Display Window -->
+  <rect x="248" y="188" width="100" height="42" rx="10" fill="url(#scannerGrad)"/>
+
+  <!-- Keyboard Base (Slanted Wedge, neatly tucked behind the bag) -->
+  <path d="
+    M 124 250 
+    L 310 250 
+    L 336 344 
+    L 98 344 
+    C 90 344, 86 338, 88 332 
+    Z" 
+    fill="#FFFFFF"/>
+
+  <!-- Keyboard Keys (Cutouts into background) -->
+  <!-- Row 1 (y=262) -->
+  <rect x="136" y="262" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="166" y="262" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="196" y="262" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="226" y="262" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="256" y="262" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="286" y="262" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+
+  <!-- Row 2 (y=281) -->
+  <rect x="131" y="281" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="161" y="281" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="191" y="281" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="221" y="281" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="251" y="281" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="281" y="281" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+
+  <!-- Row 3 (y=300) -->
+  <rect x="125" y="300" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="155" y="300" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="185" y="300" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="215" y="300" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="245" y="300" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="275" y="300" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+
+  <!-- Row 4 (y=319): Wide spacebar and side keys -->
+  <rect x="120" y="319" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="150" y="319" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="180" y="319" width="54" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="242" y="319" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+  <rect x="272" y="319" width="22" height="13" rx="3.5" fill="url(#keyRowGrad)"/>
+
+  <!-- Cash Drawer Base (Bottom) -->
+  <rect x="88" y="340" width="308" height="74" rx="20" fill="#FFFFFF"/>
+  <!-- Drawer Face Recess Cutout -->
+  <rect x="104" y="354" width="260" height="46" rx="12" fill="url(#drawerGrad)"/>
+  <!-- Drawer Keyhole / Lock Circle -->
+  <circle cx="236" cy="377" r="6.5" fill="#FFFFFF"/>
+
+  <!-- ================= RETAIL SHOPPING BAG (FOREGROUND RIGHT) ================= -->
+  <!-- Bag Handle Loop: Clean arch above the shopping bag -->
+  <path d="
+    M 340 274 
+    C 340 210, 390 210, 390 274" 
+    fill="none" 
+    stroke="#FFFFFF" 
+    stroke-width="16" 
+    stroke-linecap="round"/>
+
+  <!-- Bag Body (White Tote, overlaps cash drawer) -->
+  <path d="
+    M 306 270 
+    L 418 270 
+    C 424 270, 429 275, 431 281 
+    L 441 398 
+    C 443 408, 435 416, 425 416 
+    L 297 416 
+    C 287 416, 279 408, 281 398 
+    L 291 281 
+    C 293 275, 298 270, 306 270 
+    Z" 
+    fill="#FFFFFF"/>
+
+  <!-- Bag Eyelets / Rivets -->
+  <circle cx="340" cy="287" r="5.5" fill="#4B1B5B"/>
+  <circle cx="390" cy="287" r="5.5" fill="#4B1B5B"/>
+
+  <!-- Gift Ribbon & Bow on Bag -->
+  <!-- Left Bow Loop -->
+  <path d="
+    M 365 328 
+    C 346 312, 338 332, 360 337 
+    Z" 
+    fill="#3B1854"/>
+  <!-- Right Bow Loop -->
+  <path d="
+    M 365 328 
+    C 384 312, 392 332, 370 337 
+    Z" 
+    fill="#3B1854"/>
+  <!-- Bow Knot -->
+  <circle cx="365" cy="333" r="4.5" fill="#3B1854"/>
+
+  <!-- Horizontal Ribbon Stripe -->
+  <rect x="329" y="342" width="72" height="12" rx="2" fill="#3B1854"/>
+
+  <!-- Vertical Ribbon Stripe -->
+  <rect x="359" y="342" width="12" height="50" rx="2" fill="#3B1854"/>
+
+  <!-- Gift Box Lower Left & Right Shading -->
+  <rect x="334" y="360" width="20" height="28" rx="2" fill="#3B1854"/>
+  <rect x="376" y="360" width="20" height="28" rx="2" fill="#3B1854"/>
+</svg>
