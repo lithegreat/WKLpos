@@ -297,4 +297,159 @@ public sealed partial class PurchaseOrderPage : Page
         this.Focus(FocusState.Programmatic);
         ViewModel.CreatePurchaseOrderCommand.Execute(null);
     }
+
+    #region 动态布局与分割条调整 (Dynamic Splitter & Layout)
+
+    private bool _isDraggingCartSplitter = false;
+    private double _dragStartPointerX;
+    private double _dragStartCartWidth;
+    private const double DefaultCartWidth = 520.0;
+    private const double MinCartWidth = 380.0;
+    private double _savedCategoryWidth = 160.0;
+
+    private void CartSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        this.ProtectedCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.SizeWestEast);
+        HighlightSplitter(true);
+    }
+
+    private void CartSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_isDraggingCartSplitter)
+        {
+            this.ProtectedCursor = null;
+            HighlightSplitter(false);
+        }
+    }
+
+    private void CartSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is UIElement elem)
+        {
+            _isDraggingCartSplitter = true;
+            elem.CapturePointer(e.Pointer);
+            _dragStartPointerX = e.GetCurrentPoint(WorkbenchGrid).Position.X;
+            _dragStartCartWidth = CartColumn.ActualWidth > 0 ? CartColumn.ActualWidth : DefaultCartWidth;
+            HighlightSplitter(true);
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (_isDraggingCartSplitter)
+        {
+            double currentX = e.GetCurrentPoint(WorkbenchGrid).Position.X;
+            double deltaX = currentX - _dragStartPointerX;
+
+            // 向左拖拽 (deltaX < 0) 增加待制单宽度，向右拖拽减少待制单宽度
+            double newWidth = _dragStartCartWidth - deltaX;
+
+            // 动态限制最大宽度，确保中间商品浏览列表至少保留 280px 宽度
+            double catWidth = CategoryColumn.Width.Value > 0 ? CategoryColumn.ActualWidth : 0;
+            double gridWidth = WorkbenchGrid.ActualWidth > 0 ? WorkbenchGrid.ActualWidth : 1200;
+            double maxCartWidth = Math.Max(MinCartWidth, gridWidth - catWidth - 280 - 12);
+
+            newWidth = Math.Clamp(newWidth, MinCartWidth, maxCartWidth);
+            CartColumn.Width = new GridLength(newWidth, GridUnitType.Pixel);
+            UpdateToggleExpandButtonState(newWidth);
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (_isDraggingCartSplitter && sender is UIElement elem)
+        {
+            _isDraggingCartSplitter = false;
+            elem.ReleasePointerCapture(e.Pointer);
+            HighlightSplitter(false);
+            this.ProtectedCursor = null;
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        _isDraggingCartSplitter = false;
+        HighlightSplitter(false);
+        this.ProtectedCursor = null;
+    }
+
+    private void CartSplitter_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        CartColumn.Width = new GridLength(DefaultCartWidth, GridUnitType.Pixel);
+        UpdateToggleExpandButtonState(DefaultCartWidth);
+        e.Handled = true;
+    }
+
+    private void ToggleCartExpandButton_Click(object sender, RoutedEventArgs e)
+    {
+        double currentWidth = CartColumn.ActualWidth > 0 ? CartColumn.ActualWidth : CartColumn.Width.Value;
+        if (currentWidth < 640)
+        {
+            // 切换为宽屏展开模式 (占满舒适大宽度，同时保护商品列表)
+            double catWidth = CategoryColumn.Width.Value > 0 ? CategoryColumn.ActualWidth : 0;
+            double gridWidth = WorkbenchGrid.ActualWidth > 0 ? WorkbenchGrid.ActualWidth : 1200;
+            double targetWidth = Math.Min(740, Math.Max(DefaultCartWidth, gridWidth - catWidth - 320));
+            CartColumn.Width = new GridLength(targetWidth, GridUnitType.Pixel);
+            UpdateToggleExpandButtonState(targetWidth);
+        }
+        else
+        {
+            // 恢复默认宽度
+            CartColumn.Width = new GridLength(DefaultCartWidth, GridUnitType.Pixel);
+            UpdateToggleExpandButtonState(DefaultCartWidth);
+        }
+    }
+
+    private void UpdateToggleExpandButtonState(double width)
+    {
+        if (ToggleCartExpandBtn != null)
+        {
+            ToggleCartExpandBtn.Content = width >= 640 ? "↔ 紧凑" : "↔ 宽屏";
+        }
+    }
+
+    private void CollapseCategoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        _savedCategoryWidth = CategoryColumn.ActualWidth > 0 ? CategoryColumn.ActualWidth : 160.0;
+        CategoryColumn.Width = new GridLength(0);
+        CategoryBorder.Visibility = Visibility.Collapsed;
+        ExpandCategoryBtn.Visibility = Visibility.Visible;
+    }
+
+    private void ExpandCategoryButton_Click(object sender, RoutedEventArgs e)
+    {
+        CategoryColumn.Width = new GridLength(_savedCategoryWidth > 0 ? _savedCategoryWidth : 160.0);
+        CategoryBorder.Visibility = Visibility.Visible;
+        ExpandCategoryBtn.Visibility = Visibility.Collapsed;
+    }
+
+    private void HighlightSplitter(bool isHighlighted)
+    {
+        if (SplitterBar == null || SplitterGrip == null) return;
+
+        if (isHighlighted)
+        {
+            if (Application.Current.Resources.TryGetValue("AccentFillColorDefaultBrush", out var accent))
+            {
+                SplitterBar.Background = accent as Brush;
+                SplitterGrip.Background = accent as Brush;
+            }
+        }
+        else
+        {
+            if (Application.Current.Resources.TryGetValue("DividerStrokeColorDefaultBrush", out var divider))
+            {
+                SplitterBar.Background = divider as Brush;
+            }
+            if (Application.Current.Resources.TryGetValue("ControlStrokeColorDefaultBrush", out var grip))
+            {
+                SplitterGrip.Background = grip as Brush;
+            }
+        }
+    }
+
+    #endregion
 }

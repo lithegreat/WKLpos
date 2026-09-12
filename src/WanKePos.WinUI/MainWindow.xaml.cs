@@ -182,6 +182,10 @@ namespace WanKePos.WinUI
             }
         }
 
+        private bool _isUpdatingAlwaysOnTop = false;
+
+        public bool IsAlwaysOnTop => AlwaysOnTopCheckBox?.IsChecked ?? false;
+
         private void AlwaysOnTopCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             SetAlwaysOnTop(true);
@@ -192,6 +196,40 @@ namespace WanKePos.WinUI
             SetAlwaysOnTop(false);
         }
 
+        private const int GWL_EXSTYLE = -20;
+        private const long WS_EX_TOPMOST = 0x00000008L;
+
+        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+
+        private const uint SWP_NOSIZE = 0x0001;
+        private const uint SWP_NOMOVE = 0x0002;
+        private const uint SWP_NOACTIVATE = 0x0010;
+        private const uint SWP_FRAMECHANGED = 0x0020;
+        private const uint SWP_SHOWWINDOW = 0x0040;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetWindowLongPtr")]
+        private static extern IntPtr GetWindowLongPtr64(IntPtr hWnd, int nIndex);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "GetWindowLong")]
+        private static extern int GetWindowLong32(IntPtr hWnd, int nIndex);
+
+        private static IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)
+        {
+            return IntPtr.Size == 8 ? GetWindowLongPtr64(hWnd, nIndex) : new IntPtr(GetWindowLong32(hWnd, nIndex));
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetWindowLongPtr")]
+        private static extern IntPtr SetWindowLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetWindowLong")]
+        private static extern int SetWindowLong32(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        private static IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong)
+        {
+            return IntPtr.Size == 8 ? SetWindowLongPtr64(hWnd, nIndex, dwNewLong) : new IntPtr(SetWindowLong32(hWnd, nIndex, dwNewLong.ToInt32()));
+        }
+
         [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
         [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
         private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
@@ -200,26 +238,58 @@ namespace WanKePos.WinUI
         [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
 
-        private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
-        private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
-        private const uint SWP_NOSIZE = 0x0001;
-        private const uint SWP_NOMOVE = 0x0002;
-        private const uint SWP_SHOWWINDOW = 0x0040;
-
         public void SetAlwaysOnTop(bool isAlwaysOnTop)
         {
-            var hwnd = WindowNative.GetWindowHandle(this);
-            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-            var appWindow = AppWindow.GetFromWindowId(windowId);
-            if (appWindow?.Presenter is OverlappedPresenter presenter)
-            {
-                presenter.IsAlwaysOnTop = isAlwaysOnTop;
-            }
+            if (_isUpdatingAlwaysOnTop) return;
+            _isUpdatingAlwaysOnTop = true;
 
-            SetWindowPos(hwnd, isAlwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-            if (isAlwaysOnTop)
+            try
             {
-                SetForegroundWindow(hwnd);
+                // 1. 同步底部 CheckBox 勾选状态
+                if (AlwaysOnTopCheckBox != null && AlwaysOnTopCheckBox.IsChecked != isAlwaysOnTop)
+                {
+                    AlwaysOnTopCheckBox.IsChecked = isAlwaysOnTop;
+                }
+
+                var hwnd = WindowNative.GetWindowHandle(this);
+                if (hwnd == IntPtr.Zero) return;
+
+                var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+                var appWindow = AppWindow.GetFromWindowId(windowId);
+
+                // 2. 同步更新 WinUI 3 AppWindow Presenter 状态
+                if (appWindow?.Presenter is OverlappedPresenter presenter)
+                {
+                    presenter.IsAlwaysOnTop = isAlwaysOnTop;
+                }
+
+                // 3. 显式修改 Win32 扩展样式 GWL_EXSTYLE，确保物理层面清除或附加 WS_EX_TOPMOST
+                long exStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
+                if (isAlwaysOnTop)
+                {
+                    exStyle |= WS_EX_TOPMOST;
+                }
+                else
+                {
+                    exStyle &= ~WS_EX_TOPMOST;
+                }
+                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(exStyle));
+
+                // 4. 调用 SetWindowPos 生效新的 Z-Order
+                if (isAlwaysOnTop)
+                {
+                    SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
+                    SetForegroundWindow(hwnd);
+                }
+                else
+                {
+                    // 取消置顶时，使用 HWND_NOTOPMOST，并配合 SWP_NOACTIVATE 与 SWP_FRAMECHANGED 确保彻底脱离置顶层级
+                    SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
+                }
+            }
+            finally
+            {
+                _isUpdatingAlwaysOnTop = false;
             }
         }
 

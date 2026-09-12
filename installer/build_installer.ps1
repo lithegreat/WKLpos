@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$Version = "1.1.0",
     [bool]$RunInstaller = $true
 )
@@ -19,7 +19,9 @@ Write-Host "==========================================" -ForegroundColor Cyan
 Stop-Process -Name "WanKePos.WinUI" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "WanKePos" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "WanKePos_Setup*" -Force -ErrorAction SilentlyContinue
-
+cmd /c "taskkill /F /IM WanKePos.WinUI.exe /T 2>nul" | Out-Null
+cmd /c "taskkill /F /IM WanKePos.exe /T 2>nul" | Out-Null
+Start-Sleep -Milliseconds 800
 
 $rootDir = Split-Path -Parent $PSScriptRoot
 Set-Location $rootDir

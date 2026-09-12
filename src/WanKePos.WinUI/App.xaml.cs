@@ -50,7 +50,11 @@ namespace WanKePos.WinUI
             {
                 MainWindowInstance.DispatcherQueue?.TryEnqueue(() =>
                 {
-                    MainWindowInstance.SetAlwaysOnTop(true);
+                    // 仅当用户处于开启置顶状态时才强化置顶；若用户已取消置顶，则不违背用户意愿强制置顶
+                    if (MainWindowInstance.IsAlwaysOnTop)
+                    {
+                        MainWindowInstance.SetAlwaysOnTop(true);
+                    }
                     MainWindowInstance.Activate();
                 });
             }

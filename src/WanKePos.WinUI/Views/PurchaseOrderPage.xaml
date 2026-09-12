@@ -185,15 +185,17 @@
         </Grid>
 
         <!-- TAB 2: 新建采购单 (三栏式选品与制单工作台) -->
-        <Grid Grid.Row="1" Visibility="{x:Bind GetTab2Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
+        <Grid x:Name="WorkbenchGrid" Grid.Row="1" Visibility="{x:Bind GetTab2Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="160"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="420"/>
+                <ColumnDefinition x:Name="CategoryColumn" Width="160" MinWidth="0"/>
+                <ColumnDefinition x:Name="ProductColumn" Width="*" MinWidth="280"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition x:Name="CartColumn" Width="520" MinWidth="380"/>
             </Grid.ColumnDefinitions>
 
             <!-- 左栏：商品品类导航 -->
-            <Border Grid.Column="0" 
+            <Border x:Name="CategoryBorder"
+                    Grid.Column="0" 
                     Background="{ThemeResource LayerFillColorDefaultBrush}" 
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                     BorderThickness="1" 
@@ -206,7 +208,15 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0" Text="🏷️ 商品品类" FontSize="16" FontWeight="SemiBold" Margin="4,4,4,12"/>
+                    <Grid Grid.Row="0" Margin="4,4,4,12">
+                        <TextBlock Text="🏷️ 商品品类" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <Button x:Name="CollapseCategoryBtn" 
+                                Content="◀" 
+                                HorizontalAlignment="Right" 
+                                Height="28" Width="28" Padding="0"
+                                ToolTipService.ToolTip="折叠品类列表，获得更大选品与制单空间"
+                                Click="CollapseCategoryButton_Click"/>
+                    </Grid>
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <ItemsControl x:Name="CategoryItemsControl" ItemsSource="{Binding Categories}">
@@ -226,7 +236,7 @@
             </Border>
 
             <!-- 中栏：商品浏览与选品数据表 -->
-            <Grid Grid.Column="1" Margin="0,0,10,0">
+            <Grid Grid.Column="1" Margin="0,0,4,0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="40"/>
@@ -241,6 +251,12 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button x:Name="ExpandCategoryBtn" 
+                                Content="🏷️ 展开品类" 
+                                Visibility="Collapsed" 
+                                Height="36" 
+                                Click="ExpandCategoryButton_Click"
+                                ToolTipService.ToolTip="重新展开左侧商品品类列表"/>
                         <TextBox PlaceholderText="🔍 搜索商品名称或条码 (回车)" 
                                  Width="230" 
                                  Height="36"
@@ -335,8 +351,50 @@
                 </ListView>
             </Grid>
 
+            <!-- 动态调节分割条 (可左右拖拽自由调整待制采购单宽度) -->
+            <Border x:Name="CartSplitter" 
+                    Grid.Column="2" 
+                    Width="12" 
+                    Background="Transparent" 
+                    HorizontalAlignment="Center" 
+                    VerticalAlignment="Stretch"
+                    PointerEntered="CartSplitter_PointerEntered" 
+                    PointerExited="CartSplitter_PointerExited" 
+                    PointerPressed="CartSplitter_PointerPressed" 
+                    PointerMoved="CartSplitter_PointerMoved" 
+                    PointerReleased="CartSplitter_PointerReleased" 
+                    PointerCaptureLost="CartSplitter_PointerCaptureLost" 
+                    DoubleTapped="CartSplitter_DoubleTapped"
+                    ToolTipService.ToolTip="按住左右拖动调节待制采购单宽度，双击恢复默认宽度">
+                <Grid HorizontalAlignment="Center" VerticalAlignment="Stretch">
+                    <!-- 分割基准线 -->
+                    <Border x:Name="SplitterBar" 
+                            Width="2" 
+                            CornerRadius="1" 
+                            Background="{ThemeResource DividerStrokeColorDefaultBrush}" 
+                            HorizontalAlignment="Center" 
+                            VerticalAlignment="Stretch" 
+                            Margin="0,4"/>
+                    <!-- 居中药丸抓手手柄 (Grip) -->
+                    <Border x:Name="SplitterGrip" 
+                            Width="6" 
+                            Height="38" 
+                            CornerRadius="3" 
+                            Background="{ThemeResource ControlStrokeColorDefaultBrush}" 
+                            HorizontalAlignment="Center" 
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="3">
+                            <Ellipse Width="2" Height="2" Fill="{ThemeResource TextFillColorTertiaryBrush}"/>
+                            <Ellipse Width="2" Height="2" Fill="{ThemeResource TextFillColorTertiaryBrush}"/>
+                            <Ellipse Width="2" Height="2" Fill="{ThemeResource TextFillColorTertiaryBrush}"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
             <!-- 右栏：待制采购单明细与保存 -->
-            <Border Grid.Column="2" 
+            <Border Grid.Column="3" 
+                    Margin="4,0,0,0"
                     Background="{ThemeResource LayerFillColorDefaultBrush}" 
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                     BorderThickness="1" 
@@ -365,12 +423,21 @@
                                                Foreground="White"/>
                                 </Border>
                             </StackPanel>
-                            <Button Content="🤖 AI 识单导入" 
-                                    Command="{Binding ImportFromAiCommand}" 
-                                    HorizontalAlignment="Right" 
-                                    Height="30" 
-                                    Padding="10,0"
-                                    FontSize="12"/>
+                            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                                <Button x:Name="ToggleCartExpandBtn" 
+                                        Content="↔ 宽屏" 
+                                        Click="ToggleCartExpandButton_Click" 
+                                        Height="30" 
+                                        Padding="8,0"
+                                        FontSize="12"
+                                        ToolTipService.ToolTip="一键切换【宽屏/紧凑】制单布局，亦可直接拖拽左侧分割条"/>
+                                <Button Content="🤖 AI 识单导入" 
+                                        Command="{Binding ImportFromAiCommand}" 
+                                        Height="30" 
+                                        Padding="10,0"
+                                        FontSize="12"
+                                        ToolTipService.ToolTip="拍照或手写单据，粘贴识别一键导入"/>
+                            </StackPanel>
                         </Grid>
                         <TextBox Header="供货商名称:" 
                                  PlaceholderText="例如：广州博美美发用品有限公司" 
@@ -410,8 +477,15 @@
                                         </Grid.ColumnDefinitions>
 
                                         <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,6,0">
-                                            <TextBlock Text="{Binding ProductName}" FontWeight="SemiBold" FontSize="13" TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Barcode}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                                            <TextBlock Text="{Binding ProductName}" 
+                                                       FontWeight="SemiBold" 
+                                                       FontSize="13" 
+                                                       TextTrimming="CharacterEllipsis"
+                                                       ToolTipService.ToolTip="{Binding ProductName}"/>
+                                            <TextBlock Text="{Binding Barcode}" 
+                                                       FontSize="11" 
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                       ToolTipService.ToolTip="{Binding Barcode}"/>
                                         </StackPanel>
 
                                         <!-- 采购单价 -->
