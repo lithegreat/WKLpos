@@ -22,13 +22,52 @@ namespace WanKePos.WinUI
             
             App.MainWindowInstance = this;
 
+            // 启用 Windows 11 原生 Mica (云母) 标准背景材质
+            try
+            {
+                this.SystemBackdrop = new Microsoft.UI.Xaml.Media.MicaBackdrop
+                {
+                    Kind = Microsoft.UI.Composition.SystemBackdrops.MicaKind.Base
+                };
+            }
+            catch { }
+
+            // 将内容区域无缝扩展至标题栏并设置自定义拖拽区域 (PowerToys 风格)
+            this.ExtendsContentIntoTitleBar = true;
+            this.SetTitleBar(AppTitleBar);
+
+            this.Closed += (s, e) =>
+            {
+                App.LogToFile($"MainWindow.Closed! StackTrace:\n{Environment.StackTrace}");
+            };
+
             // 设置窗口标题与最大化/初始大小
             var hwnd = WindowNative.GetWindowHandle(this);
+            App.LogToFile($"MainWindow created. HWND: {hwnd}");
             var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
             var appWindow = AppWindow.GetFromWindowId(windowId);
             if (appWindow != null)
             {
                 appWindow.Title = "万客隆 POS 收银系统";
+                if (appWindow.TitleBar != null)
+                {
+                    appWindow.TitleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
+                    appWindow.TitleBar.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
+
+                    void UpdateTitleBarInsets()
+                    {
+                        var rightInset = appWindow.TitleBar.RightInset;
+                        TitleBarWidgetsPanel.Margin = new Thickness(0, 0, Math.Max(140, rightInset), 0);
+                    }
+                    UpdateTitleBarInsets();
+                    appWindow.Changed += (s, args) =>
+                    {
+                        if (args.DidSizeChange || args.DidPositionChange)
+                        {
+                            DispatcherQueue?.TryEnqueue(UpdateTitleBarInsets);
+                        }
+                    };
+                }
                 var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "pos_icon.ico");
                 if (System.IO.File.Exists(iconPath))
                 {
@@ -59,8 +98,8 @@ namespace WanKePos.WinUI
                 if (displayArea != null)
                 {
                     var centeredPosition = new Windows.Graphics.PointInt32(
-                        Math.Max(0, (displayArea.WorkArea.Width - 1200) / 2),
-                        Math.Max(0, (displayArea.WorkArea.Height - 800) / 2));
+                        displayArea.WorkArea.X + Math.Max(0, (displayArea.WorkArea.Width - 1200) / 2),
+                        displayArea.WorkArea.Y + Math.Max(0, (displayArea.WorkArea.Height - 800) / 2));
                     appWindow.Move(centeredPosition);
                 }
 
@@ -68,6 +107,9 @@ namespace WanKePos.WinUI
                 {
                     presenter.IsAlwaysOnTop = true;
                 }
+
+                appWindow.Show(true);
+                SetForegroundWindow(hwnd);
             }
 
             // 注册全局功能快捷键 (F1~F6) 监听：使用 PreviewKeyDown 保证在任何输入焦点下均能优先拦截
@@ -78,7 +120,7 @@ namespace WanKePos.WinUI
             NavView.SelectedItem = NavView.MenuItems[0];
             SwitchToPage("Cashier");
 
-            // 初始化底部状态栏文本
+            // 初始化状态栏文本与时钟
             StoreNameTextBlock.Text = MainViewModel.CurrentStoreName;
             SyncStatusTextBlock.Text = MainViewModel.SyncStatusText;
             ClockTextBlock.Text = MainViewModel.CurrentTime;
@@ -106,7 +148,7 @@ namespace WanKePos.WinUI
             // 在 UI 线程启动时钟
             MainViewModel.StartClock();
 
-            // 监听全局主题变更并同步更新状态栏按钮
+            // 监听全局主题变更并同步更新标题栏按钮颜色
             App.ThemeService.ThemeChanged += (s, themeName) => UpdateThemeUI(themeName);
             UpdateThemeUI(App.ThemeService.CurrentTheme);
         }
@@ -382,21 +424,39 @@ namespace WanKePos.WinUI
         {
             DispatcherQueue?.TryEnqueue(() =>
             {
-                switch (themeName)
+                try
                 {
-                    case "Light":
-                        ThemeButtonIcon.Glyph = "\uE706";
-                        ThemeButtonText.Text = "浅色模式";
-                        break;
-                    case "Dark":
-                        ThemeButtonIcon.Glyph = "\uE708";
-                        ThemeButtonText.Text = "黑暗模式";
-                        break;
-                    default:
-                        ThemeButtonIcon.Glyph = "\uE790";
-                        ThemeButtonText.Text = "跟随系统";
-                        break;
+                    switch (themeName)
+                    {
+                        case "Light":
+                            ThemeButtonIcon.Glyph = "\uE706";
+                            ThemeButtonText.Text = "浅色模式";
+                            break;
+                        case "Dark":
+                            ThemeButtonIcon.Glyph = "\uE708";
+                            ThemeButtonText.Text = "深色模式";
+                            break;
+                        default:
+                            ThemeButtonIcon.Glyph = "\uE790";
+                            ThemeButtonText.Text = "跟随系统";
+                            break;
+                    }
+
+                    var hwnd = WindowNative.GetWindowHandle(this);
+                    if (hwnd != IntPtr.Zero)
+                    {
+                        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+                        var appWindow = AppWindow.GetFromWindowId(windowId);
+                        if (appWindow?.TitleBar != null)
+                        {
+                            bool isDark = themeName == "Dark" || (themeName == "Default" && (this.Content as FrameworkElement)?.ActualTheme == ElementTheme.Dark);
+                            var fgColor = isDark ? Windows.UI.Color.FromArgb(255, 240, 240, 240) : Windows.UI.Color.FromArgb(255, 30, 30, 30);
+                            appWindow.TitleBar.ButtonForegroundColor = fgColor;
+                            appWindow.TitleBar.ButtonHoverForegroundColor = fgColor;
+                        }
+                    }
                 }
+                catch { }
             });
         }
     }

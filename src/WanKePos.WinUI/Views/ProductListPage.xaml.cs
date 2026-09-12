@@ -29,6 +29,7 @@ public sealed partial class ProductListPage : Page
         this.Loaded += async (s, e) =>
         {
             await ViewModel.InitializeAsync();
+            DispatcherQueue.TryEnqueue(UpdateCategoryButtonsHighlight);
         };
     }
 
@@ -103,6 +104,42 @@ public sealed partial class ProductListPage : Page
         if (sender is Button btn && btn.Content is string category)
         {
             await ViewModel.FilterByCategoryAsync(category);
+            UpdateCategoryButtonsHighlight();
+        }
+    }
+
+    private void UpdateCategoryButtonsHighlight()
+    {
+        if (CategoryItemsControl == null) return;
+        var selected = ViewModel.SelectedCategory;
+        var selectedStyle = Application.Current.Resources.TryGetValue("CategoryItemSelectedStyle", out var aStyle) ? aStyle as Style : null;
+        var defaultStyle = Application.Current.Resources.TryGetValue("CategoryItemButtonStyle", out var dStyle) ? dStyle as Style : null;
+
+        FindAndStyleCategoryButtons(CategoryItemsControl, selected, selectedStyle, defaultStyle);
+    }
+
+    private void FindAndStyleCategoryButtons(DependencyObject parent, string selected, Style? accentStyle, Style? defaultStyle)
+    {
+        int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(parent);
+        for (int i = 0; i < count; i++)
+        {
+            var child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(parent, i);
+            if (child is Button btn && btn.Content is string cat)
+            {
+                bool isMatch = string.Equals(cat, selected, StringComparison.OrdinalIgnoreCase);
+                if (isMatch && accentStyle != null)
+                {
+                    btn.Style = accentStyle;
+                }
+                else if (!isMatch && defaultStyle != null)
+                {
+                    btn.Style = defaultStyle;
+                }
+            }
+            else
+            {
+                FindAndStyleCategoryButtons(child, selected, accentStyle, defaultStyle);
+            }
         }
     }
 

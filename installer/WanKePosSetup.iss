@@ -50,11 +50,11 @@ ShowLanguageDialog=no
 Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
 ; 打包 publish_winui 目录下的所有程序文件及运行依赖，排除运行时生成的日志与数据库临时锁文件
-Source: "..\publish_winui\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.db-shm,*.db-wal,*.log"
+Source: "..\publish_winui\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "*.db-shm,*.db-wal,*.log,*.pdb"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\Assets\pos_icon.ico"; WorkingDir: "{app}"; AppUserModelID: "WanKePos.SmartPOS.App"

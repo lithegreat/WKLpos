@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="➕ 办理新会员 / 新增会员"
+    Title="办理新会员"
     PrimaryButtonText="确认开卡"
     CloseButtonText="取消"
     DefaultButton="Primary"
@@ -38,7 +38,9 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="MemberNoTextBox" Grid.Column="0" PlaceholderText="自动生成或输入"/>
-                        <Button Grid.Column="1" Content="⚡" Click="GenerateMemberNoButton_Click"/>
+                        <Button Grid.Column="1" Click="GenerateMemberNoButton_Click" Height="32" Width="36" Padding="0" ToolTipService.ToolTip="自动生成卡号">
+                            <FontIcon Glyph="&#xE735;" FontSize="11"/>
+                        </Button>
                     </Grid>
                 </StackPanel>
             </Grid>
@@ -71,11 +73,11 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Spacing="4">
-                        <TextBlock Text="开卡储值余额 (元)" FontWeight="SemiBold" Foreground="LightGreen"/>
+                        <TextBlock Text="开卡储值余额 (元)" FontWeight="SemiBold" Foreground="{ThemeResource SuccessTextBrush}"/>
                         <TextBox x:Name="BalanceTextBox" Text="0.00"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Spacing="4">
-                        <TextBlock Text="初始积分" FontWeight="SemiBold" Foreground="#FF8C00"/>
+                        <TextBlock Text="初始积分" FontWeight="SemiBold" Foreground="{ThemeResource PriceHighlightBrush}"/>
                         <TextBox x:Name="PointsTextBox" Text="0"/>
                     </StackPanel>
                 </Grid>
@@ -108,7 +110,7 @@
             </StackPanel>
 
             <!-- 错误提示 -->
-            <TextBlock x:Name="ErrorTextBlock" Foreground="Red" FontSize="12" Visibility="Collapsed"/>
+            <TextBlock x:Name="ErrorTextBlock" Foreground="{ThemeResource CriticalTextBrush}" FontSize="12" Visibility="Collapsed"/>
 
         </StackPanel>
     </ScrollViewer>

@@ -5,7 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="➕ 手动新增商品"
+    Title="新增商品档案"
     PrimaryButtonText="保存并上架"
     CloseButtonText="取消"
     DefaultButton="Primary"
@@ -23,7 +23,12 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBox x:Name="BarcodeTextBox" Grid.Column="0" PlaceholderText="支持扫码枪直接扫入或手动输入"/>
-                    <Button Grid.Column="1" Content="⚡ 自动生成" Click="GenerateBarcodeButton_Click"/>
+                    <Button Grid.Column="1" Click="GenerateBarcodeButton_Click" Height="32">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE735;" FontSize="11"/>
+                            <TextBlock Text="自动生成" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
                 </Grid>
             </StackPanel>
 
@@ -66,7 +71,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Row="0" Grid.Column="0" Spacing="4">
-                        <TextBlock Text="门店零售价 (元) *" FontWeight="SemiBold" Foreground="#FF8C00"/>
+                        <TextBlock Text="门店零售价 (元) *" FontWeight="SemiBold" Foreground="{ThemeResource PriceHighlightBrush}"/>
                         <TextBox x:Name="RetailPriceTextBox" PlaceholderText="0.00"/>
                     </StackPanel>
 
@@ -76,7 +81,7 @@
                     </StackPanel>
 
                     <StackPanel Grid.Row="0" Grid.Column="2" Spacing="4">
-                        <TextBlock Text="门店会员价 (元)" FontWeight="SemiBold" Foreground="LightGreen"/>
+                        <TextBlock Text="门店会员价 (元)" FontWeight="SemiBold" Foreground="{ThemeResource SuccessTextBrush}"/>
                         <TextBox x:Name="MemberPriceTextBox" PlaceholderText="选填"/>
                     </StackPanel>
 
@@ -114,7 +119,7 @@
             </Grid>
 
             <!-- 错误提示文本 -->
-            <TextBlock x:Name="ErrorTextBlock" Foreground="Red" FontSize="12" Visibility="Collapsed"/>
+            <TextBlock x:Name="ErrorTextBlock" Foreground="{ThemeResource CriticalTextBrush}" FontSize="12" Visibility="Collapsed"/>
 
         </StackPanel>
     </ScrollViewer>

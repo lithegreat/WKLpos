@@ -5,133 +5,160 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:converters="using:WanKePos.WinUI.Converters"
+    xmlns:controls="using:WanKePos.WinUI.Controls"
+    Background="Transparent"
     mc:Ignorable="d">
 
-
-
-    <Grid Padding="16">
+    <Grid Padding="24,18,24,20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
-        <!-- 搜索与操作栏 -->
-        <Grid Grid.Row="0" Margin="0,0,0,14">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
 
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
-                <TextBox PlaceholderText="🔍 搜索会员手机号、姓名或卡号 (回车)" 
-                         Width="280" 
-                         Text="{Binding SearchKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         KeyDown="SearchTextBox_KeyDown"/>
-                <Button Content="搜索" Command="{Binding SearchCommand}"/>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                <Button Content="➕ 新增会员" 
-                        Command="{Binding AddMemberCommand}" 
+        <!-- WinUI Gallery 标准标头 -->
+        <controls:PageHeader Grid.Row="0"
+                             Title="会员档案管理" 
+                             Description="维护会员档案、充值储值、积分查询及消费统计" 
+                             Glyph="&#xE77B;"
+                             BadgeText="快捷键 F3">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Command="{Binding AddMemberCommand}" 
                         Style="{StaticResource AccentButtonStyle}"
-                        Height="38" 
+                        Height="36" 
                         Padding="16,0" 
-                        FontWeight="Bold"/>
-                <Button Content="📂 导入Excel" 
-                        Command="{Binding ImportFromExcelCommand}" 
-                        Height="38" 
-                        Padding="14,0"/>
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE710;" FontSize="13"/>
+                        <TextBlock Text="新增会员" FontSize="13" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+                <Button Command="{Binding ImportFromExcelCommand}" 
+                        Height="36" 
+                        Padding="14,0"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE8B7;" FontSize="14"/>
+                        <TextBlock Text="导入 Excel" FontSize="13"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
-        </Grid>
+        </controls:PageHeader>
 
-        <!-- 会员原生虚拟化数据表格 -->
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="40"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
+            
+            <!-- 搜索与操作栏 -->
+            <Grid Grid.Row="0" Margin="0,0,0,14">
+                <StackPanel Orientation="Horizontal" Spacing="10">
+                    <TextBox PlaceholderText="搜索会员手机号、姓名或卡号 (回车)" 
+                             Width="320" 
+                             Height="36"
+                             Text="{Binding SearchKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             KeyDown="SearchTextBox_KeyDown"/>
+                    <Button Command="{Binding SearchCommand}" Height="36" Padding="14,0" CornerRadius="6">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE721;" FontSize="12"/>
+                            <TextBlock Text="搜索" FontSize="13"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
-            <!-- 表头 -->
-            <Border Grid.Row="0" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="110"/>
-                        <ColumnDefinition Width="110"/>
-                        <ColumnDefinition Width="1.5*"/>
-                        <ColumnDefinition Width="50"/>
-                        <ColumnDefinition Width="75"/>
-                        <ColumnDefinition Width="85"/>
-                        <ColumnDefinition Width="85"/>
-                        <ColumnDefinition Width="60"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="85"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="会员卡号" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="手机号" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="2" Text="姓名" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="3" Text="性别" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="4" Text="总积分" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="5" Text="储值余额" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="6" Text="累计消费" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="7" Text="状态" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="8" Text="专属导购" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="9" Text="操作" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                </Grid>
-            </Border>
+            <!-- 会员原生虚拟化数据表格 (WinUI Gallery 表格风格) -->
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="38"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <!-- 数据行 -->
-            <ListView Grid.Row="1" 
-                      ItemsSource="{Binding Members}" 
-                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      SelectionMode="None"
-                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                      BorderThickness="1,0,1,1"
-                      CornerRadius="0,0,8,8"
-                      Padding="0">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Padding" Value="0"/>
-                        <Setter Property="MinHeight" Value="40"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Padding="14,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="1.5*"/>
-                                <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="75"/>
-                                <ColumnDefinition Width="85"/>
-                                <ColumnDefinition Width="85"/>
-                                <ColumnDefinition Width="60"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="85"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding MemberNo}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="1" Text="{Binding Phone}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="2" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="3" Text="{Binding Gender}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Text="{Binding TotalPoints}" FontWeight="Bold" Foreground="LightGreen" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="5" Text="{Binding Balance, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="#FF8C00" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="6" Text="{Binding TotalSpent, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="7" Text="{Binding Status}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="8" Text="{Binding GuideName}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
-                            
-                            <!-- 操作按钮 -->
-                            <Button Grid.Column="9" 
-                                    Content="🗑️ 注销" 
-                                    Click="DeleteMemberButton_Click"
-                                    Height="32" 
-                                    Padding="10,0" 
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"/>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+                <!-- 表头 -->
+                <Border Grid.Row="0" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="1.5*"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="70"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="会员卡号" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="手机号" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="姓名" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="性别" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="总积分" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="5" Text="储值余额" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="6" Text="累计消费" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="7" Text="状态" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="8" Text="专属导购" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="9" Text="操作" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- 数据行 -->
+                <ListView Grid.Row="1" 
+                          ItemsSource="{Binding Members}" 
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          SelectionMode="None"
+                          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                          BorderThickness="1,0,1,1"
+                          CornerRadius="0,0,8,8"
+                          Padding="0">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="MinHeight" Value="40"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="14,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="1.5*"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="90"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding MemberNo}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Phone}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="2" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="3" Text="{Binding Gender}" VerticalAlignment="Center" FontSize="12"/>
+                                <TextBlock Grid.Column="4" Text="{Binding TotalPoints}" FontWeight="Bold" Foreground="{ThemeResource SuccessTextBrush}" VerticalAlignment="Center" FontSize="13"/>
+                                <TextBlock Grid.Column="5" Text="{Binding Balance, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="{ThemeResource PriceHighlightBrush}" VerticalAlignment="Center" FontSize="13"/>
+                                <TextBlock Grid.Column="6" Text="{Binding TotalSpent, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center" FontSize="12"/>
+                                <TextBlock Grid.Column="7" Text="{Binding Status}" VerticalAlignment="Center" FontSize="12"/>
+                                <TextBlock Grid.Column="8" Text="{Binding GuideName}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                
+                                <!-- 操作按钮 -->
+                                <Button Grid.Column="9" 
+                                        Click="DeleteMemberButton_Click"
+                                        Height="28" 
+                                        Padding="8,0" 
+                                        CornerRadius="4"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        ToolTipService.ToolTip="注销会员档案">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="{ThemeResource CriticalTextBrush}"/>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
         </Grid>
     </Grid>
 </Page>

@@ -60,39 +60,45 @@ namespace WanKePos.WinUI
             }
         }
 
+        public static void LogToFile(string text)
+        {
+            try
+            {
+                var logPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "wklpos_debug.log");
+                System.IO.File.AppendAllText(logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {text}\r\n");
+            }
+            catch { }
+        }
+
         public App()
         {
+            LogToFile("App constructor entered.");
             this.InitializeComponent();
+            LogToFile("App.InitializeComponent completed.");
 
             this.UnhandledException += (sender, e) =>
             {
-                var msg = $"[WinUI UnhandledException] {DateTime.Now}: {e.Message}\nException: {e.Exception}\nStackTrace: {e.Exception?.StackTrace}";
-                try
-                {
-                    System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash.log"), msg);
-                }
-                catch { }
-                e.Handled = true;
+                var msg = $"[WinUI UnhandledException]: {e.Message}\nException: {e.Exception}\nStackTrace: {e.Exception?.StackTrace}";
+                LogToFile(msg);
+                e.Handled = false;
             };
 
             AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
             {
-                var msg = $"[AppDomain UnhandledException] {DateTime.Now}: {e.ExceptionObject}";
-                try
-                {
-                    System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_domain.log"), msg);
-                }
-                catch { }
+                var msg = $"[AppDomain UnhandledException]: {e.ExceptionObject}";
+                LogToFile(msg);
             };
 
             System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (sender, e) =>
             {
-                var msg = $"[UnobservedTaskException] {DateTime.Now}: {e.Exception}";
-                try
-                {
-                    System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_task.log"), msg);
-                }
-                catch { }
+                var msg = $"[UnobservedTaskException]: {e.Exception}";
+                LogToFile(msg);
+            };
+
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+            {
+                var msg = $"[ProcessExit] StackTrace:\n{Environment.StackTrace}";
+                LogToFile(msg);
             };
         }
 
@@ -101,47 +107,50 @@ namespace WanKePos.WinUI
 
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
+            LogToFile("App.OnLaunched entered.");
             try
             {
-                // 显式配置 AppUserModelID，使 Windows 任务栏精准关联并彻底隔离旧图标缓存
                 try
                 {
                     SetCurrentProcessExplicitAppUserModelID("WanKePos.SmartPOS.App");
                 }
                 catch { }
 
-                // 1. 同步确保 SQLite 数据库结构已就绪 (耗时极短，防止异步切线程导致窗口 HWND 丢失)
+                LogToFile("Step 1: EnsurePosDatabaseCreated...");
                 Services.EnsurePosDatabaseCreated();
+                LogToFile("Step 1: Database ready.");
 
-                // 2. 在主 UI 线程同步实例化并激活主窗口，确保 Win32 窗口句柄永远属于主 UI 消息循环
+                LogToFile("Step 2: Resolving MainWindow from DI...");
                 MainWindowInstance = Services.GetRequiredService<MainWindow>();
+                LogToFile("Step 2: MainWindow resolved. Activating...");
                 MainWindowInstance.Activate();
+                LogToFile("Step 2: MainWindow.Activate() called.");
 
-                // 3. 异步启动宿主服务和主题适配，不阻塞主 UI 呈现
                 _ = Task.Run(async () =>
                 {
                     try
                     {
+                        LogToFile("Step 3: Starting host in background...");
                         await _host.StartAsync();
+                        LogToFile("Step 3: Host started. Initializing theme...");
                         if (MainWindowInstance != null)
                         {
                             MainWindowInstance.DispatcherQueue?.TryEnqueue(async () =>
                             {
                                 await ThemeService.InitializeAsync(MainWindowInstance);
+                                LogToFile("Step 3: Theme initialized.");
                             });
                         }
                     }
                     catch (Exception ex)
                     {
-                        var msg = $"[Background Init Exception] {DateTime.Now}: {ex}";
-                        System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_init.log"), msg);
+                        LogToFile($"[Background Init Exception]: {ex}");
                     }
                 });
             }
             catch (Exception ex)
             {
-                var msg = $"[OnLaunched Exception] {DateTime.Now}: {ex.Message}\nStackTrace: {ex.StackTrace}\nInner: {ex.InnerException}";
-                System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_launch.log"), msg);
+                LogToFile($"[OnLaunched Exception]: {ex.Message}\n{ex.StackTrace}\nInner: {ex.InnerException}");
             }
         }
     }

@@ -8,7 +8,119 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
+                <ResourceDictionary Source="ms-appx:///Themes/Generic.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <!-- Fluent 2 语义化主题画刷 (适配浅色与深色高反差) -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <!-- 官方标准沉稳科技蓝调 (彻底杜绝高饱和刺眼荧光青绿) -->
+                    <Color x:Key="SystemAccentColor">#0078D4</Color>
+                    <Color x:Key="SystemAccentColorDark1">#005FB8</Color>
+                    <Color x:Key="SystemAccentColorDark2">#004E98</Color>
+                    <Color x:Key="SystemAccentColorDark3">#003E7A</Color>
+                    <Color x:Key="SystemAccentColorLight1">#2886D7</Color>
+                    <Color x:Key="SystemAccentColorLight2">#60CDFF</Color>
+                    <Color x:Key="SystemAccentColorLight3">#85D7FF</Color>
+
+                    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#0078D4"/>
+                    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#006CBE"/>
+                    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#005A9E"/>
+                    <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#60CDFF"/>
+
+                    <!-- 真实物理卡片表面画刷 (确保卡片、表格与选品区不被壁纸过度穿透，维持精致沉稳的 Mica 层级质感) -->
+                    <SolidColorBrush x:Key="LayerFillColorDefaultBrush" Color="#232323"/>
+                    <SolidColorBrush x:Key="LayerFillColorAltBrush" Color="#1E1E1E"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillColorDefaultBrush" Color="#232323"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillColorSecondaryBrush" Color="#1C1C1C"/>
+
+                    <!-- 穿透 Mica 材质：侧边导航与框架直通 Mica 背景 -->
+                    <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="NavigationViewDefaultContentBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent"/>
+
+                    <!-- 业务语义化画刷 -->
+                    <SolidColorBrush x:Key="PriceHighlightBrush" Color="#FF8C00"/>
+                    <SolidColorBrush x:Key="SuccessTextBrush" Color="#6CCB5F"/>
+                    <SolidColorBrush x:Key="CriticalTextBrush" Color="#FF99A4"/>
+                    <SolidColorBrush x:Key="InfoTextBrush" Color="#60CDFF"/>
+                    <SolidColorBrush x:Key="OrderStatSalesBrush" Color="#57D38C"/>
+                    <SolidColorBrush x:Key="OrderStatCountBrush" Color="#60CDFF"/>
+                    <SolidColorBrush x:Key="OrderStatProfitBrush" Color="#F7630C"/>
+
+                    <!-- 采购单与状态标签 (深色模式) -->
+                    <SolidColorBrush x:Key="PurchaseOrderDraftBackgroundBrush" Color="#26364D"/>
+                    <SolidColorBrush x:Key="PurchaseOrderDraftForegroundBrush" Color="#70BFFF"/>
+                    <SolidColorBrush x:Key="PurchaseOrderReceivedBackgroundBrush" Color="#1E3A24"/>
+                    <SolidColorBrush x:Key="PurchaseOrderReceivedForegroundBrush" Color="#6CCB5F"/>
+                    <SolidColorBrush x:Key="PurchaseOrderCancelledBackgroundBrush" Color="#323232"/>
+                    <SolidColorBrush x:Key="PurchaseOrderCancelledForegroundBrush" Color="#A0A0A0"/>
+
+                    <!-- Fluent 2 胶囊徽章画刷 (深色模式) -->
+                    <SolidColorBrush x:Key="StockNormalBackgroundBrush" Color="#1E3A24"/>
+                    <SolidColorBrush x:Key="StockNormalForegroundBrush" Color="#6CCB5F"/>
+                    <SolidColorBrush x:Key="StockWarningBackgroundBrush" Color="#3D2914"/>
+                    <SolidColorBrush x:Key="StockWarningForegroundBrush" Color="#FFB957"/>
+                    <SolidColorBrush x:Key="PillNeutralBackgroundBrush" Color="#2B2B2B"/>
+                    <SolidColorBrush x:Key="PillNeutralForegroundBrush" Color="#C8C8C8"/>
+                    <SolidColorBrush x:Key="PillInfoBackgroundBrush" Color="#1C354D"/>
+                    <SolidColorBrush x:Key="PillInfoForegroundBrush" Color="#60CDFF"/>
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <Color x:Key="SystemAccentColor">#005FB8</Color>
+                    <Color x:Key="SystemAccentColorDark1">#0054A4</Color>
+                    <Color x:Key="SystemAccentColorDark2">#004385</Color>
+                    <Color x:Key="SystemAccentColorDark3">#003466</Color>
+                    <Color x:Key="SystemAccentColorLight1">#2473C3</Color>
+                    <Color x:Key="SystemAccentColorLight2">#4B8ECF</Color>
+                    <Color x:Key="SystemAccentColorLight3">#78ABDC</Color>
+
+                    <SolidColorBrush x:Key="AccentFillColorDefaultBrush" Color="#005FB8"/>
+                    <SolidColorBrush x:Key="AccentFillColorSecondaryBrush" Color="#0054A4"/>
+                    <SolidColorBrush x:Key="AccentFillColorTertiaryBrush" Color="#004385"/>
+                    <SolidColorBrush x:Key="AccentTextFillColorPrimaryBrush" Color="#005FB8"/>
+
+                    <!-- 真实物理卡片表面画刷 (浅色模式纯白卡片与高对比度表面) -->
+                    <SolidColorBrush x:Key="LayerFillColorDefaultBrush" Color="#FFFFFF"/>
+                    <SolidColorBrush x:Key="LayerFillColorAltBrush" Color="#F9F9F9"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillColorDefaultBrush" Color="#FFFFFF"/>
+                    <SolidColorBrush x:Key="CardBackgroundFillColorSecondaryBrush" Color="#F5F5F5"/>
+
+                    <!-- 穿透 Mica 材质：侧边导航与框架直通 Mica 背景 -->
+                    <SolidColorBrush x:Key="NavigationViewContentBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="NavigationViewDefaultContentBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="NavigationViewTopPaneBackground" Color="Transparent"/>
+                    <SolidColorBrush x:Key="NavigationViewExpandedPaneBackground" Color="Transparent"/>
+
+                    <!-- 业务语义化画刷 -->
+                    <SolidColorBrush x:Key="PriceHighlightBrush" Color="#C44702"/>
+                    <SolidColorBrush x:Key="SuccessTextBrush" Color="#0F7B0F"/>
+                    <SolidColorBrush x:Key="CriticalTextBrush" Color="#C42B1C"/>
+                    <SolidColorBrush x:Key="InfoTextBrush" Color="#005FB8"/>
+                    <SolidColorBrush x:Key="OrderStatSalesBrush" Color="#0F7B0F"/>
+                    <SolidColorBrush x:Key="OrderStatCountBrush" Color="#0067C0"/>
+                    <SolidColorBrush x:Key="OrderStatProfitBrush" Color="#C44702"/>
+
+                    <!-- 采购单与状态标签 (浅色模式) -->
+                    <SolidColorBrush x:Key="PurchaseOrderDraftBackgroundBrush" Color="#DDEEFE"/>
+                    <SolidColorBrush x:Key="PurchaseOrderDraftForegroundBrush" Color="#005FB8"/>
+                    <SolidColorBrush x:Key="PurchaseOrderReceivedBackgroundBrush" Color="#E0F4DD"/>
+                    <SolidColorBrush x:Key="PurchaseOrderReceivedForegroundBrush" Color="#0E700E"/>
+                    <SolidColorBrush x:Key="PurchaseOrderCancelledBackgroundBrush" Color="#EBEBEB"/>
+                    <SolidColorBrush x:Key="PurchaseOrderCancelledForegroundBrush" Color="#5C5C5C"/>
+
+                    <!-- Fluent 2 胶囊徽章画刷 (浅色模式) -->
+                    <SolidColorBrush x:Key="StockNormalBackgroundBrush" Color="#E0F4DD"/>
+                    <SolidColorBrush x:Key="StockNormalForegroundBrush" Color="#0E700E"/>
+                    <SolidColorBrush x:Key="StockWarningBackgroundBrush" Color="#FFF1D6"/>
+                    <SolidColorBrush x:Key="StockWarningForegroundBrush" Color="#995200"/>
+                    <SolidColorBrush x:Key="PillNeutralBackgroundBrush" Color="#F0F0F0"/>
+                    <SolidColorBrush x:Key="PillNeutralForegroundBrush" Color="#5A5A5A"/>
+                    <SolidColorBrush x:Key="PillInfoBackgroundBrush" Color="#E0EEFA"/>
+                    <SolidColorBrush x:Key="PillInfoForegroundBrush" Color="#005FB8"/>
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+
             <!-- 全局通用转换器 -->
             <converters:DecimalToCurrencyConverter x:Key="CurrencyConverter"/>
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>

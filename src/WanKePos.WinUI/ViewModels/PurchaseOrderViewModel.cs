@@ -56,7 +56,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
     /// 购物车动态标题 (包含品类数与总件数徽标)
     /// </summary>
     [ObservableProperty]
-    private string _cartTitle = "📋 待制采购单";
+    private string _cartTitle = "待制采购单";
 
     [ObservableProperty]
     private PurchaseOrder? _selectedOrder;

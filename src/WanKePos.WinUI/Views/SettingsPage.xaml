@@ -4,121 +4,201 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:WanKePos.WinUI.Controls"
+    Background="Transparent"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
-        <StackPanel Spacing="20" MaxWidth="720" HorizontalAlignment="Left">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="28,20,28,28">
+        <StackPanel Spacing="8" MaxWidth="920" HorizontalAlignment="Left">
             
-            <!-- 门店信息 -->
-            <TextBlock Text="🏪 门店信息" FontSize="18" FontWeight="Bold"/>
-            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="门店名称"/>
-                    <TextBox Text="{Binding Settings.StoreName, Mode=TwoWay}"/>
-                    <TextBlock Text="门店地址"/>
-                    <TextBox Text="{Binding Settings.StoreAddress, Mode=TwoWay}"/>
-                    <TextBlock Text="联系电话"/>
-                    <TextBox Text="{Binding Settings.StorePhone, Mode=TwoWay}"/>
-                </StackPanel>
-            </Border>
+            <!-- WinUI Gallery 标准标头 -->
+            <controls:PageHeader Title="系统设置" 
+                                 Description="配置门店基础信息、小票打印硬件、界面外观、积分规则与在线更新" 
+                                 Glyph="&#xE713;"
+                                 BadgeText="快捷键 F6">
+                <Button Command="{Binding SaveSettingsCommand}" 
+                        Style="{StaticResource AccentButtonStyle}" 
+                        Height="36" 
+                        Padding="20,0" 
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE74E;" FontSize="13"/>
+                        <TextBlock Text="保存设置" FontSize="13" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+            </controls:PageHeader>
 
-            <!-- 外观与主题 -->
-            <TextBlock Text="🎨 外观与主题" FontSize="18" FontWeight="Bold"/>
-            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
-                <StackPanel Spacing="12">
-                    <TextBlock Text="选择客户端界面显示主题，默认为跟随系统自动切换：" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            <!-- 1. 门店信息 -->
+            <controls:SettingsGroup Header="门店信息" Description="门店核心信息将呈现在收银台主界面及小票抬头">
+                <controls:SettingsCard Header="门店名称" 
+                                       Description="收银系统展示的门店全称" 
+                                       Glyph="&#xE707;">
+                    <TextBox Text="{Binding Settings.StoreName, Mode=TwoWay}" Width="320"/>
+                </controls:SettingsCard>
+                <controls:SettingsCard Header="门店地址" 
+                                       Description="用于打印在收银小票上的实体门店地址" 
+                                       Glyph="&#xE81D;">
+                    <TextBox Text="{Binding Settings.StoreAddress, Mode=TwoWay}" Width="320"/>
+                </controls:SettingsCard>
+                <controls:SettingsCard Header="联系电话" 
+                                       Description="小票客服联系电话或店长热线" 
+                                       Glyph="&#xE717;">
+                    <TextBox Text="{Binding Settings.StorePhone, Mode=TwoWay}" Width="320"/>
+                </controls:SettingsCard>
+            </controls:SettingsGroup>
+
+            <!-- 2. 外观与个性化 -->
+            <controls:SettingsGroup Header="外观与个性化" Description="自定义软件视觉风格，支持沉浸式暗色与高反差浅色模式">
+                <controls:SettingsCard Header="应用界面主题" 
+                                       Description="支持明亮清爽的浅色模式、护眼沉浸的深色模式或自适应跟随 Windows" 
+                                       Glyph="&#xE790;">
                     <RadioButtons SelectedIndex="{Binding SelectedThemeIndex, Mode=TwoWay}" MaxColumns="3">
-                        <RadioButton Content="💻 跟随系统 (默认)" ToolTipService.ToolTip="自动与 Windows 系统的深浅色设置保持同步"/>
-                        <RadioButton Content="☀️ 浅色模式" ToolTipService.ToolTip="强制使用明亮清爽的浅色界面"/>
-                        <RadioButton Content="🌙 黑暗模式" ToolTipService.ToolTip="强制使用护眼沉浸的深色界面"/>
+                        <RadioButton ToolTipService.ToolTip="自动与 Windows 系统的深浅色设置保持同步">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE770;" FontSize="13"/>
+                                <TextBlock Text="跟随系统"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton ToolTipService.ToolTip="强制使用明亮清爽的浅色界面">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE706;" FontSize="13"/>
+                                <TextBlock Text="浅色模式"/>
+                            </StackPanel>
+                        </RadioButton>
+                        <RadioButton ToolTipService.ToolTip="强制使用护眼沉浸的深色界面">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE708;" FontSize="13"/>
+                                <TextBlock Text="深色模式"/>
+                            </StackPanel>
+                        </RadioButton>
                     </RadioButtons>
-                </StackPanel>
-            </Border>
+                </controls:SettingsCard>
+            </controls:SettingsGroup>
 
-            <!-- 打印机设置 -->
-            <TextBlock Text="🖨️ 小票打印机设置" FontSize="18" FontWeight="Bold"/>
-            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="打印机串口 (COM Port)"/>
+            <!-- 3. 打印机设置 -->
+            <controls:SettingsGroup Header="小票打印设备" Description="配置热敏小票机端口通信参数与测试打印">
+                <controls:SettingsCard Header="打印机串口 (COM Port)" 
+                                       Description="选择小票机连接的通信端口" 
+                                       Glyph="&#xE749;">
                     <ComboBox ItemsSource="{Binding AvailablePorts}" 
                               SelectedItem="{Binding Settings.PrinterPort, Mode=TwoWay}"
-                              Width="200" HorizontalAlignment="Left"/>
-                    <TextBlock Text="波特率 (Baud Rate)"/>
-                    <TextBox Text="{Binding Settings.PrinterBaudRate, Mode=TwoWay}" Width="200" HorizontalAlignment="Left"/>
-                    <Button Content="🖨️ 发送测试打印" Command="{Binding TestPrintCommand}" Margin="0,6,0,0"/>
-                </StackPanel>
-            </Border>
-
-            <!-- 积分规则 -->
-            <TextBlock Text="⭐ 积分规则" FontSize="18" FontWeight="Bold"/>
-            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="每消费金额 (元) 累计 1 积分"/>
-                    <TextBox Text="{Binding Settings.PointsPerYuan, Mode=TwoWay}" Width="200" HorizontalAlignment="Left"/>
-                </StackPanel>
-            </Border>
-
-            <!-- 小票版面自定义 -->
-            <TextBlock Text="📄 小票抬头与结尾" FontSize="18" FontWeight="Bold"/>
-            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
-                <StackPanel Spacing="10">
-                    <TextBlock Text="小票抬头附加说明 (Header)"/>
-                    <TextBox Text="{Binding Settings.ReceiptHeader, Mode=TwoWay}" AcceptsReturn="True" Height="60"/>
-                    <TextBlock Text="小票结尾感谢语 (Footer)"/>
-                    <TextBox Text="{Binding Settings.ReceiptFooter, Mode=TwoWay}" AcceptsReturn="True" Height="60"/>
-                </StackPanel>
-            </Border>
-
-            <!-- 数据管理 -->
-            <TextBlock Text="💾 数据管理" FontSize="18" FontWeight="Bold"/>
-            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
-                <StackPanel Orientation="Horizontal" Spacing="12">
-                    <Button Content="📥 重新导入商品库 (Excel)" Command="{Binding ImportProductsCommand}"/>
-                    <Button Content="📥 重新导入会员库 (Excel)" Command="{Binding ImportMembersCommand}"/>
-                </StackPanel>
-            </Border>
-
-            <!-- 软件版本与在线更新 (GitHub Releases) -->
-            <TextBlock Text="🚀 软件版本与在线更新" FontSize="18" FontWeight="Bold"/>
-            <Border Background="{ThemeResource LayerFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8" Padding="16">
-                <StackPanel Spacing="12">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Spacing="4">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="当前客户端版本: " FontWeight="SemiBold"/>
-                                <TextBlock Text="v" FontWeight="Bold" Foreground="#FF8C00"/>
-                                <TextBlock Text="{Binding AppVersion}" FontWeight="Bold" Foreground="#FF8C00"/>
-                            </StackPanel>
-                            <TextBlock Text="{Binding UpdateStatusText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                              Width="220"/>
+                </controls:SettingsCard>
+                <controls:SettingsCard Header="通信波特率 (Baud Rate)" 
+                                       Description="串口通信速率 (常见默认为 9600 或 115200)" 
+                                       Glyph="&#xE8B9;">
+                    <TextBox Text="{Binding Settings.PrinterBaudRate, Mode=TwoWay}" Width="220"/>
+                </controls:SettingsCard>
+                <controls:SettingsCard Header="打印机连通性测试" 
+                                       Description="向选定端口发送包含门店名称的小票测试样张" 
+                                       Glyph="&#xE725;">
+                    <Button Command="{Binding TestPrintCommand}" CornerRadius="6" Height="34" Padding="14,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE749;" FontSize="13"/>
+                            <TextBlock Text="发送测试小票"/>
                         </StackPanel>
-                        <Button Grid.Column="1" 
-                                Content="🔍 检查新版本" 
-                                Command="{Binding CheckUpdateCommand}"
-                                Height="36" 
-                                Padding="16,0"
-                                Style="{StaticResource AccentButtonStyle}"/>
-                    </Grid>
+                    </Button>
+                </controls:SettingsCard>
+            </controls:SettingsGroup>
 
-                    <StackPanel Spacing="4" Margin="0,4,0,0">
-                        <TextBlock Text="GitHub 更新源仓库 (格式: 所有者/仓库名):" FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
-                        <TextBox Text="{Binding GitHubRepo, Mode=TwoWay}" Width="280" HorizontalAlignment="Left" PlaceholderText="例如: WKL/WanKePos"/>
+            <!-- 4. 积分规则 -->
+            <controls:SettingsGroup Header="会员与积分规则" Description="制定顾客消费时的积分自动累加比例">
+                <controls:SettingsCard Header="积分累计比例" 
+                                       Description="每有效消费指定金额 (元) 为会员累计增加 1 点积分" 
+                                       Glyph="&#xE735;">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <TextBlock Text="每消费" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBox Text="{Binding Settings.PointsPerYuan, Mode=TwoWay}" Width="100"/>
+                        <TextBlock Text="元 = 1 积分" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
-                </StackPanel>
-            </Border>
+                </controls:SettingsCard>
+            </controls:SettingsGroup>
 
-            <!-- 保存按钮 -->
-            <Button Content="💾 保存所有设置" 
-                    Command="{Binding SaveSettingsCommand}" 
+            <!-- 5. 小票版面自定义 -->
+            <controls:SettingsGroup Header="小票版面自定义" Description="自定义打印小票的头部附加告示与结尾致谢文本">
+                <controls:SettingsCard Header="小票抬头附加说明 (Header)" 
+                                       Description="显示在小票顶部门店名下方的促销提示或标语" 
+                                       Glyph="&#xE8A5;">
+                    <TextBox Text="{Binding Settings.ReceiptHeader, Mode=TwoWay}" AcceptsReturn="True" Width="380" Height="56"/>
+                </controls:SettingsCard>
+                <controls:SettingsCard Header="小票结尾感谢语 (Footer)" 
+                                       Description="打印在小票底部的致谢词、退换货提示或门店二维码说明" 
+                                       Glyph="&#xE8C8;">
+                    <TextBox Text="{Binding Settings.ReceiptFooter, Mode=TwoWay}" AcceptsReturn="True" Width="380" Height="56"/>
+                </controls:SettingsCard>
+            </controls:SettingsGroup>
+
+            <!-- 6. 数据管理与导入 -->
+            <controls:SettingsGroup Header="数据维护与批量导入" Description="通过 Excel 模板文件快速初始化或覆盖商品与会员档案">
+                <controls:SettingsCard Header="批量导入商品库" 
+                                       Description="支持 .xlsx 模板表格，自动导入条码、品类、进价与零售价" 
+                                       Glyph="&#xE8B7;">
+                    <Button Command="{Binding ImportProductsCommand}" CornerRadius="6" Height="34" Padding="14,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE8B7;" FontSize="13"/>
+                            <TextBlock Text="重新导入商品 (Excel)"/>
+                        </StackPanel>
+                    </Button>
+                </controls:SettingsCard>
+                <controls:SettingsCard Header="批量导入会员库" 
+                                       Description="导入会员姓名、手机号、初始积分与余额" 
+                                       Glyph="&#xE716;">
+                    <Button Command="{Binding ImportMembersCommand}" CornerRadius="6" Height="34" Padding="14,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE716;" FontSize="13"/>
+                            <TextBlock Text="重新导入会员 (Excel)"/>
+                        </StackPanel>
+                    </Button>
+                </controls:SettingsCard>
+            </controls:SettingsGroup>
+
+            <!-- 7. 软件版本与在线更新 -->
+            <controls:SettingsGroup Header="软件版本与在线更新" Description="自动比对 GitHub Releases 并静默下载安装最新版本">
+                <controls:SettingsCard Header="客户端当前版本" 
+                                       Description="{Binding UpdateStatusText}" 
+                                       Glyph="&#xE895;">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                                BorderThickness="1" 
+                                CornerRadius="8" 
+                                Padding="10,4">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="v" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Text="{Binding AppVersion}" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                            </StackPanel>
+                        </Border>
+                        <Button Command="{Binding CheckUpdateCommand}" 
+                                Style="{StaticResource AccentButtonStyle}" 
+                                Height="34" 
+                                Padding="16,0"
+                                CornerRadius="6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE895;" FontSize="12"/>
+                                <TextBlock Text="检查新版本" FontSize="13"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </controls:SettingsCard>
+                <controls:SettingsCard Header="GitHub 更新仓库源" 
+                                       Description="指定在线更新检查的发布仓库路径 (格式: 所有者/仓库名)" 
+                                       Glyph="&#xE774;">
+                    <TextBox Text="{Binding GitHubRepo, Mode=TwoWay}" Width="280" PlaceholderText="例如: WKL/WanKePos"/>
+                </controls:SettingsCard>
+            </controls:SettingsGroup>
+
+            <!-- 底部保存按钮 -->
+            <Button Command="{Binding SaveSettingsCommand}" 
                     Style="{StaticResource AccentButtonStyle}" 
-                    Height="44" 
-                    Padding="24,0" 
-                    FontSize="15" 
-                    FontWeight="Bold" 
-                    Margin="0,10,0,30"/>
+                    Height="42" 
+                    Padding="28,0" 
+                    CornerRadius="6"
+                    Margin="0,16,0,32">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE74E;" FontSize="15"/>
+                    <TextBlock Text="保存所有设置" FontSize="14" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Button>
 
         </StackPanel>
     </ScrollViewer>

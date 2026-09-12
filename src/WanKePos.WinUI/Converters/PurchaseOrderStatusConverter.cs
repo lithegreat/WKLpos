@@ -27,6 +27,15 @@ public class PurchaseOrderStatusConverter : IValueConverter
     private static readonly SolidColorBrush ReceivedForeground = new(ColorHelper.FromArgb(255, 30, 130, 50));   // 绿
     private static readonly SolidColorBrush CancelledForeground = new(ColorHelper.FromArgb(255, 120, 120, 120));// 灰
 
+    private static object GetBrush(string key, SolidColorBrush fallback)
+    {
+        if (Application.Current?.Resources != null && Application.Current.Resources.TryGetValue(key, out var brush))
+        {
+            return brush;
+        }
+        return fallback;
+    }
+
     public object Convert(object value, Type targetType, object parameter, string language)
     {
         if (value is not PurchaseOrderStatus status)
@@ -38,17 +47,17 @@ public class PurchaseOrderStatusConverter : IValueConverter
         {
             "Background" => status switch
             {
-                PurchaseOrderStatus.Draft => DraftBackground,
-                PurchaseOrderStatus.Received => ReceivedBackground,
-                PurchaseOrderStatus.Cancelled => CancelledBackground,
-                _ => DraftBackground
+                PurchaseOrderStatus.Draft => GetBrush("PurchaseOrderDraftBackgroundBrush", DraftBackground),
+                PurchaseOrderStatus.Received => GetBrush("PurchaseOrderReceivedBackgroundBrush", ReceivedBackground),
+                PurchaseOrderStatus.Cancelled => GetBrush("PurchaseOrderCancelledBackgroundBrush", CancelledBackground),
+                _ => GetBrush("PurchaseOrderDraftBackgroundBrush", DraftBackground)
             },
             "Foreground" => status switch
             {
-                PurchaseOrderStatus.Draft => DraftForeground,
-                PurchaseOrderStatus.Received => ReceivedForeground,
-                PurchaseOrderStatus.Cancelled => CancelledForeground,
-                _ => DraftForeground
+                PurchaseOrderStatus.Draft => GetBrush("PurchaseOrderDraftForegroundBrush", DraftForeground),
+                PurchaseOrderStatus.Received => GetBrush("PurchaseOrderReceivedForegroundBrush", ReceivedForeground),
+                PurchaseOrderStatus.Cancelled => GetBrush("PurchaseOrderCancelledForegroundBrush", CancelledForeground),
+                _ => GetBrush("PurchaseOrderDraftForegroundBrush", DraftForeground)
             },
             "DraftOnly" => status == PurchaseOrderStatus.Draft
                 ? Visibility.Visible : Visibility.Collapsed,
