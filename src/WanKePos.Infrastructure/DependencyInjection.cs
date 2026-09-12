@@ -98,7 +98,50 @@ public static class DependencyInjection
     }
 
     /// <summary>
-    /// 启动时确保 SQLite 数据库结构已创建
+    /// 启动时在主线程同步确保 SQLite 数据库结构已创建，耗时极短 (几毫秒)，防止异步切线程导致 UI 消息循环丢失
+    /// </summary>
+    public static void EnsurePosDatabaseCreated(this IServiceProvider services)
+    {
+        using var scope = services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PosDbContext>();
+        dbContext.Database.EnsureCreated();
+
+        // 确保已有数据库平滑升级增加 AppTheme 字段，保持向后兼容
+        try
+        {
+            using var conn = dbContext.Database.GetDbConnection();
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "PRAGMA table_info(StoreSettings);";
+            bool hasAppTheme = false;
+            using (var reader = cmd.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    var colName = reader.GetString(1);
+                    if (string.Equals(colName, "AppTheme", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasAppTheme = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!hasAppTheme)
+            {
+                using var alterCmd = conn.CreateCommand();
+                alterCmd.CommandText = "ALTER TABLE StoreSettings ADD COLUMN AppTheme TEXT DEFAULT 'Default';";
+                alterCmd.ExecuteNonQuery();
+            }
+        }
+        catch
+        {
+            // 容错忽略
+        }
+    }
+
+    /// <summary>
+    /// 启动时确保 SQLite 数据库结构已创建 (异步版)
     /// </summary>
     public static async Task EnsurePosDatabaseCreatedAsync(this IServiceProvider services)
     {

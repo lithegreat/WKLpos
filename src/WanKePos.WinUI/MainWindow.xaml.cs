@@ -37,6 +37,15 @@ namespace WanKePos.WinUI
                 // 窗口居中并设为1200x800
                 appWindow.Resize(new Windows.Graphics.SizeInt32(1200, 800));
 
+                var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
+                if (displayArea != null)
+                {
+                    var centeredPosition = new Windows.Graphics.PointInt32(
+                        Math.Max(0, (displayArea.WorkArea.Width - 1200) / 2),
+                        Math.Max(0, (displayArea.WorkArea.Height - 800) / 2));
+                    appWindow.Move(centeredPosition);
+                }
+
                 if (appWindow.Presenter is OverlappedPresenter presenter)
                 {
                     presenter.IsAlwaysOnTop = true;

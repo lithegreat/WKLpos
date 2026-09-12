@@ -70,7 +70,6 @@ namespace WanKePos.WinUI
                 try
                 {
                     System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash.log"), msg);
-                    System.IO.File.WriteAllText(@"C:\Users\WKL\POS\pos_crash.log", msg);
                 }
                 catch { }
                 e.Handled = true;
@@ -82,33 +81,57 @@ namespace WanKePos.WinUI
                 try
                 {
                     System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_domain.log"), msg);
-                    System.IO.File.WriteAllText(@"C:\Users\WKL\POS\pos_crash_domain.log", msg);
+                }
+                catch { }
+            };
+
+            System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (sender, e) =>
+            {
+                var msg = $"[UnobservedTaskException] {DateTime.Now}: {e.Exception}";
+                try
+                {
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_task.log"), msg);
                 }
                 catch { }
             };
         }
 
-        protected override async void OnLaunched(LaunchActivatedEventArgs args)
+        protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
             try
             {
-                await _host.StartAsync();
+                // 1. 同步确保 SQLite 数据库结构已就绪 (耗时极短，防止异步切线程导致窗口 HWND 丢失)
+                Services.EnsurePosDatabaseCreated();
 
-                // 确保数据库已初始化
-                await Services.EnsurePosDatabaseCreatedAsync();
-
+                // 2. 在主 UI 线程同步实例化并激活主窗口，确保 Win32 窗口句柄永远属于主 UI 消息循环
                 MainWindowInstance = Services.GetRequiredService<MainWindow>();
-
-                // 初始化并应用客户端主题 (深色/浅色/跟随系统)
-                await ThemeService.InitializeAsync(MainWindowInstance);
-
                 MainWindowInstance.Activate();
+
+                // 3. 异步启动宿主服务和主题适配，不阻塞主 UI 呈现
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _host.StartAsync();
+                        if (MainWindowInstance != null)
+                        {
+                            MainWindowInstance.DispatcherQueue?.TryEnqueue(async () =>
+                            {
+                                await ThemeService.InitializeAsync(MainWindowInstance);
+                            });
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        var msg = $"[Background Init Exception] {DateTime.Now}: {ex}";
+                        System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_init.log"), msg);
+                    }
+                });
             }
             catch (Exception ex)
             {
                 var msg = $"[OnLaunched Exception] {DateTime.Now}: {ex.Message}\nStackTrace: {ex.StackTrace}\nInner: {ex.InnerException}";
                 System.IO.File.WriteAllText(System.IO.Path.Combine(AppContext.BaseDirectory, "pos_crash_launch.log"), msg);
-                System.IO.File.WriteAllText(@"C:\Users\WKL\POS\pos_crash_launch.log", msg);
             }
         }
     }

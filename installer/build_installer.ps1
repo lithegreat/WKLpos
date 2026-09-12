@@ -132,8 +132,98 @@ if ($LASTEXITCODE -eq 0) {
         if ($targetExe -and (Test-Path -Path $targetExe)) {
             Write-Host "Launching updated application: $targetExe" -ForegroundColor Green
             $appDir = Split-Path -Parent $targetExe
-            Start-Process -FilePath $targetExe -WorkingDirectory $appDir
-            Write-Host "WanKePos system launched successfully!" -ForegroundColor Green
+            try {
+                if (-not ([System.Management.Automation.PSTypeName]'DesktopProcessLauncher').Type) {
+                    Add-Type @'
+                    using System;
+                    using System.Runtime.InteropServices;
+
+                    public class DesktopProcessLauncher {
+                        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+                        public struct STARTUPINFO {
+                            public int cb;
+                            public string lpReserved;
+                            public string lpDesktop;
+                            public string lpTitle;
+                            public int dwX;
+                            public int dwY;
+                            public int dwXSize;
+                            public int dwYSize;
+                            public int dwXCountChars;
+                            public int dwYCountChars;
+                            public int dwFillAttribute;
+                            public int dwFlags;
+                            public short wShowWindow;
+                            public short cbReserved2;
+                            public IntPtr lpReserved2;
+                            public IntPtr hStdInput;
+                            public IntPtr hStdOutput;
+                            public IntPtr hStdError;
+                        }
+
+                        [StructLayout(LayoutKind.Sequential)]
+                        public struct PROCESS_INFORMATION {
+                            public IntPtr hProcess;
+                            public IntPtr hThread;
+                            public int dwProcessId;
+                            public int dwThreadId;
+                        }
+
+                        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+                        public static extern bool CreateProcess(
+                            string lpApplicationName,
+                            string lpCommandLine,
+                            IntPtr lpProcessAttributes,
+                            IntPtr lpThreadAttributes,
+                            bool bInheritHandles,
+                            uint dwCreationFlags,
+                            IntPtr lpEnvironment,
+                            string lpCurrentDirectory,
+                            ref STARTUPINFO lpStartupInfo,
+                            out PROCESS_INFORMATION lpProcessInformation);
+
+                        [DllImport("kernel32.dll", SetLastError = true)]
+                        public static extern bool CloseHandle(IntPtr hObject);
+
+                        public static int StartOnInteractiveDesktop(string appPath, string workingDir) {
+                            STARTUPINFO si = new STARTUPINFO();
+                            si.cb = Marshal.SizeOf(si);
+                            si.lpDesktop = @"WinSta0\Default";
+                            PROCESS_INFORMATION pi = new PROCESS_INFORMATION();
+
+                            bool success = CreateProcess(
+                                appPath,
+                                null,
+                                IntPtr.Zero,
+                                IntPtr.Zero,
+                                false,
+                                0,
+                                IntPtr.Zero,
+                                workingDir,
+                                ref si,
+                                out pi);
+
+                            if (success) {
+                                CloseHandle(pi.hThread);
+                                CloseHandle(pi.hProcess);
+                                return pi.dwProcessId;
+                            }
+                            return 0;
+                        }
+                    }
+'@
+                }
+                $launchedPid = [DesktopProcessLauncher]::StartOnInteractiveDesktop($targetExe, $appDir)
+                if ($launchedPid -gt 0) {
+                    Write-Host "WanKePos system launched successfully on interactive desktop (PID: $launchedPid)!" -ForegroundColor Green
+                } else {
+                    Start-Process -FilePath $targetExe -WorkingDirectory $appDir
+                    Write-Host "WanKePos system launched successfully (fallback Start-Process)!" -ForegroundColor Green
+                }
+            } catch {
+                Start-Process -FilePath $targetExe -WorkingDirectory $appDir
+                Write-Host "WanKePos system launched successfully (fallback)!" -ForegroundColor Green
+            }
         } else {
             Write-Host "Error: Could not locate installed executable." -ForegroundColor Red
         }
