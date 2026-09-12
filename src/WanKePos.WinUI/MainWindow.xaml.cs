@@ -33,6 +33,24 @@ namespace WanKePos.WinUI
                 if (System.IO.File.Exists(iconPath))
                 {
                     appWindow.SetIcon(iconPath);
+
+                    // 显式为底层 Win32 HWND 设置大图标(32x32)与小图标(16x16)，并更新窗口类，强制任务栏脱离老旧缓存并实时呈现最新矢量图标
+                    try
+                    {
+                        IntPtr hIconBig = LoadImage(IntPtr.Zero, iconPath, IMAGE_ICON, 32, 32, LR_LOADFROMFILE);
+                        IntPtr hIconSmall = LoadImage(IntPtr.Zero, iconPath, IMAGE_ICON, 16, 16, LR_LOADFROMFILE);
+                        if (hIconBig != IntPtr.Zero)
+                        {
+                            SendMessage(hwnd, WM_SETICON, ICON_BIG, hIconBig);
+                            SetClassLongPtr(hwnd, GCLP_HICON, hIconBig);
+                        }
+                        if (hIconSmall != IntPtr.Zero)
+                        {
+                            SendMessage(hwnd, WM_SETICON, ICON_SMALL, hIconSmall);
+                            SetClassLongPtr(hwnd, GCLP_HICONSM, hIconSmall);
+                        }
+                    }
+                    catch { }
                 }
                 // 窗口居中并设为1200x800
                 appWindow.Resize(new Windows.Graphics.SizeInt32(1200, 800));
@@ -235,6 +253,31 @@ namespace WanKePos.WinUI
 
         private static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
         private static readonly IntPtr HWND_NOTOPMOST = new IntPtr(-2);
+
+        private const uint WM_SETICON = 0x0080;
+        private static readonly IntPtr ICON_SMALL = new IntPtr(0);
+        private static readonly IntPtr ICON_BIG = new IntPtr(1);
+        private const int GCLP_HICON = -14;
+        private const int GCLP_HICONSM = -34;
+        private const uint IMAGE_ICON = 1;
+        private const uint LR_LOADFROMFILE = 0x00000010;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr LoadImage(IntPtr hinst, string lpszName, uint uType, int cxDesired, int cyDesired, uint fuLoad);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        private static extern IntPtr SendMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetClassLongPtr")]
+        private static extern IntPtr SetClassLongPtr64(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "SetClassLong")]
+        private static extern int SetClassLong32(IntPtr hWnd, int nIndex, int dwNewLong);
+
+        private static IntPtr SetClassLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong)
+        {
+            return IntPtr.Size == 8 ? SetClassLongPtr64(hWnd, nIndex, dwNewLong) : new IntPtr(SetClassLong32(hWnd, nIndex, dwNewLong.ToInt32()));
+        }
 
         private const uint SWP_NOSIZE = 0x0001;
         private const uint SWP_NOMOVE = 0x0002;

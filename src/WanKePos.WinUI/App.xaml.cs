@@ -96,10 +96,20 @@ namespace WanKePos.WinUI
             };
         }
 
+        [System.Runtime.InteropServices.DllImport("shell32.dll", SetLastError = true)]
+        private static extern void SetCurrentProcessExplicitAppUserModelID([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string AppID);
+
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
             try
             {
+                // 显式配置 AppUserModelID，使 Windows 任务栏精准关联并彻底隔离旧图标缓存
+                try
+                {
+                    SetCurrentProcessExplicitAppUserModelID("WanKePos.SmartPOS.App");
+                }
+                catch { }
+
                 // 1. 同步确保 SQLite 数据库结构已就绪 (耗时极短，防止异步切线程导致窗口 HWND 丢失)
                 Services.EnsurePosDatabaseCreated();
 

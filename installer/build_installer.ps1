@@ -117,8 +117,13 @@ if ($LASTEXITCODE -eq 0) {
         
         # Step 1: Run silent installer
         Write-Host "Running silent installation..." -ForegroundColor Yellow
-        $installProc = Start-Process -FilePath $setupFile.FullName -ArgumentList "/VERYSILENT", "/SP-", "/SUPPRESSMSGBOXES", "/NORESTART" -PassThru -Wait
+        $installProc = Start-Process -FilePath $setupFile.FullName -ArgumentList "/VERYSILENT", "/SP-", "/SUPPRESSMSGBOXES", "/NORESTART", "/TASKS=""desktopicon""" -PassThru -Wait
         Write-Host "Silent installation completed with exit code: $($installProc.ExitCode)" -ForegroundColor Green
+
+        # 刷新 Windows 任务栏与外壳图标缓存，确保新图标即时生效
+        try {
+            & ie4uinit.exe -show 2>$null
+        } catch { }
 
         # Step 2: Locate installed executable
         $localAppExe = "$env:LOCALAPPDATA\Programs\WanKePos\WanKePos.WinUI.exe"
@@ -191,7 +196,14 @@ if ($LASTEXITCODE -eq 0) {
                         [DllImport("kernel32.dll", SetLastError = true)]
                         public static extern bool CloseHandle(IntPtr hObject);
 
+                        [DllImport("shell32.dll")]
+                        public static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+
                         public static int StartOnInteractiveDesktop(string appPath, string workingDir) {
+                            try {
+                                SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);
+                            } catch { }
+
                             STARTUPINFO si = new STARTUPINFO();
                             si.cb = Marshal.SizeOf(si);
                             si.lpDesktop = @"WinSta0\Default";
