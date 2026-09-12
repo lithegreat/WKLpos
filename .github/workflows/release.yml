@@ -64,6 +64,9 @@ jobs:
           "TAG=$tag" >> $env:GITHUB_ENV
           "VERSION=$cleanVersion" >> $env:GITHUB_ENV
 
+      - name: Run Unit Tests
+        run: dotnet test tests/WanKePos.Tests/WanKePos.Tests.csproj --configuration Release --verbosity normal
+
       - name: Run Packaging Script
         shell: pwsh
         run: |

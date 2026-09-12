@@ -63,12 +63,13 @@
 
 ---
 
-## 5. 持续交付与自动打包规范 (CI/CD & Delivery)
+## 5. 持续交付、自动打包与即时运行规范 (CI/CD, Packaging & Auto-Run)
 
 **核心约束与强制要求 (Mandatory Rule for AI Agents)**：
 - **每次代码或界面修改验证通过后，必须自动执行打包发布**。
 - 禁止仅执行 `dotnet build` 就结束任务，必须确保生成最终可交付的独立发布文件与 Windows 安装包，保证 `output_installer\` 下始终为最新版本。
-- 执行打包发布命令：
+- **每次做完更改并生成 Setup 程序后，必须自动运行安装程序并打开**，以便即时进行端到端体验与功能验收。
+- 执行打包发布与自动运行安装程序命令：
   ```powershell
   powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
   ```
@@ -76,7 +77,8 @@
   1. 自动终止正在运行的 `WanKePos.WinUI` 进程，防止文件占用锁定；
   2. 执行 WinUI 3 独立免依赖编译发布 (`dotnet publish -c Release -r win-x64 --self-contained true -o publish_winui`)；
   3. 清理 `publish_winui\` 中的临时锁与日志文件 (`*.db-shm`, `*.db-wal`, `*.log`)；
-  4. 自动定位 Inno Setup 编译器 (或自动安装)，生成单文件安装包 `output_installer\WanKePos_Setup_v1.0.0.exe`。
+  4. 自动定位 Inno Setup 编译器 (或自动安装)，生成单文件安装包 `output_installer\WanKePos_Setup_v1.1.0.exe`；
+  5. **自动启动运行生成的 Setup 安装程序并打开应用** (`Start-Process`)。
 
 ---
 
@@ -87,9 +89,9 @@
 dotnet build WanKePos.sln
 ```
 
-### 独立发布与生成安装包
+### 独立发布、生成安装包并自动运行打开
 ```powershell
-# 一键自动发布并打包 Windows 安装包 (更改后必须执行)
+# 一键自动发布、打包 Windows 安装包并自动运行安装程序打开 (更改后必须执行)
 powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
 
 # 手动发布 WinUI 3 独立程序 (如需单独发布)

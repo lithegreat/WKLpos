@@ -1,5 +1,6 @@
-param(
-    [string]$Version = "1.1.0"
+﻿param(
+    [string]$Version = "1.1.0",
+    [bool]$RunInstaller = $true
 )
 
 # 规范化版本号 (移除前导 v 或 V)
@@ -17,6 +18,8 @@ Write-Host "==========================================" -ForegroundColor Cyan
 # 1. 停止运行中的进程
 Stop-Process -Name "WanKePos.WinUI" -Force -ErrorAction SilentlyContinue
 Stop-Process -Name "WanKePos" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "WanKePos_Setup*" -Force -ErrorAction SilentlyContinue
+
 
 $rootDir = Split-Path -Parent $PSScriptRoot
 Set-Location $rootDir
@@ -100,6 +103,41 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "  文件路径: $($setupFile.FullName)" -ForegroundColor White
     Write-Host "  文件大小: $fileSizeMB MB" -ForegroundColor White
     Write-Host "==========================================" -ForegroundColor Green
+
+    if ($RunInstaller -and ($env:CI -ne "true") -and ($env:GITHUB_ACTIONS -ne "true")) {
+        Write-Host "`n[4/4] Auto-installing and launching updated app..." -ForegroundColor Cyan
+        
+        # Step 1: Run silent installer
+        Write-Host "Running silent installation..." -ForegroundColor Yellow
+        $installProc = Start-Process -FilePath $setupFile.FullName -ArgumentList "/VERYSILENT", "/SP-", "/SUPPRESSMSGBOXES", "/NORESTART" -PassThru -Wait
+        Write-Host "Silent installation completed with exit code: $($installProc.ExitCode)" -ForegroundColor Green
+
+        # Step 2: Locate installed executable
+        $localAppExe = "$env:LOCALAPPDATA\Programs\WanKePos\WanKePos.WinUI.exe"
+        $progFilesExe = "C:\Program Files\WanKePos\WanKePos.WinUI.exe"
+        $publishExe = "$rootDir\publish_winui\WanKePos.WinUI.exe"
+
+        $targetExe = $null
+        if (Test-Path -Path $localAppExe) {
+            $targetExe = $localAppExe
+        } elseif (Test-Path -Path $progFilesExe) {
+            $targetExe = $progFilesExe
+        } elseif (Test-Path -Path $publishExe) {
+            $targetExe = $publishExe
+        }
+
+        # Step 3: Launch the updated application
+        if ($targetExe -and (Test-Path -Path $targetExe)) {
+            Write-Host "Launching updated application: $targetExe" -ForegroundColor Green
+            $appDir = Split-Path -Parent $targetExe
+            Start-Process -FilePath $targetExe -WorkingDirectory $appDir
+            Write-Host "WanKePos system launched successfully!" -ForegroundColor Green
+        } else {
+            Write-Host "Error: Could not locate installed executable." -ForegroundColor Red
+        }
+    } elseif ($env:CI -eq "true" -or $env:GITHUB_ACTIONS -eq "true") {
+        Write-Host "`n[4/4] CI/CD environment detected, skipping GUI launch." -ForegroundColor Yellow
+    }
 } else {
     Write-Host "安装包打包失败!" -ForegroundColor Red
     exit 1

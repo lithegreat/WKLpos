@@ -26,6 +26,11 @@ namespace WanKePos.Infrastructure.Data.Repositories
             return await _context.Products.ToListAsync();
         }
 
+        public async Task<Product?> GetByIdAsync(int id)
+        {
+            return await _context.Products.FindAsync(id);
+        }
+
         public async Task<Product?> GetByBarcodeAsync(string barcode)
         {
             return await _context.Products.FirstOrDefaultAsync(p => p.Barcode == barcode);

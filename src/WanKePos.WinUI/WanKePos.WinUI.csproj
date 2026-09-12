@@ -68,6 +68,9 @@
     <Page Include="Dialogs\UpdateContentDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Dialogs\AiImportPurchaseOrderContentDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>

@@ -12,6 +12,9 @@
             <!-- 全局通用转换器 -->
             <converters:DecimalToCurrencyConverter x:Key="CurrencyConverter"/>
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+            <converters:PurchaseOrderStatusConverter x:Key="PurchaseOrderStatusConverter"/>
+            <converters:DateTimeFormatConverter x:Key="DateTimeFormatConverter"/>
+            <converters:CategoryToStyleConverter x:Key="CategoryToStyleConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

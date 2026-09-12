@@ -92,6 +92,7 @@ public static class DependencyInjection
         services.AddSingleton<ReceiptPrinter>();
         services.AddTransient<ExcelImporter>();
         services.AddTransient<PurchaseOrderExporter>();
+        services.AddTransient<AiPurchaseOrderParser>();
 
         return services;
     }

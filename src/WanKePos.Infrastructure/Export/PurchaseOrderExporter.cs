@@ -12,55 +12,74 @@ namespace WanKePos.Infrastructure.Export;
 /// </summary>
 public class PurchaseOrderExporter
 {
-    public const string UserDownloadsTemplatePath = @"C:\Users\WKL\Downloads\zggj_门店商品-批量收货.xlsx";
+    public static string UserDownloadsTemplatePath =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "zggj_门店商品-批量收货.xlsx");
 
     private readonly IProductRepository? _productRepo;
+    private readonly IPurchaseOrderRepository? _purchaseRepo;
 
-    public PurchaseOrderExporter(IProductRepository? productRepo = null)
+    public PurchaseOrderExporter(IProductRepository? productRepo = null, IPurchaseOrderRepository? purchaseRepo = null)
     {
         _productRepo = productRepo;
+        _purchaseRepo = purchaseRepo;
     }
 
     /// <summary>
-    /// 定位收货模板路径：优先用户指定下载目录，其次当前程序安装目录下的 Templates 目录，再次通用 Downloads 目录
+    /// 定位收货模板路径：优先当前用户通用 Downloads 目录，其次当前程序安装目录下的 Templates 目录
     /// </summary>
     public static string? ResolveTemplatePath()
     {
-        // 1. 用户指定目录
-        if (File.Exists(UserDownloadsTemplatePath))
-            return UserDownloadsTemplatePath;
+        // 1. 当前用户通用下载目录
+        var userDownloads = UserDownloadsTemplatePath;
+        if (File.Exists(userDownloads))
+            return userDownloads;
 
         // 2. 程序安装目录内附带的模板
         var localTemplate = Path.Combine(AppContext.BaseDirectory, "Templates", "zggj_门店商品-批量收货.xlsx");
         if (File.Exists(localTemplate))
             return localTemplate;
 
-        // 3. 当前用户通用下载目录
-        var userDownloads = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads", "zggj_门店商品-批量收货.xlsx");
-        if (File.Exists(userDownloads))
-            return userDownloads;
-
         return null;
     }
 
+    public static string DefaultExportDirectory =>
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "采购单");
+
     public async Task<string> ExportToExcelAsync(PurchaseOrder order, StoreSettings? storeSettings, string? targetFilePath = null)
     {
+        // 若传入的采购单缺少商品明细（例如从摘要列表传入），自动从仓储重新加载完整明细
+        if ((order.Items == null || order.Items.Count == 0) && _purchaseRepo != null && order.Id > 0)
+        {
+            var loaded = await _purchaseRepo.GetByIdAsync(order.Id);
+            if (loaded != null && loaded.Items != null && loaded.Items.Count > 0)
+            {
+                order = loaded;
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(targetFilePath))
         {
-            var documentsFolder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             var fileName = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
-            targetFilePath = Path.Combine(documentsFolder, fileName);
+            targetFilePath = Path.Combine(DefaultExportDirectory, fileName);
         }
 
         // 确保所有明细项的商品详情均已加载
-        if (_productRepo != null)
+        if (_productRepo != null && order.Items != null)
         {
             foreach (var item in order.Items)
             {
                 if (item.Product == null)
                 {
-                    var p = await _productRepo.GetByBarcodeAsync(item.Barcode);
-                    if (p != null) item.Product = p;
+                    if (item.ProductId > 0)
+                    {
+                        var p = await _productRepo.GetByIdAsync(item.ProductId);
+                        if (p != null) item.Product = p;
+                    }
+                    if (item.Product == null && !string.IsNullOrWhiteSpace(item.Barcode))
+                    {
+                        var p = await _productRepo.GetByBarcodeAsync(item.Barcode);
+                        if (p != null) item.Product = p;
+                    }
                 }
             }
         }
@@ -113,6 +132,7 @@ public class PurchaseOrderExporter
 
     private static void FillOrderData(IXLWorksheet ws, PurchaseOrder order)
     {
+        if (order.Items == null) return;
         int currentRow = 2;
         foreach (var item in order.Items)
         {
@@ -132,7 +152,7 @@ public class PurchaseOrderExporter
 
             // Col D: 入库数量（必填，新增加的商品数量）
             ws.Cell(currentRow, 4).SetValue(item.Quantity);
-            ws.Cell(currentRow, 4).Style.NumberFormat.Format = "#,##0";
+            ws.Cell(currentRow, 4).Style.NumberFormat.Format = item.Quantity % 1 == 0 ? "#,##0" : "#,##0.##";
 
             // Col E: 门店零售价(选填)
             if (product != null && product.RetailPrice > 0)
