@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Threading.Tasks;
 using WanKePos.Domain.Entities;
@@ -28,6 +29,7 @@ namespace WanKePos.WinUI.Views
             {
                 await ViewModel.InitializeAsync();
                 BarcodeTextBox.Focus(FocusState.Programmatic);
+                DispatcherQueue.TryEnqueue(UpdateCategoryButtonsHighlight);
             };
         }
 
@@ -63,13 +65,14 @@ namespace WanKePos.WinUI.Views
             return result == ContentDialogResult.Primary;
         }
 
-        private async void ShowMessageAsync(string title, string content)
+        private async void ShowMessageAsync(string title, string message)
         {
             var dialog = new ContentDialog
             {
                 Title = title,
-                Content = content,
+                Content = message,
                 CloseButtonText = "确定",
+                DefaultButton = ContentDialogButton.Close,
                 XamlRoot = this.XamlRoot,
                 RequestedTheme = this.ActualTheme
             };
@@ -97,6 +100,42 @@ namespace WanKePos.WinUI.Views
             if (sender is Button btn && btn.Content is string category)
             {
                 await ViewModel.SelectCategoryAsync(category);
+                UpdateCategoryButtonsHighlight();
+            }
+        }
+
+        private void UpdateCategoryButtonsHighlight()
+        {
+            if (CategoryItemsControl == null) return;
+            var selected = ViewModel.SelectedCategory ?? "";
+            var selectedStyle = Application.Current.Resources.TryGetValue("CategoryItemSelectedStyle", out var aStyle) ? aStyle as Style : null;
+            var defaultStyle = Application.Current.Resources.TryGetValue("CategoryItemButtonStyle", out var dStyle) ? dStyle as Style : null;
+
+            FindAndStyleCategoryButtons(CategoryItemsControl, selected, selectedStyle, defaultStyle);
+        }
+
+        private void FindAndStyleCategoryButtons(DependencyObject parent, string selected, Style? accentStyle, Style? defaultStyle)
+        {
+            int count = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is Button btn && btn.Content is string cat)
+                {
+                    bool isMatch = string.Equals(cat, selected, StringComparison.OrdinalIgnoreCase);
+                    if (isMatch && accentStyle != null)
+                    {
+                        btn.Style = accentStyle;
+                    }
+                    else if (!isMatch && defaultStyle != null)
+                    {
+                        btn.Style = defaultStyle;
+                    }
+                }
+                else
+                {
+                    FindAndStyleCategoryButtons(child, selected, accentStyle, defaultStyle);
+                }
             }
         }
 

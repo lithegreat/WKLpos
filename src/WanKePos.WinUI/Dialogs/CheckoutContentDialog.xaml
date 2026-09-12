@@ -20,7 +20,7 @@
                 Padding="16">
             <StackPanel HorizontalAlignment="Center" Spacing="4">
                 <TextBlock Text="应付金额" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" HorizontalAlignment="Center"/>
-                <TextBlock x:Name="PayableText" FontSize="32" FontWeight="Bold" Foreground="#FF8C00" HorizontalAlignment="Center"/>
+                <TextBlock x:Name="PayableText" FontSize="32" FontWeight="Bold" Foreground="{ThemeResource PriceHighlightBrush}" HorizontalAlignment="Center"/>
             </StackPanel>
         </Border>
 
@@ -40,7 +40,7 @@
                 Padding="12">
             <Grid>
                 <TextBlock Text="找零金额:" FontSize="15" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                <TextBlock x:Name="ChangeText" Text="¥0.00" FontSize="24" FontWeight="Bold" Foreground="#28A745" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                <TextBlock x:Name="ChangeText" Text="¥0.00" FontSize="24" FontWeight="Bold" Foreground="{ThemeResource SuccessTextBrush}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
             </Grid>
         </Border>
     </StackPanel>

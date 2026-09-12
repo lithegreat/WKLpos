@@ -36,12 +36,17 @@ public sealed partial class PurchaseOrderPage : Page
             {
                 DispatcherQueue?.TryEnqueue(UpdateCategoryButtonsHighlight);
             }
+            else if (e.PropertyName == nameof(ViewModel.SelectedTabIndex))
+            {
+                DispatcherQueue?.TryEnqueue(UpdateTabButtonStyles);
+            }
         };
 
         this.Loaded += async (s, e) =>
         {
             await ViewModel.InitializeAsync();
             UpdateCategoryButtonsHighlight();
+            UpdateTabButtonStyles();
         };
     }
 
@@ -101,6 +106,11 @@ public sealed partial class PurchaseOrderPage : Page
         return Task.FromResult(path);
     }
 
+    private void ProductSearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+    {
+        ViewModel.SearchProductsCommand.Execute(null);
+    }
+
     private void SearchProductTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == Windows.System.VirtualKey.Enter)
@@ -150,10 +160,10 @@ public sealed partial class PurchaseOrderPage : Page
     {
         if (CategoryItemsControl == null) return;
         var selected = ViewModel.SelectedCategory;
-        var accentStyle = Application.Current.Resources.TryGetValue("AccentButtonStyle", out var aStyle) ? aStyle as Style : null;
-        var defaultStyle = Application.Current.Resources.TryGetValue("DefaultButtonStyle", out var dStyle) ? dStyle as Style : null;
+        var selectedStyle = Application.Current.Resources.TryGetValue("CategoryItemSelectedStyle", out var aStyle) ? aStyle as Style : null;
+        var defaultStyle = Application.Current.Resources.TryGetValue("CategoryItemButtonStyle", out var dStyle) ? dStyle as Style : null;
 
-        FindAndStyleCategoryButtons(CategoryItemsControl, selected, accentStyle, defaultStyle);
+        FindAndStyleCategoryButtons(CategoryItemsControl, selected, selectedStyle, defaultStyle);
     }
 
     private void FindAndStyleCategoryButtons(DependencyObject parent, string selected, Style? accentStyle, Style? defaultStyle)
@@ -305,7 +315,6 @@ public sealed partial class PurchaseOrderPage : Page
     private double _dragStartCartWidth;
     private const double DefaultCartWidth = 520.0;
     private const double MinCartWidth = 380.0;
-    private double _savedCategoryWidth = 160.0;
 
     private void CartSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
@@ -403,27 +412,78 @@ public sealed partial class PurchaseOrderPage : Page
         }
     }
 
+    private void TabOrdersButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.SelectedTabIndex = 0;
+        UpdateTabButtonStyles();
+    }
+
+    private void TabCreateOrderButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.SelectedTabIndex = 1;
+        UpdateTabButtonStyles();
+    }
+
+    private void UpdateTabButtonStyles()
+    {
+        if (TabOrdersButton == null || TabCreateOrderButton == null) return;
+        var accentStyle = Application.Current.Resources.TryGetValue("AccentButtonStyle", out var aStyle) ? aStyle as Style : null;
+
+        if (ViewModel.SelectedTabIndex == 0)
+        {
+            TabOrdersButton.Style = accentStyle;
+            TabCreateOrderButton.Style = null;
+        }
+        else
+        {
+            TabOrdersButton.Style = null;
+            TabCreateOrderButton.Style = accentStyle;
+        }
+    }
+
     private void UpdateToggleExpandButtonState(double width)
     {
         if (ToggleCartExpandBtn != null)
         {
-            ToggleCartExpandBtn.Content = width >= 640 ? "↔ 紧凑" : "↔ 宽屏";
+            var icon = new FontIcon { Glyph = "\uE740", FontSize = 10 };
+            var text = new TextBlock { Text = width >= 640 ? "紧凑" : "宽屏" };
+            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+            panel.Children.Add(icon);
+            panel.Children.Add(text);
+            ToggleCartExpandBtn.Content = panel;
         }
     }
 
     private void CollapseCategoryButton_Click(object sender, RoutedEventArgs e)
     {
-        _savedCategoryWidth = CategoryColumn.ActualWidth > 0 ? CategoryColumn.ActualWidth : 160.0;
-        CategoryColumn.Width = new GridLength(0);
-        CategoryBorder.Visibility = Visibility.Collapsed;
+        if (CollapseCategoryStoryboard != null)
+        {
+            CollapseCategoryStoryboard.Completed -= CollapseCategoryStoryboard_Completed;
+            CollapseCategoryStoryboard.Completed += CollapseCategoryStoryboard_Completed;
+            CollapseCategoryStoryboard.Begin();
+        }
+        else
+        {
+            CategoryPanel.Visibility = Visibility.Collapsed;
+            ExpandCategoryBtn.Visibility = Visibility.Visible;
+        }
+    }
+
+    private void CollapseCategoryStoryboard_Completed(object? sender, object e)
+    {
+        if (CollapseCategoryStoryboard != null)
+        {
+            CollapseCategoryStoryboard.Completed -= CollapseCategoryStoryboard_Completed;
+        }
+        CategoryPanel.Visibility = Visibility.Collapsed;
         ExpandCategoryBtn.Visibility = Visibility.Visible;
     }
 
     private void ExpandCategoryButton_Click(object sender, RoutedEventArgs e)
     {
-        CategoryColumn.Width = new GridLength(_savedCategoryWidth > 0 ? _savedCategoryWidth : 160.0);
-        CategoryBorder.Visibility = Visibility.Visible;
+        CategoryPanel.Visibility = Visibility.Visible;
         ExpandCategoryBtn.Visibility = Visibility.Collapsed;
+        ExpandCategoryStoryboard?.Begin();
     }
 
     private void HighlightSplitter(bool isHighlighted)

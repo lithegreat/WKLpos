@@ -104,9 +104,12 @@ dotnet publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --
 Stop-Process -Name "WanKePos.WinUI" -Force -ErrorAction SilentlyContinue
 ```
 
-### Git 提交约定
-- `feat:` 新增业务功能（如采购单、会员功能等）
-- `fix:` 修复 Bug 或界面缺陷
-- `refactor:` 架构重构或分层解耦
-- `perf:` 渲染性能与响应时间优化
-- `docs:` 文档更新（如 README、AGENTS）
+### Git 分支与提交规范
+- **默认分支保护（强制约束）**：**严禁直接向默认分支（如 `main` / `master`）提交代码**。所有改动必须在特性/修复分支（如 `awesome_ui`、`feat/*`、`fix/*` 等）进行提交，再通过 Pull Request 或 Merge 合并。
+- **Git 提交信息约定**：
+  - `feat:` 新增业务功能（如采购单、会员功能等）
+  - `fix:` 修复 Bug 或界面缺陷
+  - `refactor:` 架构重构或分层解耦
+  - `perf:` 渲染性能与响应时间优化
+  - `docs:` 文档更新（如 README、AGENTS）
+

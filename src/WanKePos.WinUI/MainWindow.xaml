@@ -9,95 +9,188 @@
     mc:Ignorable="d"
     Title="万客隆 POS 收银系统">
 
-    <Grid x:Name="RootGrid" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid x:Name="RootGrid" Background="Transparent">
         <Grid.RowDefinitions>
+            <RowDefinition Height="44"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="32"/>
         </Grid.RowDefinitions>
 
-        <!-- 主导航栏 -->
-        <NavigationView x:Name="NavView"
-                        Grid.Row="0"
-                        PaneTitle="万客隆 POS"
-                        IsBackButtonVisible="Collapsed"
-                        IsSettingsVisible="False"
-                        OpenPaneLength="190"
-                        SelectionChanged="NavView_SelectionChanged">
-            <NavigationView.MenuItems>
-                <NavigationViewItem Content="收银台 (F1)" Tag="Cashier" Icon="Shop"/>
-                <NavigationViewItem Content="商品管理 (F2)" Tag="Products" Icon="BrowsePhotos"/>
-                <NavigationViewItem Content="会员管理 (F3)" Tag="Members" Icon="People"/>
-                <NavigationViewItem Content="销售记录 (F4)" Tag="Orders" Icon="Document"/>
-                <NavigationViewItem Content="采购进货 (F5)" Tag="Purchase" Icon="AllApps"/>
-            </NavigationView.MenuItems>
-            <NavigationView.FooterMenuItems>
-                <NavigationViewItem Content="系统设置 (F6)" Tag="Settings" Icon="Setting"/>
-            </NavigationView.FooterMenuItems>
+        <!-- 自定义 PowerToys 风格沉浸式标题栏 (集成状态、时钟与主题控制) -->
+        <Grid x:Name="AppTitleBar" Grid.Row="0" Background="Transparent">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-            <Frame x:Name="ContentFrame"/>
-        </NavigationView>
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="16,0,0,0">
+                <Image Source="Assets/pos_icon.ico" Width="18" Height="18" VerticalAlignment="Center"/>
+                <TextBlock Text="万客隆 POS" 
+                           FontSize="13" 
+                           FontWeight="SemiBold" 
+                           VerticalAlignment="Center"/>
+                <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="10" 
+                        Padding="8,1" 
+                        VerticalAlignment="Center">
+                    <TextBlock Text="v0.1.0" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </Border>
+            </StackPanel>
 
-        <!-- 底部状态栏 -->
-        <Border Grid.Row="1" 
-                Background="{ThemeResource LayerFillColorDefaultBrush}" 
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="0,1,0,0" 
-                Padding="16,0">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock Text="🏪" FontSize="13"/>
-                    <TextBlock x:Name="StoreNameTextBlock" 
-                               FontSize="12" 
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                </StackPanel>
+            <!-- 中间空白可拖拽区域 -->
+            <Border Grid.Column="1" Background="Transparent"/>
 
-                <TextBlock x:Name="SyncStatusTextBlock" 
-                           Grid.Column="1" 
-                           FontSize="12" 
-                           HorizontalAlignment="Center" 
-                           VerticalAlignment="Center" 
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+            <!-- 右侧一体化微件区 (动态自适应原生最小化/最大化/关闭按钮) -->
+            <StackPanel x:Name="TitleBarWidgetsPanel" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="0,0,140,0">
+                <!-- 门店胶囊徽章 -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="8,3" 
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE707;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                        <TextBlock x:Name="StoreNameTextBlock" 
+                                   FontSize="11" 
+                                   FontWeight="SemiBold" 
+                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                    </StackPanel>
+                </Border>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                    <!-- 主题切换下拉菜单 -->
-                    <DropDownButton x:Name="ThemeDropDownButton" 
-                                    Padding="8,2" 
-                                    VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="快速切换主题：跟随系统 / 浅色 / 黑暗模式">
-                        <DropDownButton.Content>
-                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <FontIcon x:Name="ThemeButtonIcon" Glyph="&#xE790;" FontSize="12"/>
-                                <TextBlock x:Name="ThemeButtonText" Text="跟随系统" FontSize="12"/>
-                            </StackPanel>
-                        </DropDownButton.Content>
-                        <DropDownButton.Flyout>
-                            <MenuFlyout Placement="Top">
-                                <MenuFlyoutItem Text="💻 跟随系统 (默认)" Tag="Default" Click="ThemeMenuItem_Click"/>
-                                <MenuFlyoutItem Text="☀️ 浅色模式" Tag="Light" Click="ThemeMenuItem_Click"/>
-                                <MenuFlyoutItem Text="🌙 黑暗模式" Tag="Dark" Click="ThemeMenuItem_Click"/>
-                            </MenuFlyout>
-                        </DropDownButton.Flyout>
-                    </DropDownButton>
+                <!-- 同步状态胶囊徽章 -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="8,3" 
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xEB55;" FontSize="11" Foreground="{ThemeResource SuccessTextBrush}"/>
+                        <TextBlock x:Name="SyncStatusTextBlock" 
+                                   FontSize="11" 
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
 
+                <!-- 主题切换下拉菜单 -->
+                <DropDownButton x:Name="ThemeDropDownButton" 
+                                Padding="8,2" 
+                                CornerRadius="12"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="快速切换主题：跟随系统 / 浅色 / 深色模式">
+                    <DropDownButton.Content>
+                        <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <FontIcon x:Name="ThemeButtonIcon" Glyph="&#xE790;" FontSize="11"/>
+                            <TextBlock x:Name="ThemeButtonText" Text="跟随系统" FontSize="11"/>
+                        </StackPanel>
+                    </DropDownButton.Content>
+                    <DropDownButton.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <MenuFlyoutItem Text="跟随系统 (默认)" Tag="Default" Click="ThemeMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE770;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="浅色模式" Tag="Light" Click="ThemeMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE706;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="深色模式" Tag="Dark" Click="ThemeMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE708;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+
+                <!-- 置顶开关胶囊 -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="6,1,8,1" 
+                        VerticalAlignment="Center">
                     <CheckBox x:Name="AlwaysOnTopCheckBox" 
-                              Content="窗口置顶" 
+                              Content="置顶" 
                               IsChecked="True" 
-                              FontSize="12" 
+                              FontSize="11" 
+                              MinHeight="0"
+                              MinWidth="0"
+                              Padding="4,0,0,0"
                               Checked="AlwaysOnTopCheckBox_Checked" 
                               Unchecked="AlwaysOnTopCheckBox_Unchecked"
                               ToolTipService.ToolTip="保持软件窗口始终在浏览器与其他窗口上方"/>
-                    <TextBlock x:Name="ClockTextBlock" 
-                               FontSize="12" 
-                               VerticalAlignment="Center" 
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                </StackPanel>
-            </Grid>
-        </Border>
+                </Border>
+
+                <!-- 时钟 -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="8,3" 
+                        VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                        <FontIcon Glyph="&#xE823;" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock x:Name="ClockTextBlock" 
+                                   FontSize="11" 
+                                   FontWeight="SemiBold" 
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <!-- 主导航栏 (PowerToys 风格，直通底部，完全一体化) -->
+        <NavigationView x:Name="NavView"
+                        Grid.Row="1"
+                        PaneTitle=""
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        OpenPaneLength="210"
+                        CompactPaneLength="48"
+                        Background="Transparent"
+                        SelectionChanged="NavView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="收银结算" Tag="Cashier" ToolTipService.ToolTip="收银结算台 (F1)">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE7BF;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="商品管理" Tag="Products" ToolTipService.ToolTip="商品管理 (F2)">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE7B8;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="会员管理" Tag="Members" ToolTipService.ToolTip="会员管理 (F3)">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE716;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="销售流水" Tag="Orders" ToolTipService.ToolTip="销售记录流水 (F4)">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8A5;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="采购进货" Tag="Purchase" ToolTipService.ToolTip="采购进货单与入库 (F5)">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8F1;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Content="系统设置" Tag="Settings" ToolTipService.ToolTip="系统设置与更新 (F6)">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE713;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+
+            <Frame x:Name="ContentFrame" Background="Transparent"/>
+        </NavigationView>
     </Grid>
 </Window>

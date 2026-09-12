@@ -4,171 +4,210 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:WanKePos.WinUI.Controls"
+    Background="Transparent"
     mc:Ignorable="d">
 
-    <Grid Padding="16">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="160"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
+    <Grid Padding="24,18,24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <!-- 左栏：品类导航 -->
-        <Border Grid.Column="0" 
-                Background="{ThemeResource LayerFillColorDefaultBrush}" 
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
-                BorderThickness="1" 
-                CornerRadius="8" 
-                Margin="0,0,12,0" 
-                Padding="10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Grid.Row="0" Text="🏷️ 商品品类" FontSize="16" FontWeight="SemiBold" Margin="4,4,4,12"/>
-
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl ItemsSource="{Binding Categories}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Content="{Binding}" 
-                                        Click="CategoryButton_Click" 
-                                        HorizontalAlignment="Stretch" 
-                                        Height="38" 
-                                        Margin="0,0,0,4"/>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
-            </Grid>
-        </Border>
-
-        <!-- 右栏：商品管理列表与工具栏 -->
-        <Grid Grid.Column="1">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="40"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            
-            <!-- 搜索与操作栏 -->
-            <Grid Grid.Row="0" Margin="0,0,0,12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
-                    <TextBox PlaceholderText="🔍 搜索商品名称或条码 (回车)" 
-                             Width="250" 
-                             Text="{Binding SearchKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             KeyDown="SearchTextBox_KeyDown"/>
-                    <Button Content="搜索" Command="{Binding SearchCommand}"/>
-                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="8,0,0,0">
-                        <TextBlock Text="当前分类:" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                        <TextBlock Text="{Binding SelectedCategory}" FontSize="13" FontWeight="SemiBold" Foreground="#FF8C00"/>
+        <!-- WinUI Gallery 标准标头 -->
+        <controls:PageHeader Grid.Row="0"
+                             Title="商品档案管理" 
+                             Description="集中管理店内商品条码、品类划分、零售价格与库存警戒" 
+                             Glyph="&#xE7B8;"
+                             BadgeText="快捷键 F2">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <Button Command="{Binding AddProductCommand}" 
+                        Style="{StaticResource AccentButtonStyle}"
+                        Height="36" 
+                        Padding="16,0" 
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE710;" FontSize="13"/>
+                        <TextBlock Text="新增商品" FontSize="13" FontWeight="SemiBold"/>
                     </StackPanel>
-                </StackPanel>
+                </Button>
+                <Button Command="{Binding ImportFromExcelCommand}" 
+                        Height="36" 
+                        Padding="14,0"
+                        CornerRadius="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE8B7;" FontSize="14"/>
+                        <TextBlock Text="导入 Excel" FontSize="13"/>
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+        </controls:PageHeader>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
-                    <Button Content="➕ 新增商品" 
-                            Command="{Binding AddProductCommand}" 
-                            Style="{StaticResource AccentButtonStyle}"
-                            Height="38" 
-                            Padding="16,0" 
-                            FontWeight="Bold"/>
-                    <Button Content="📂 导入Excel" 
-                            Command="{Binding ImportFromExcelCommand}" 
-                            Height="38" 
-                            Padding="14,0"/>
-                </StackPanel>
-            </Grid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="170"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-            <!-- 表头 -->
-            <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
+            <!-- 左栏：品类导航 (WinUI Gallery 侧栏导航风格) -->
+            <Border Grid.Column="0" 
+                    Background="{ThemeResource LayerFillColorDefaultBrush}" 
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                    BorderThickness="1" 
+                    CornerRadius="8" 
+                    Margin="0,0,12,0" 
+                    Padding="10">
                 <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="110"/>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="75"/>
-                        <ColumnDefinition Width="70"/>
-                        <ColumnDefinition Width="70"/>
-                        <ColumnDefinition Width="70"/>
-                        <ColumnDefinition Width="60"/>
-                        <ColumnDefinition Width="40"/>
-                        <ColumnDefinition Width="50"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="80"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="条码" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="商品名称" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="2" Text="店内品类" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="3" Text="零售售价" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="4" Text="进货成本" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="5" Text="会员特价" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="6" Text="库存" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="7" Text="单位" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="8" Text="状态" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="9" Text="供应商" FontWeight="Bold" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="10" Text="操作" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="6,4,4,12">
+                        <FontIcon Glyph="&#xE8EC;" FontSize="15" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="商品品类" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="CategoryItemsControl" ItemsSource="{Binding Categories}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding}" 
+                                            Click="CategoryButton_Click" 
+                                            Style="{StaticResource CategoryItemButtonStyle}"
+                                            Margin="0,0,0,3"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
                 </Grid>
             </Border>
 
-            <!-- 数据行 (虚拟化列表) -->
-            <ListView Grid.Row="2" 
-                      ItemsSource="{Binding Products}" 
-                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                      SelectionMode="None"
-                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                      BorderThickness="1,0,1,1"
-                      CornerRadius="0,0,8,8"
-                      Padding="0">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Padding" Value="0"/>
-                        <Setter Property="MinHeight" Value="40"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate>
-                        <Grid Padding="14,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="110"/>
-                                <ColumnDefinition Width="2*"/>
-                                <ColumnDefinition Width="75"/>
-                                <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="60"/>
-                                <ColumnDefinition Width="40"/>
-                                <ColumnDefinition Width="50"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="80"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding Barcode}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="2" Text="{Binding StoreCategory}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                            <TextBlock Grid.Column="3" Text="{Binding RetailPrice, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="#FF8C00" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                            <TextBlock Grid.Column="5" Text="{Binding MemberPrice, Converter={StaticResource CurrencyConverter}}" Foreground="LightGreen" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="6" Text="{Binding Stock}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="7" Text="{Binding SaleUnit}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="8" Text="{Binding ShelfStatus}" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="9" Text="{Binding Supplier}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
-                            <!-- 操作按钮 -->
-                            <Button Grid.Column="10" 
-                                    Content="🗑️ 删除" 
-                                    Click="DeleteProductButton_Click"
-                                    Height="32" 
-                                    Padding="10,0" 
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"/>
-                        </Grid>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
-            </ListView>
+            <!-- 右栏：商品管理列表与工具栏 -->
+            <Grid Grid.Column="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="38"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <!-- 搜索栏 -->
+                <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBox PlaceholderText="搜索商品名称或条码 (回车)" 
+                                 Width="280" 
+                                 Height="36"
+                                 Text="{Binding SearchKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 KeyDown="SearchTextBox_KeyDown"/>
+                        <Button Command="{Binding SearchCommand}" Height="36" Padding="14,0" CornerRadius="6">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE721;" FontSize="12"/>
+                                <TextBlock Text="搜索" FontSize="13"/>
+                            </StackPanel>
+                        </Button>
+                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="12"
+                                Padding="10,3"
+                                VerticalAlignment="Center"
+                                Margin="4,0,0,0">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock Text="当前分类:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                <TextBlock Text="{Binding SelectedCategory}" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource PriceHighlightBrush}"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+
+                <!-- 表头 (WinUI Gallery 表格风格) -->
+                <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="80"/>
+                            <ColumnDefinition Width="75"/>
+                            <ColumnDefinition Width="75"/>
+                            <ColumnDefinition Width="75"/>
+                            <ColumnDefinition Width="65"/>
+                            <ColumnDefinition Width="45"/>
+                            <ColumnDefinition Width="55"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="70"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="条码" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="商品名称" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="店内品类" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="零售售价" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="进货成本" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="5" Text="会员特价" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="6" Text="库存" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="7" Text="单位" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="8" Text="状态" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="9" Text="供应商" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="10" Text="操作" FontWeight="SemiBold" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- 数据行 (虚拟化列表) -->
+                <ListView Grid.Row="2" 
+                          ItemsSource="{Binding Products}" 
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          SelectionMode="None"
+                          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                          BorderThickness="1,0,1,1"
+                          CornerRadius="0,0,8,8"
+                          Padding="0">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="MinHeight" Value="40"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="14,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="120"/>
+                                    <ColumnDefinition Width="2*"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="75"/>
+                                    <ColumnDefinition Width="75"/>
+                                    <ColumnDefinition Width="75"/>
+                                    <ColumnDefinition Width="65"/>
+                                    <ColumnDefinition Width="45"/>
+                                    <ColumnDefinition Width="55"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Barcode}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="2" Text="{Binding StoreCategory}" VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Grid.Column="3" Text="{Binding RetailPrice, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="{ThemeResource PriceHighlightBrush}" VerticalAlignment="Center" FontSize="13"/>
+                                <TextBlock Grid.Column="4" Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                                <TextBlock Grid.Column="5" Text="{Binding MemberPrice, Converter={StaticResource CurrencyConverter}}" Foreground="{ThemeResource SuccessTextBrush}" VerticalAlignment="Center" FontSize="12"/>
+                                <TextBlock Grid.Column="6" Text="{Binding Stock}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13"/>
+                                <TextBlock Grid.Column="7" Text="{Binding SaleUnit}" VerticalAlignment="Center" FontSize="12"/>
+                                <TextBlock Grid.Column="8" Text="{Binding ShelfStatus}" VerticalAlignment="Center" FontSize="12"/>
+                                <TextBlock Grid.Column="9" Text="{Binding Supplier}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                <!-- 操作按钮 -->
+                                <Button Grid.Column="10" 
+                                        Click="DeleteProductButton_Click"
+                                        Height="28" 
+                                        Padding="8,0" 
+                                        CornerRadius="4"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        ToolTipService.ToolTip="删除商品档案">
+                                    <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="{ThemeResource CriticalTextBrush}"/>
+                                </Button>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
         </Grid>
     </Grid>
 </Page>

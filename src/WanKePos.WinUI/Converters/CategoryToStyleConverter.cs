@@ -19,16 +19,21 @@ public class CategoryToStyleConverter : IValueConverter
             var current = vm?.SelectedCategory;
             if (!string.IsNullOrEmpty(current) && string.Equals(category, current, StringComparison.OrdinalIgnoreCase))
             {
-                if (Application.Current.Resources.TryGetValue("AccentButtonStyle", out var accentStyle))
+                if (Application.Current.Resources.TryGetValue("CategoryItemSelectedStyle", out var accentStyle))
                 {
                     return accentStyle;
                 }
             }
         }
 
-        if (Application.Current.Resources.TryGetValue("DefaultButtonStyle", out var defaultStyle))
+        if (Application.Current.Resources.TryGetValue("CategoryItemButtonStyle", out var defaultStyle))
         {
             return defaultStyle;
+        }
+
+        if (Application.Current.Resources.TryGetValue("DefaultButtonStyle", out var fallbackStyle))
+        {
+            return fallbackStyle;
         }
 
         return DependencyProperty.UnsetValue;

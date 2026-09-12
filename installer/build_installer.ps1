@@ -116,9 +116,17 @@ if ($LASTEXITCODE -eq 0) {
         Write-Host "`n[4/4] Auto-installing and launching updated app..." -ForegroundColor Cyan
         
         # Step 1: Run silent installer
-        Write-Host "Running silent installation..." -ForegroundColor Yellow
-        $installProc = Start-Process -FilePath $setupFile.FullName -ArgumentList "/VERYSILENT", "/SP-", "/SUPPRESSMSGBOXES", "/NORESTART", "/TASKS=""desktopicon""" -PassThru -Wait
+        Write-Host "Running silent installation without desktop icon..." -ForegroundColor Yellow
+        $installProc = Start-Process -FilePath $setupFile.FullName -ArgumentList "/VERYSILENT", "/SP-", "/SUPPRESSMSGBOXES", "/NORESTART", "/MERGETASKS=""!desktopicon""" -PassThru -Wait
         Write-Host "Silent installation completed with exit code: $($installProc.ExitCode)" -ForegroundColor Green
+
+        # 确保清理用户桌面与公共桌面上可能残留的快捷方式
+        try {
+            Remove-Item "$([Environment]::GetFolderPath('Desktop'))\*万客隆*.lnk" -Force -ErrorAction SilentlyContinue
+            Remove-Item "$([Environment]::GetFolderPath('CommonDesktop'))\*万客隆*.lnk" -Force -ErrorAction SilentlyContinue
+            Remove-Item "$([Environment]::GetFolderPath('Desktop'))\*WanKe*.lnk" -Force -ErrorAction SilentlyContinue
+            Remove-Item "$([Environment]::GetFolderPath('CommonDesktop'))\*WanKe*.lnk" -Force -ErrorAction SilentlyContinue
+        } catch { }
 
         # 刷新 Windows 任务栏与外壳图标缓存，确保新图标即时生效
         try {
@@ -207,19 +215,38 @@ if ($LASTEXITCODE -eq 0) {
                             STARTUPINFO si = new STARTUPINFO();
                             si.cb = Marshal.SizeOf(si);
                             si.lpDesktop = @"WinSta0\Default";
+                            si.dwFlags = 1; // STARTF_USESHOWWINDOW
+                            si.wShowWindow = 5; // SW_SHOW
                             PROCESS_INFORMATION pi = new PROCESS_INFORMATION();
 
+                            // Try with CREATE_BREAKAWAY_FROM_JOB (0x01000000) | CREATE_NEW_PROCESS_GROUP (0x00000200)
+                            string cmdLine = "\"" + appPath + "\"";
                             bool success = CreateProcess(
-                                appPath,
                                 null,
+                                cmdLine,
                                 IntPtr.Zero,
                                 IntPtr.Zero,
                                 false,
-                                0,
+                                0x01000200,
                                 IntPtr.Zero,
                                 workingDir,
                                 ref si,
                                 out pi);
+
+                            if (!success) {
+                                // Fallback without breakaway flag
+                                success = CreateProcess(
+                                    null,
+                                    cmdLine,
+                                    IntPtr.Zero,
+                                    IntPtr.Zero,
+                                    false,
+                                    0x00000200,
+                                    IntPtr.Zero,
+                                    workingDir,
+                                    ref si,
+                                    out pi);
+                            }
 
                             if (success) {
                                 CloseHandle(pi.hThread);
@@ -249,6 +276,6 @@ if ($LASTEXITCODE -eq 0) {
         Write-Host "`n[4/4] CI/CD environment detected, skipping GUI launch." -ForegroundColor Yellow
     }
 } else {
-    Write-Host "安装包打包失败!" -ForegroundColor Red
+    Write-Host "Failed to build installer package!" -ForegroundColor Red
     exit 1
 }
