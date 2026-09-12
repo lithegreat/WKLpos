@@ -14,12 +14,12 @@
 
 ### 分层约束：
 1. **`WanKePos.Domain` (领域层)**：
-   - 目标框架：`net8.0`（纯 C# 类库，**绝对不依赖任何 UI 框架、EF Core 或外部第三方 IO 库**）。
+   - 目标框架：`net10.0`（纯 C# 类库，**绝对不依赖任何 UI 框架、EF Core 或外部第三方 IO 库**）。
    - 包含：实体模型 (`Entities`)、业务枚举 (`Enums`)、仓储接口契约 (`Interfaces`)。
    - 所有实体主键默认采用 `int Id` 自增，业务单号（如 `OrderNo`、`PurchaseOrderNo`）采用业务唯一编号规则。
 
 2. **`WanKePos.Infrastructure` (基础设施层)**：
-   - 目标框架：`net8.0`。
+   - 目标框架：`net10.0`。
    - 包含：`PosDbContext`、仓储实现 (`Repositories`)、Excel 导入导出 (`Import/Export`，基于 ClosedXML)、硬件打印通信 (`Hardware/ReceiptPrinter.cs`)、网络同步适配 (`Sync/ApiSyncService.cs`)。
    - 必须通过接口向外部暴露能力，所有数据库读写均使用 `async/await` 异步方法。
 

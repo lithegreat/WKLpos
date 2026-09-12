@@ -1,4 +1,4 @@
-param(
+﻿param(
     [string]$Version = "1.1.0",
     [bool]$RunInstaller = $true
 )
@@ -29,7 +29,13 @@ Set-Location $rootDir
 # 2. 编译并发布 WinUI 3 独立程序
 Write-Host "`n[1/3] 正在发布 WinUI 3 独立免依赖程序 (版本: v$cleanVersion)..." -ForegroundColor Yellow
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
-dotnet publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$cleanVersion /p:FileVersion=$cleanVersion
+$dotnetCmd = "dotnet"
+if (Test-Path "$env:USERPROFILE\.dotnet\dotnet.exe") {
+    $dotnetCmd = "$env:USERPROFILE\.dotnet\dotnet.exe"
+    $env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"
+    $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
+}
+& $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$cleanVersion /p:FileVersion=$cleanVersion
 
 if ($LASTEXITCODE -ne 0) {
     Write-Host "编译发布失败，请检查代码错误!" -ForegroundColor Red
