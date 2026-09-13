@@ -86,5 +86,13 @@ namespace WanKePos.WinUI.Views
                 ViewModel.OpenOrderDetailCommand.Execute(order);
             }
         }
+
+        private void CalendarDatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
+        {
+            if (ViewModel != null && ViewModel.SelectedDate != args.NewDate)
+            {
+                ViewModel.SelectedDate = args.NewDate;
+            }
+        }
     }
 }

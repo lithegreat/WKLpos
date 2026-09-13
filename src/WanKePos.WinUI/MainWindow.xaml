@@ -6,6 +6,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="using:WanKePos.WinUI.Views"
     xmlns:vm="using:WanKePos.WinUI.ViewModels"
+    xmlns:animatedvisuals="using:Microsoft.UI.Xaml.Controls.AnimatedVisuals"
     mc:Ignorable="d"
     Title="万客隆 POS 收银系统">
 
@@ -136,7 +137,14 @@
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem Content="系统设置" Tag="Settings" ToolTipService.ToolTip="系统设置与更新 (F6)">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE713;"/>
+                        <AnimatedIcon>
+                            <AnimatedIcon.Source>
+                                <animatedvisuals:AnimatedSettingsVisualSource/>
+                            </AnimatedIcon.Source>
+                            <AnimatedIcon.FallbackIconSource>
+                                <FontIconSource Glyph="&#xE713;"/>
+                            </AnimatedIcon.FallbackIconSource>
+                        </AnimatedIcon>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>

@@ -28,7 +28,7 @@ public sealed partial class MemberListPage : Page
 
         this.Loaded += async (s, e) =>
         {
-            await ViewModel.InitializeAsync();
+            await ViewModel.ReloadAsync();
         };
     }
 

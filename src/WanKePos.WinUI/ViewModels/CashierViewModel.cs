@@ -385,11 +385,8 @@ namespace WanKePos.WinUI.ViewModels
         {
             var settings = await _settingsRepo.GetSettingsAsync();
 
-            decimal pointsEarned = 0;
-            if (settings.PointsPerYuan > 0)
-            {
-                pointsEarned = Math.Floor(PayableAmount / settings.PointsPerYuan);
-            }
+            var pointsRate = settings.PointsPerYuan > 0 ? settings.PointsPerYuan : 1m;
+            decimal pointsEarned = Math.Floor(PayableAmount / pointsRate);
 
             // 获取商品当前进货价用于快照
             var productIds = CartItems.Select(ci => ci.ProductId).ToList();
@@ -432,18 +429,18 @@ namespace WanKePos.WinUI.ViewModels
 
             await _orderRepo.CreateAsync(order);
 
-            // 批量扣减库存
+            // 批量扣减库存并立即刷新收银台与商品管理页
             var stockChanges = CartItems.ToDictionary(ci => ci.ProductId, ci => -ci.Quantity);
             await _productRepo.BatchUpdateStockAsync(stockChanges);
+            await LoadProductsAsync();
+            WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
 
-            if (CurrentMember != null && pointsEarned > 0)
-            {
-                await _memberRepo.UpdatePointsAsync(CurrentMember.Id, pointsEarned);
-                CurrentMember.TotalPoints += pointsEarned;
-            }
-
+            // 记录会员累计消费与积分变动并广播
             if (CurrentMember != null)
             {
+                await _memberRepo.RecordConsumptionAsync(CurrentMember.Id, PayableAmount, pointsEarned);
+                CurrentMember.TotalSpent += PayableAmount;
+                CurrentMember.TotalPoints += pointsEarned;
                 WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
             }
 

@@ -77,6 +77,13 @@
                           ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                           SelectionMode="None"
                           Padding="0">
+                    <ListView.ItemContainerTransitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromVerticalOffset="24" IsStaggeringEnabled="True"/>
+                            <RepositionThemeTransition/>
+                            <AddDeleteThemeTransition/>
+                        </TransitionCollection>
+                    </ListView.ItemContainerTransitions>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>

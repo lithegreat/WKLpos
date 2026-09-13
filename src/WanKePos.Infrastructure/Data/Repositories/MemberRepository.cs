@@ -23,26 +23,27 @@ namespace WanKePos.Infrastructure.Data.Repositories
 
         public async Task<List<Member>> GetAllAsync()
         {
-            return await _context.Members.ToListAsync();
+            return await _context.Members.AsNoTracking().ToListAsync();
         }
 
         public async Task<Member?> GetByPhoneAsync(string phone)
         {
-            return await _context.Members.FirstOrDefaultAsync(m => m.Phone == phone);
+            return await _context.Members.AsNoTracking().FirstOrDefaultAsync(m => m.Phone == phone);
         }
 
         public async Task<Member?> GetByMemberNoAsync(string memberNo)
         {
-            return await _context.Members.FirstOrDefaultAsync(m => m.MemberNo == memberNo);
+            return await _context.Members.AsNoTracking().FirstOrDefaultAsync(m => m.MemberNo == memberNo);
         }
 
         public async Task<List<Member>> SearchAsync(string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
-                return await _context.Members.ToListAsync();
+                return await _context.Members.AsNoTracking().ToListAsync();
 
             var lower = keyword.ToLower();
             return await _context.Members
+                .AsNoTracking()
                 .Where(m => m.Phone.Contains(lower) ||
                             m.Name.ToLower().Contains(lower) ||
                             m.MemberNo.ToLower().Contains(lower))
@@ -87,9 +88,21 @@ namespace WanKePos.Infrastructure.Data.Repositories
             }
         }
 
+        public async Task RecordConsumptionAsync(int memberId, decimal spentAmount, decimal pointsChange)
+        {
+            var member = await _context.Members.FindAsync(memberId);
+            if (member != null)
+            {
+                member.TotalSpent += spentAmount;
+                member.TotalPoints += pointsChange;
+                member.LastModified = DateTime.Now;
+                await _context.SaveChangesAsync();
+            }
+        }
+
         public async Task<Member?> GetByIdAsync(int id)
         {
-            return await _context.Members.FindAsync(id);
+            return await _context.Members.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id);
         }
 
         public async Task DeleteAsync(int memberId)

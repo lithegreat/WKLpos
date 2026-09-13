@@ -30,7 +30,9 @@
                     <FontIcon Glyph="&#xE76B;" FontSize="12"/>
                 </Button>
 
-                <CalendarDatePicker Date="{Binding SelectedDate, Mode=TwoWay}" 
+                <CalendarDatePicker x:Name="HistoryCalendarDatePicker"
+                                    Date="{Binding SelectedDate, Mode=TwoWay}" 
+                                    DateChanged="CalendarDatePicker_DateChanged"
                                     DateFormat="{}{year.full}-{month.integer(2)}-{day.integer(2)}"
                                     Height="34" 
                                     Width="150"

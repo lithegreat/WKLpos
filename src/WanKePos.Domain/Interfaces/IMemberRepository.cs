@@ -13,6 +13,7 @@ public interface IMemberRepository
     Task AddOrUpdateAsync(Member member);
     Task UpdatePointsAsync(int memberId, decimal pointsChange);
     Task UpdateBalanceAsync(int memberId, decimal balanceChange);
+    Task RecordConsumptionAsync(int memberId, decimal spentAmount, decimal pointsChange);
     Task<Member?> GetByIdAsync(int id);
     Task DeleteAsync(int memberId);
     Task<int> ImportFromListAsync(List<Member> members);
