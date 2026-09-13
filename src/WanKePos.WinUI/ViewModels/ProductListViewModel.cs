@@ -137,8 +137,9 @@ public partial class ProductListViewModel : ObservableObject
                 try
                 {
                     await _productRepository.UpdateAsync(updated);
+                    product.CopyFrom(updated); // 内存对象即时同步并触发 INotifyPropertyChanged
                     ShowMessage?.Invoke("修改成功", $"商品【{updated.Name}】(条码: {updated.Barcode}) 信息已成功更新！");
-                    await ReloadAsync();
+                    await RefreshCurrentViewAsync();
                     WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
                 }
                 catch (Exception ex)
@@ -146,6 +147,22 @@ public partial class ProductListViewModel : ObservableObject
                     ShowMessage?.Invoke("修改失败", $"错误: {ex.Message}");
                 }
             }
+        }
+    }
+
+    public async Task RefreshCurrentViewAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(SearchKeyword))
+        {
+            await SearchAsync();
+        }
+        else if (!string.IsNullOrWhiteSpace(SelectedCategory) && SelectedCategory != CategoryConstants.All)
+        {
+            await FilterByCategoryAsync(SelectedCategory);
+        }
+        else
+        {
+            await ReloadAsync();
         }
     }
 

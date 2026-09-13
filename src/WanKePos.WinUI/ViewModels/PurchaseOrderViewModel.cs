@@ -441,7 +441,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
                 return;
             }
 
-            var defaultFileName = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
+            var defaultFileName = PurchaseOrderExporter.GenerateDefaultFileName(order);
             var defaultFolder = PurchaseOrderExporter.DefaultExportDirectory;
             string? savePath = null;
 
@@ -604,7 +604,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
         var exportDir = PurchaseOrderExporter.DefaultExportDirectory;
         if (!System.IO.Directory.Exists(exportDir)) return null;
 
-        var pattern = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_*.xlsx";
+        var pattern = $"*{order.PurchaseOrderNo}*.xlsx";
         try
         {
             var files = System.IO.Directory.GetFiles(exportDir, pattern);

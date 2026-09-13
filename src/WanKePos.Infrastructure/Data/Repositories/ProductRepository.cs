@@ -23,7 +23,7 @@ namespace WanKePos.Infrastructure.Data.Repositories
 
         public async Task<List<Product>> GetAllAsync()
         {
-            return await _context.Products.ToListAsync();
+            return await _context.Products.AsNoTracking().ToListAsync();
         }
 
         public async Task<Product?> GetByIdAsync(int id)
@@ -39,10 +39,11 @@ namespace WanKePos.Infrastructure.Data.Repositories
         public async Task<List<Product>> SearchAsync(string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
-                return await _context.Products.ToListAsync();
+                return await _context.Products.AsNoTracking().ToListAsync();
 
             var lower = keyword.ToLower();
             return await _context.Products
+                .AsNoTracking()
                 .Where(p => p.Barcode.ToLower().Contains(lower) || p.Name.ToLower().Contains(lower))
                 .ToListAsync();
         }
@@ -50,9 +51,10 @@ namespace WanKePos.Infrastructure.Data.Repositories
         public async Task<List<Product>> GetByCategoryAsync(string category)
         {
             if (string.IsNullOrWhiteSpace(category) || category == WanKePos.Domain.CategoryConstants.All)
-                return await _context.Products.ToListAsync();
+                return await _context.Products.AsNoTracking().ToListAsync();
 
             return await _context.Products
+                .AsNoTracking()
                 .Where(p => p.StoreCategory == category)
                 .ToListAsync();
         }

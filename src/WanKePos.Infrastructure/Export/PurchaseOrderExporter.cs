@@ -45,6 +45,37 @@ public class PurchaseOrderExporter
     public static string DefaultExportDirectory =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "采购单");
 
+    /// <summary>
+    /// 生成符合人类可读性且时间前置（便于 Windows 资源管理器按名称降序排序时最新文件排在最上方）的建议导出文件名
+    /// </summary>
+    public static string GenerateDefaultFileName(PurchaseOrder order)
+    {
+        var supplier = !string.IsNullOrWhiteSpace(order.Supplier)
+            ? SanitizeFileName(order.Supplier)
+            : "通用供货商";
+        var orderTime = order.CreatedAt != default ? order.CreatedAt : DateTime.Now;
+        var timeStr = orderTime.ToString("yyyy-MM-dd_HHmmss");
+        var orderNo = !string.IsNullOrWhiteSpace(order.PurchaseOrderNo)
+            ? SanitizeFileName(order.PurchaseOrderNo)
+            : DateTime.Now.ToString("yyyyMMddHHmmss");
+
+        return $"{timeStr}_采购单_{supplier}_{orderNo}.xlsx";
+    }
+
+    /// <summary>
+    /// 清洗文件名中的非法字符，替换为下划线
+    /// </summary>
+    public static string SanitizeFileName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return string.Empty;
+        var invalidChars = Path.GetInvalidFileNameChars();
+        foreach (var c in invalidChars)
+        {
+            name = name.Replace(c, '_');
+        }
+        return name.Trim();
+    }
+
     public async Task<string> ExportToExcelAsync(PurchaseOrder order, StoreSettings? storeSettings, string? targetFilePath = null)
     {
         // 若传入的采购单缺少商品明细（例如从摘要列表传入），自动从仓储重新加载完整明细
@@ -59,7 +90,7 @@ public class PurchaseOrderExporter
 
         if (string.IsNullOrWhiteSpace(targetFilePath))
         {
-            var fileName = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
+            var fileName = GenerateDefaultFileName(order);
             targetFilePath = Path.Combine(DefaultExportDirectory, fileName);
         }
 

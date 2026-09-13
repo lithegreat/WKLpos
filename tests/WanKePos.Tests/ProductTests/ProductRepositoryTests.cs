@@ -167,4 +167,35 @@ public class ProductRepositoryTests
             connection.Dispose();
         }
     }
+
+    [Fact]
+    public void Product_CopyFrom_ShouldRaisePropertyChanged()
+    {
+        var product = new Product
+        {
+            Barcode = "690001",
+            Name = "原始商品",
+            RetailPrice = 100m
+        };
+
+        var changedProps = new System.Collections.Generic.List<string>();
+        product.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName != null) changedProps.Add(e.PropertyName);
+        };
+
+        var updated = new Product
+        {
+            Barcode = "690001",
+            Name = "新商品名",
+            RetailPrice = 120m
+        };
+
+        product.CopyFrom(updated);
+
+        Assert.Equal("新商品名", product.Name);
+        Assert.Equal(120m, product.RetailPrice);
+        Assert.Contains(nameof(Product.Name), changedProps);
+        Assert.Contains(nameof(Product.RetailPrice), changedProps);
+    }
 }

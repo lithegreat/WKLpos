@@ -562,4 +562,89 @@ public class PurchaseOrderExporterTests
             connection.Dispose();
         }
     }
+
+    [Fact]
+    public void GenerateDefaultFileName_WithSupplierAndDate_ShouldGenerateSortableReadableName()
+    {
+        var order = new PurchaseOrder
+        {
+            PurchaseOrderNo = "PO20260913153022123",
+            Supplier = "广州博美",
+            CreatedAt = new DateTime(2026, 9, 13, 15, 30, 22)
+        };
+
+        var fileName = PurchaseOrderExporter.GenerateDefaultFileName(order);
+
+        Assert.Equal("2026-09-13_153022_采购单_广州博美_PO20260913153022123.xlsx", fileName);
+    }
+
+    [Fact]
+    public void GenerateDefaultFileName_WithNullOrEmptySupplier_ShouldFallbackToGenericSupplier()
+    {
+        var order = new PurchaseOrder
+        {
+            PurchaseOrderNo = "PO20260913160000000",
+            Supplier = "   ",
+            CreatedAt = new DateTime(2026, 9, 13, 16, 0, 0)
+        };
+
+        var fileName = PurchaseOrderExporter.GenerateDefaultFileName(order);
+
+        Assert.Equal("2026-09-13_160000_采购单_通用供货商_PO20260913160000000.xlsx", fileName);
+    }
+
+    [Fact]
+    public void GenerateDefaultFileName_WithSpecialCharsInSupplier_ShouldSanitizeFileName()
+    {
+        var order = new PurchaseOrder
+        {
+            PurchaseOrderNo = "PO20260913170000111",
+            Supplier = "博美/深圳*特供?商贸",
+            CreatedAt = new DateTime(2026, 9, 13, 17, 0, 0)
+        };
+
+        var fileName = PurchaseOrderExporter.GenerateDefaultFileName(order);
+
+        Assert.DoesNotContain("/", fileName);
+        Assert.DoesNotContain("*", fileName);
+        Assert.DoesNotContain("?", fileName);
+        Assert.Equal("2026-09-13_170000_采购单_博美_深圳_特供_商贸_PO20260913170000111.xlsx", fileName);
+    }
+
+    [Fact]
+    public void GenerateDefaultFileName_WhenSortedDescending_ShouldPlaceLatestOrderAtTop()
+    {
+        var orderMorning = new PurchaseOrder
+        {
+            PurchaseOrderNo = "PO20260913090000001",
+            Supplier = "资生堂直供",
+            CreatedAt = new DateTime(2026, 9, 13, 9, 0, 0)
+        };
+        var orderAfternoon = new PurchaseOrder
+        {
+            PurchaseOrderNo = "PO20260913153000002",
+            Supplier = "爱茉莉美妆",
+            CreatedAt = new DateTime(2026, 9, 13, 15, 30, 0)
+        };
+        var orderEvening = new PurchaseOrder
+        {
+            PurchaseOrderNo = "PO20260913204500003",
+            Supplier = "广州博美",
+            CreatedAt = new DateTime(2026, 9, 13, 20, 45, 0)
+        };
+
+        var fileNames = new List<string>
+        {
+            PurchaseOrderExporter.GenerateDefaultFileName(orderMorning),
+            PurchaseOrderExporter.GenerateDefaultFileName(orderAfternoon),
+            PurchaseOrderExporter.GenerateDefaultFileName(orderEvening)
+        };
+
+        // 在资源管理器中按名称降序排序 (Z -> A / 最新时间在前)
+        var sortedDescending = fileNames.OrderByDescending(f => f, StringComparer.Ordinal).ToList();
+
+        Assert.Equal("2026-09-13_204500_采购单_广州博美_PO20260913204500003.xlsx", sortedDescending[0]);
+        Assert.Equal("2026-09-13_153000_采购单_爱茉莉美妆_PO20260913153000002.xlsx", sortedDescending[1]);
+        Assert.Equal("2026-09-13_090000_采购单_资生堂直供_PO20260913090000001.xlsx", sortedDescending[2]);
+    }
 }
