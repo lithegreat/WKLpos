@@ -232,12 +232,17 @@
             </Grid>
         </Grid>
 
-        <!-- TAB 1: 快速制作采购单与待制采购单 (同屏同时显示，商品名与采购按钮绝不折叠) -->
-        <Grid Grid.Row="2" Visibility="{x:Bind GetTab1Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
+        <!-- TAB 1: 快速制作采购单与待制采购单 (同屏同时显示，支持手动拖动调节两边大小) -->
+        <Grid x:Name="WorkbenchGrid" Grid.Row="2" Visibility="{x:Bind GetTab1Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
             <Grid.ColumnDefinitions>
+                <!-- 左栏：商品分类 -->
                 <ColumnDefinition Width="150"/>
-                <ColumnDefinition Width="*" MinWidth="360"/>
-                <ColumnDefinition Width="380" MinWidth="340"/>
+                <!-- 中栏：快速选品区 (弹性填充) -->
+                <ColumnDefinition x:Name="ProductColumn" Width="*" MinWidth="320"/>
+                <!-- 中间选品区与右侧待制采购单大小调节分隔条 (可左右拖动) -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- 右栏：待制采购单 (支持左右拖动调整宽度) -->
+                <ColumnDefinition x:Name="CartColumn" Width="380" MinWidth="300" MaxWidth="750"/>
             </Grid.ColumnDefinitions>
 
             <!-- 左栏：商品品类 (固定舒适宽度 150px，不折叠) -->
@@ -280,7 +285,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                     BorderThickness="1" 
                     CornerRadius="8" 
-                    Margin="0,0,10,0" 
+                    Margin="0,0,0,0" 
                     Padding="12,10">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -431,8 +436,35 @@
                 </Grid>
             </Border>
 
-            <!-- 右栏：待制采购单 (与选品区同屏同时显示) -->
-            <Border Grid.Column="2" 
+            <!-- 中间选品区与右侧待制采购单大小调节分隔条 (可左右拖动，双击恢复默认宽度) -->
+            <Border Grid.Column="2"
+                    x:Name="CartSplitter"
+                    Width="14"
+                    Background="Transparent"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Stretch"
+                    PointerEntered="CartSplitter_PointerEntered"
+                    PointerExited="CartSplitter_PointerExited"
+                    PointerPressed="CartSplitter_PointerPressed"
+                    PointerMoved="CartSplitter_PointerMoved"
+                    PointerReleased="CartSplitter_PointerReleased"
+                    PointerCaptureLost="CartSplitter_PointerCaptureLost"
+                    DoubleTapped="CartSplitter_DoubleTapped"
+                    ToolTipService.ToolTip="按住左右拖动调整选品区与待制单宽度 (双击恢复默认)">
+                <Grid HorizontalAlignment="Center" VerticalAlignment="Stretch">
+                    <!-- 竖直视觉拖动手柄 -->
+                    <Border x:Name="SplitterHandle"
+                            Width="4" 
+                            Height="56"
+                            CornerRadius="2" 
+                            Background="{ThemeResource CardStrokeColorDefaultBrush}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- 右栏：待制采购单 (与选品区同屏同时显示，支持拖动调整宽度) -->
+            <Border Grid.Column="3" 
                     Background="{ThemeResource LayerFillColorDefaultBrush}" 
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                     BorderThickness="1" 

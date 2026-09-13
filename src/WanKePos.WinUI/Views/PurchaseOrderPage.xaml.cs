@@ -1,8 +1,10 @@
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using WanKePos.Domain.Entities;
@@ -47,6 +49,7 @@ public sealed partial class PurchaseOrderPage : Page
             await ViewModel.InitializeAsync();
             UpdateCategoryButtonsHighlight();
             UpdateTabButtonStyles();
+            InitializeSplitter();
         };
     }
 
@@ -332,4 +335,119 @@ public sealed partial class PurchaseOrderPage : Page
         TabOrdersButton.Style = ViewModel.SelectedTabIndex == 0 ? accentStyle : null;
         TabCreateOrderButton.Style = ViewModel.SelectedTabIndex == 1 ? accentStyle : null;
     }
+
+    #region Splitter Logic (拖动调整选品区与待制单宽度)
+    private bool _isDraggingSplitter;
+    private double _dragStartPointerX;
+    private double _dragStartCartWidth;
+    private const double DefaultCartWidth = 380;
+    private const double MinCartWidth = 300;
+    private const double MinProductWidth = 320;
+    private const double MaxCartWidth = 750;
+
+    private void InitializeSplitter()
+    {
+        try
+        {
+            var cursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+            typeof(UIElement).GetProperty("ProtectedCursor", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)?
+                .SetValue(CartSplitter, cursor);
+        }
+        catch
+        {
+            // 在不支持 ProtectedCursor 的平台优雅降级
+        }
+    }
+
+    private void CartSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_isDraggingSplitter)
+        {
+            SplitterHandle.Background = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
+            SplitterHandle.Width = 6;
+        }
+    }
+
+    private void CartSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_isDraggingSplitter)
+        {
+            SplitterHandle.Background = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+            SplitterHandle.Width = 4;
+        }
+    }
+
+    private void CartSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        var properties = e.GetCurrentPoint(CartSplitter).Properties;
+        if (properties.IsLeftButtonPressed)
+        {
+            _isDraggingSplitter = true;
+            _dragStartPointerX = e.GetCurrentPoint(this).Position.X;
+            _dragStartCartWidth = CartColumn.ActualWidth > 0 ? CartColumn.ActualWidth : DefaultCartWidth;
+            CartSplitter.CapturePointer(e.Pointer);
+
+            SplitterHandle.Background = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
+            SplitterHandle.Width = 6;
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (_isDraggingSplitter)
+        {
+            var currentX = e.GetCurrentPoint(this).Position.X;
+            var deltaX = currentX - _dragStartPointerX;
+
+            // 向左拖动 (deltaX < 0) -> 待制单变宽；向右拖动 (deltaX > 0) -> 待制单变窄
+            var newCartWidth = _dragStartCartWidth - deltaX;
+
+            // 动态限制最大宽度，确保选品区留有充足的保底宽度
+            double maxAllowedCartWidth = MaxCartWidth;
+            if (WorkbenchGrid.ActualWidth > 0)
+            {
+                // WorkbenchGrid 总宽 - 分类列(150) - 分割条(14) - 选品区保底宽度(MinProductWidth) - 留白(20)
+                double availableForCart = WorkbenchGrid.ActualWidth - 150 - 14 - MinProductWidth - 20;
+                if (availableForCart > MinCartWidth)
+                {
+                    maxAllowedCartWidth = Math.Min(MaxCartWidth, availableForCart);
+                }
+            }
+
+            newCartWidth = Math.Clamp(newCartWidth, MinCartWidth, maxAllowedCartWidth);
+            CartColumn.Width = new GridLength(newCartWidth);
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (_isDraggingSplitter)
+        {
+            _isDraggingSplitter = false;
+            CartSplitter.ReleasePointerCapture(e.Pointer);
+            SplitterHandle.Background = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+            SplitterHandle.Width = 4;
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        if (_isDraggingSplitter)
+        {
+            _isDraggingSplitter = false;
+            SplitterHandle.Background = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+            SplitterHandle.Width = 4;
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        CartColumn.Width = new GridLength(DefaultCartWidth);
+        e.Handled = true;
+    }
+    #endregion
 }
