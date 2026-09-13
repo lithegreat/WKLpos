@@ -1,6 +1,8 @@
 ﻿param(
     [string]$Version = "0.1.0",
-    [bool]$RunInstaller = $true
+    [bool]$RunInstaller = $true,
+    [ValidateSet("SelfContained", "FrameworkDependent", "Both")]
+    [string]$PackageMode = "Both"
 )
 
 # 规范化版本号 (移除前导 v 或 V)
@@ -12,7 +14,7 @@ if ([string]::IsNullOrWhiteSpace($cleanVersion)) {
 # 自动化构建万客隆 POS Windows Setup 安装包脚本
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "  万客隆 POS 系统 - Windows 安装包打包流水线" -ForegroundColor Cyan
-Write-Host "  目标版本: v$cleanVersion" -ForegroundColor Cyan
+Write-Host "  目标版本: v$cleanVersion | 打包规格: $PackageMode" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. 停止运行中的进程
@@ -26,8 +28,21 @@ Start-Sleep -Milliseconds 800
 $rootDir = Split-Path -Parent $PSScriptRoot
 Set-Location $rootDir
 
-# 2. 编译并发布 WinUI 3 独立程序
-Write-Host "`n[1/3] 正在发布 WinUI 3 独立免依赖程序 (版本: v$cleanVersion)..." -ForegroundColor Yellow
+# 多语言本地化文件夹精简函数 (仅保留中文及核心系统目录，移除 80+ 个无用外语 MUI)
+function Prune-UnusedLocales($targetDir) {
+    if (-not (Test-Path $targetDir)) { return }
+    $allowedDirs = @("zh-Hans", "zh-CN", "zh-TW", "en-US", "runtimes", "Assets", "Templates", "Microsoft.UI.Xaml")
+    Get-ChildItem -Path $targetDir -Directory | ForEach-Object {
+        if ($allowedDirs -notcontains $_.Name) {
+            $muiFiles = Get-ChildItem -Path $_.FullName -Filter "*.mui" -ErrorAction SilentlyContinue
+            if ($muiFiles.Count -gt 0) {
+                Remove-Item -Path $_.FullName -Recurse -Force -ErrorAction SilentlyContinue
+            }
+        }
+    }
+}
+
+# 2. 编译并发布 WinUI 3 程序
 $env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 $dotnetCmd = "dotnet"
 if (Test-Path "$env:USERPROFILE\.dotnet\dotnet.exe") {
@@ -35,17 +50,41 @@ if (Test-Path "$env:USERPROFILE\.dotnet\dotnet.exe") {
     $env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"
     $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
 }
-& $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$cleanVersion /p:FileVersion=$cleanVersion
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "编译发布失败，请检查代码错误!" -ForegroundColor Red
-    exit 1
+# 2.1 自包含版发布 (方案 A: 零环境依赖 + 依赖剥离优化)
+if ($PackageMode -eq "SelfContained" -or $PackageMode -eq "Both") {
+    Write-Host "`n[1/3] 正在发布 WinUI 3 独立自包含免依赖程序 (Self-Contained)..." -ForegroundColor Yellow
+    & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$cleanVersion /p:FileVersion=$cleanVersion
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "自包含版本编译发布失败，请检查代码错误!" -ForegroundColor Red
+        exit 1
+    }
+
+    # 清理临时锁文件、日志、PDB 与无用多语言资源
+    Remove-Item -Path "$rootDir\publish_winui\*.db-shm" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$rootDir\publish_winui\*.db-wal" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$rootDir\publish_winui\*.log" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$rootDir\publish_winui\*.pdb" -Force -ErrorAction SilentlyContinue
+    Prune-UnusedLocales "$rootDir\publish_winui"
 }
 
-# 清理发布目录下的临时锁文件与运行时日志，避免将其打入安装包
-Remove-Item -Path "$rootDir\publish_winui\*.db-shm" -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$rootDir\publish_winui\*.db-wal" -Force -ErrorAction SilentlyContinue
-Remove-Item -Path "$rootDir\publish_winui\*.log" -Force -ErrorAction SilentlyContinue
+# 2.2 轻量框架依赖版发布 (方案 B: 极小体积 Framework-Dependent)
+if ($PackageMode -eq "FrameworkDependent" -or $PackageMode -eq "Both") {
+    Write-Host "`n[1/3] 正在发布 WinUI 3 轻量框架依赖程序 (Framework-Dependent)..." -ForegroundColor Yellow
+    & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained false -o publish_winui_slim /p:Version=$cleanVersion /p:AssemblyVersion=$cleanVersion /p:FileVersion=$cleanVersion
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "轻量框架依赖版编译发布失败，请检查代码错误!" -ForegroundColor Red
+        exit 1
+    }
+
+    Remove-Item -Path "$rootDir\publish_winui_slim\*.db-shm" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$rootDir\publish_winui_slim\*.db-wal" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$rootDir\publish_winui_slim\*.log" -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path "$rootDir\publish_winui_slim\*.pdb" -Force -ErrorAction SilentlyContinue
+    Prune-UnusedLocales "$rootDir\publish_winui_slim"
+}
 
 # 3. 定位 Inno Setup 编译器 ISCC.exe
 Write-Host "`n[2/3] 正在查找 Inno Setup 编译器..." -ForegroundColor Yellow
@@ -100,7 +139,21 @@ if (-not (Test-Path "$rootDir\output_installer")) {
 }
 
 $outputBaseFilename = "WanKePos_Setup_v$cleanVersion"
-& $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "$rootDir\installer\WanKePosSetup.iss"
+
+if ($PackageMode -eq "FrameworkDependent" -or $PackageMode -eq "Both") {
+    $slimBaseFilename = "WanKePos_Setup_v${cleanVersion}_Slim"
+    Write-Host "--> 打包轻量依赖版: $slimBaseFilename.exe" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$slimBaseFilename" "/DSourceDir=..\publish_winui_slim" "$rootDir\installer\WanKePosSetup.iss"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "生成轻量安装包失败!" -ForegroundColor Red
+        exit 1
+    }
+}
+
+if ($PackageMode -eq "SelfContained" -or $PackageMode -eq "Both") {
+    Write-Host "--> 打包标准自包含版: $outputBaseFilename.exe" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui" "$rootDir\installer\WanKePosSetup.iss"
+}
 
 if ($LASTEXITCODE -eq 0) {
     $setupFile = Get-Item "$rootDir\output_installer\$outputBaseFilename.exe"
@@ -108,8 +161,12 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "`n==========================================" -ForegroundColor Green
     Write-Host "  安装包制作成功!" -ForegroundColor Green
     Write-Host "  版本: v$cleanVersion" -ForegroundColor Green
-    Write-Host "  文件路径: $($setupFile.FullName)" -ForegroundColor White
-    Write-Host "  文件大小: $fileSizeMB MB" -ForegroundColor White
+    Write-Host "  标准自包含安装包: $($setupFile.FullName) ($fileSizeMB MB)" -ForegroundColor White
+    if (Test-Path "$rootDir\output_installer\WanKePos_Setup_v${cleanVersion}_Slim.exe") {
+        $slimFile = Get-Item "$rootDir\output_installer\WanKePos_Setup_v${cleanVersion}_Slim.exe"
+        $slimSizeMB = [Math]::Round($slimFile.Length / 1MB, 2)
+        Write-Host "  轻量依赖安装包: $($slimFile.FullName) ($slimSizeMB MB)" -ForegroundColor White
+    }
     Write-Host "==========================================" -ForegroundColor Green
 
     if ($RunInstaller -and ($env:CI -ne "true") -and ($env:GITHUB_ACTIONS -ne "true")) {
@@ -153,110 +210,111 @@ if ($LASTEXITCODE -eq 0) {
             $appDir = Split-Path -Parent $targetExe
             try {
                 if (-not ([System.Management.Automation.PSTypeName]'DesktopProcessLauncher').Type) {
-                    Add-Type @'
-                    using System;
-                    using System.Runtime.InteropServices;
+$desktopLauncherSource = @'
+using System;
+using System.Runtime.InteropServices;
 
-                    public class DesktopProcessLauncher {
-                        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-                        public struct STARTUPINFO {
-                            public int cb;
-                            public string lpReserved;
-                            public string lpDesktop;
-                            public string lpTitle;
-                            public int dwX;
-                            public int dwY;
-                            public int dwXSize;
-                            public int dwYSize;
-                            public int dwXCountChars;
-                            public int dwYCountChars;
-                            public int dwFillAttribute;
-                            public int dwFlags;
-                            public short wShowWindow;
-                            public short cbReserved2;
-                            public IntPtr lpReserved2;
-                            public IntPtr hStdInput;
-                            public IntPtr hStdOutput;
-                            public IntPtr hStdError;
-                        }
+public class DesktopProcessLauncher {
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    public struct STARTUPINFO {
+        public int cb;
+        public string lpReserved;
+        public string lpDesktop;
+        public string lpTitle;
+        public int dwX;
+        public int dwY;
+        public int dwXSize;
+        public int dwYSize;
+        public int dwXCountChars;
+        public int dwYCountChars;
+        public int dwFillAttribute;
+        public int dwFlags;
+        public short wShowWindow;
+        public short cbReserved2;
+        public IntPtr lpReserved2;
+        public IntPtr hStdInput;
+        public IntPtr hStdOutput;
+        public IntPtr hStdError;
+    }
 
-                        [StructLayout(LayoutKind.Sequential)]
-                        public struct PROCESS_INFORMATION {
-                            public IntPtr hProcess;
-                            public IntPtr hThread;
-                            public int dwProcessId;
-                            public int dwThreadId;
-                        }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct PROCESS_INFORMATION {
+        public IntPtr hProcess;
+        public IntPtr hThread;
+        public int dwProcessId;
+        public int dwThreadId;
+    }
 
-                        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-                        public static extern bool CreateProcess(
-                            string lpApplicationName,
-                            string lpCommandLine,
-                            IntPtr lpProcessAttributes,
-                            IntPtr lpThreadAttributes,
-                            bool bInheritHandles,
-                            uint dwCreationFlags,
-                            IntPtr lpEnvironment,
-                            string lpCurrentDirectory,
-                            ref STARTUPINFO lpStartupInfo,
-                            out PROCESS_INFORMATION lpProcessInformation);
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+    public static extern bool CreateProcess(
+        string lpApplicationName,
+        string lpCommandLine,
+        IntPtr lpProcessAttributes,
+        IntPtr lpThreadAttributes,
+        bool bInheritHandles,
+        uint dwCreationFlags,
+        IntPtr lpEnvironment,
+        string lpCurrentDirectory,
+        ref STARTUPINFO lpStartupInfo,
+        out PROCESS_INFORMATION lpProcessInformation);
 
-                        [DllImport("kernel32.dll", SetLastError = true)]
-                        public static extern bool CloseHandle(IntPtr hObject);
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
 
-                        [DllImport("shell32.dll")]
-                        public static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
+    [DllImport("shell32.dll")]
+    public static extern void SHChangeNotify(int wEventId, uint uFlags, IntPtr dwItem1, IntPtr dwItem2);
 
-                        public static int StartOnInteractiveDesktop(string appPath, string workingDir) {
-                            try {
-                                SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);
-                            } catch { }
+    public static int StartOnInteractiveDesktop(string appPath, string workingDir) {
+        try {
+            SHChangeNotify(0x08000000, 0, IntPtr.Zero, IntPtr.Zero);
+        } catch { }
 
-                            STARTUPINFO si = new STARTUPINFO();
-                            si.cb = Marshal.SizeOf(si);
-                            si.lpDesktop = @"WinSta0\Default";
-                            si.dwFlags = 1; // STARTF_USESHOWWINDOW
-                            si.wShowWindow = 5; // SW_SHOW
-                            PROCESS_INFORMATION pi = new PROCESS_INFORMATION();
+        STARTUPINFO si = new STARTUPINFO();
+        si.cb = Marshal.SizeOf(si);
+        si.lpDesktop = @"WinSta0\Default";
+        si.dwFlags = 1; // STARTF_USESHOWWINDOW
+        si.wShowWindow = 5; // SW_SHOW
+        PROCESS_INFORMATION pi = new PROCESS_INFORMATION();
 
-                            // Try with CREATE_BREAKAWAY_FROM_JOB (0x01000000) | CREATE_NEW_PROCESS_GROUP (0x00000200)
-                            string cmdLine = "\"" + appPath + "\"";
-                            bool success = CreateProcess(
-                                null,
-                                cmdLine,
-                                IntPtr.Zero,
-                                IntPtr.Zero,
-                                false,
-                                0x01000200,
-                                IntPtr.Zero,
-                                workingDir,
-                                ref si,
-                                out pi);
+        // Try with CREATE_BREAKAWAY_FROM_JOB (0x01000000) | CREATE_NEW_PROCESS_GROUP (0x00000200)
+        string cmdLine = "\"" + appPath + "\"";
+        bool success = CreateProcess(
+            null,
+            cmdLine,
+            IntPtr.Zero,
+            IntPtr.Zero,
+            false,
+            0x01000200,
+            IntPtr.Zero,
+            workingDir,
+            ref si,
+            out pi);
 
-                            if (!success) {
-                                // Fallback without breakaway flag
-                                success = CreateProcess(
-                                    null,
-                                    cmdLine,
-                                    IntPtr.Zero,
-                                    IntPtr.Zero,
-                                    false,
-                                    0x00000200,
-                                    IntPtr.Zero,
-                                    workingDir,
-                                    ref si,
-                                    out pi);
-                            }
+        if (!success) {
+            // Fallback without breakaway flag
+            success = CreateProcess(
+                null,
+                cmdLine,
+                IntPtr.Zero,
+                IntPtr.Zero,
+                false,
+                0x00000200,
+                IntPtr.Zero,
+                workingDir,
+                ref si,
+                out pi);
+        }
 
-                            if (success) {
-                                CloseHandle(pi.hThread);
-                                CloseHandle(pi.hProcess);
-                                return pi.dwProcessId;
-                            }
-                            return 0;
-                        }
-                    }
+        if (success) {
+            CloseHandle(pi.hThread);
+            CloseHandle(pi.hProcess);
+            return pi.dwProcessId;
+        }
+        return 0;
+    }
+}
 '@
+                    Add-Type -TypeDefinition $desktopLauncherSource
                 }
                 $launchedPid = [DesktopProcessLauncher]::StartOnInteractiveDesktop($targetExe, $appDir)
                 if ($launchedPid -gt 0) {
