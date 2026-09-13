@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$Version = "0.2.0-preview",
+    [string]$Version = "0.2.0",
     $RunInstaller = $true,
     [ValidateSet("FrameworkDependent", "SelfContained", "Both")]
     [string]$PackageMode = "FrameworkDependent",
@@ -13,10 +13,10 @@ $RunInstaller = [System.Convert]::ToBoolean($RunInstaller)
 # 规范化版本号 (移除前导 v 或 V)
 $cleanVersion = $Version.TrimStart('v', 'V')
 if ([string]::IsNullOrWhiteSpace($cleanVersion)) {
-    $cleanVersion = "0.2.0-preview"
+    $cleanVersion = "0.2.0"
 }
 
-# 提取纯数字版本用于 Windows 文件与程序集属性 (如 0.2.0-preview -> 0.2.0.0)
+# 提取纯数字版本用于 Windows 文件与程序集属性 (如 0.2.0 -> 0.2.0.0)
 $rawNumeric = ($cleanVersion -split '-')[0]
 $parts = $rawNumeric -split '\.'
 while ($parts.Length -lt 3) { $parts += "0" }
@@ -440,3 +440,4 @@ public class DesktopProcessLauncher {
     Write-Host "Failed to build installer package!" -ForegroundColor Red
     exit 1
 }
+

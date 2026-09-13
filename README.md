@@ -1,6 +1,6 @@
 # 万客隆 POS 智能收银与进销存管理系统 (WanKePos)
 
-一套专为美发用品专卖、商超零售店量身定制的现代化 Windows 原生 POS 收银与进销存系统。基于 **.NET 10** 构建，遵循 **清晰分层架构 (Clean Architecture)** 与 **MVVM 模式**，采用 **WinUI 3 (Windows App SDK 1.6)** 原生现代设计（Mica 材质与毫秒级瞬时响应）。当前版本：**v0.2.0 Pre-Release**。
+一套专为美发用品专卖、商超零售店量身定制的现代化 Windows 原生 POS 收银与进销存系统。基于 **.NET 10** 构建，遵循 **清晰分层架构 (Clean Architecture)** 与 **MVVM 模式**，采用 **WinUI 3 (Windows App SDK 1.6)** 原生现代设计（Mica 材质与毫秒级瞬时响应）。当前版本：**v0.2.0**。
 
 ---
 
@@ -91,7 +91,7 @@ dotnet run --project src\WanKePos.WinUI\WanKePos.WinUI.csproj
 ## 📦 发布与安装包制作
 
 > [!IMPORTANT]
-> **发布策略说明 (v0.2.0 Pre-Release 起)**：
+> **发布策略说明 (v0.2.0 起)**：
 > 为提供最极速的分发与更新体验，系统已全面推行**轻量安装包 (Framework-Dependent)** 发布策略：
 > * **极小体积**：安装包体积从原先的 52 MB+ 骤降至 **~23.6 MB**（解压体积由 200 MB 降至 107 MB，体积削减达 55%）；
 > * **运行环境前置要求**：目标收银机电脑仅需预先安装 **[.NET 10 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/10.0)**。
@@ -100,7 +100,7 @@ dotnet run --project src\WanKePos.WinUI\WanKePos.WinUI.csproj
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
 ```
-生成的安装包将存放在 `output_installer\WanKePos_Setup_v0.2.0-preview.exe`（仅约 23.6 MB），脚本会自动完成编译发布、无用资源清洗、安装包制作，并在本机自动静默安装及拉起运行验证。
+生成的安装包将存放在 `output_installer\WanKePos_Setup_v0.2.0.exe`（仅约 23.6 MB），脚本会自动完成编译发布、无用资源清洗、安装包制作，并在本机自动静默安装及拉起运行验证。
 
 ### 2. 高级打包选项 (如需双版本或自包含包)
 ```powershell

@@ -17,7 +17,7 @@
     <EnableDefaultPageItems>false</EnableDefaultPageItems>
     <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
     <ApplicationIcon>Assets\pos_icon.ico</ApplicationIcon>
-    <Version>0.2.0-preview</Version>
+    <Version>0.2.0</Version>
     <AssemblyVersion>0.2.0.0</AssemblyVersion>
     <FileVersion>0.2.0.0</FileVersion>
     <NoWarn>$(NoWarn);MVVMTK0045</NoWarn>

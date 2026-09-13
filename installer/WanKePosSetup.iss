@@ -2,7 +2,7 @@
 ; Documentation: https://jrsoftware.org/isinfo.php
 
 #ifndef MyAppVersion
-  #define MyAppVersion "0.2.0-preview"
+  #define MyAppVersion "0.2.0"
 #endif
 
 #ifndef OutputBaseFilename
