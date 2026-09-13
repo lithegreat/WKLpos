@@ -12,21 +12,26 @@
 [WanKePos.WinUI] (WinUI 3 表现层) --> [WanKePos.Infrastructure] --> [WanKePos.Domain]
 ```
 
-### 分层约束：
+### 分层约束与目标框架：
+本项目全局统一采用 **.NET 10**（严禁降级为 .NET 8 或其它版本）：
 1. **`WanKePos.Domain` (领域层)**：
-   - 目标框架：`net8.0`（纯 C# 类库，**绝对不依赖任何 UI 框架、EF Core 或外部第三方 IO 库**）。
+   - 目标框架：`net10.0`（纯 C# 类库，**绝对不依赖任何 UI 框架、EF Core 或外部第三方 IO 库**）。
    - 包含：实体模型 (`Entities`)、业务枚举 (`Enums`)、仓储接口契约 (`Interfaces`)。
    - 所有实体主键默认采用 `int Id` 自增，业务单号（如 `OrderNo`、`PurchaseOrderNo`）采用业务唯一编号规则。
 
 2. **`WanKePos.Infrastructure` (基础设施层)**：
-   - 目标框架：`net8.0`。
+   - 目标框架：`net10.0`。
    - 包含：`PosDbContext`、仓储实现 (`Repositories`)、Excel 导入导出 (`Import/Export`，基于 ClosedXML)、硬件打印通信 (`Hardware/ReceiptPrinter.cs`)、网络同步适配 (`Sync/ApiSyncService.cs`)。
    - 必须通过接口向外部暴露能力，所有数据库读写均使用 `async/await` 异步方法。
 
 3. **表现层 (`WanKePos.WinUI`)**：
+   - 目标框架：`net10.0-windows10.0.19041.0`。
    - 采用 Windows App SDK 1.6 原生 WinUI 3 现代设计（Mica 材质、原生控件与流畅交互）。
    - 页面与 ViewModel 必须遵循 MVVM 解耦原则，使用 `CommunityToolkit.Mvvm` 库（`[ObservableProperty]`, `[RelayCommand]`）。
    - **禁止在表现层直接操作数据库连接或执行原生 SQL 拼接**，必须经由仓储接口（如 `IProductRepository`, `IPurchaseOrderRepository`）进行操作。
+
+4. **测试层 (`WanKePos.Tests`)**：
+   - 目标框架：`net10.0`。
 
 ---
 
@@ -84,17 +89,34 @@
 
 ## 6. 常用命令与操作指南
 
+### 开发环境与 .NET 10 SDK 路径说明
+- 本项目强制使用 **.NET 10** SDK 构建，禁止回退至 .NET 8。
+- 本机 .NET 10 SDK 安装于 `$env:USERPROFILE\.dotnet`（若全局 PATH 中的 `dotnet` 找不到对应 SDK，需优先引入此目录）。
+- 在 PowerShell 中执行手工命令前，建议配置环境变量：
+  ```powershell
+  $env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"
+  $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
+  ```
+
 ### 编译验证
 ```powershell
+$env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"; $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
 dotnet build WanKePos.sln
+```
+
+### 运行单元测试
+```powershell
+$env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"; $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
+dotnet test tests\WanKePos.Tests\WanKePos.Tests.csproj
 ```
 
 ### 独立发布、生成安装包并自动运行打开
 ```powershell
-# 一键自动发布、打包 Windows 安装包并自动运行安装程序打开 (更改后必须执行)
+# 一键自动发布、打包 Windows 安装包并自动运行安装程序打开 (更改后必须执行，流水线脚本内部已内置 .NET 10 自动定位)
 powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
 
 # 手动发布 WinUI 3 独立程序 (如需单独发布)
+$env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"; $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
 dotnet publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui
 ```
 

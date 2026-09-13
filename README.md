@@ -60,11 +60,11 @@ c:\Users\WKL\POS\
 
 ## 🛠️ 技术选型
 
-- **开发框架**: .NET 8 (`net8.0`, `net8.0-windows10.0.19041.0`)
+- **开发框架**: .NET 10 (`net10.0`, `net10.0-windows10.0.19041.0`)
 - **现代前端**: Windows App SDK 1.6 (WinUI 3 原生 XAML + Unpackaged 独立免安装/打包)
-- **MVVM 框架**: CommunityToolkit.Mvvm 8.3.2
+- **MVVM 框架**: CommunityToolkit.Mvvm 8.4.2
 - **依赖注入**: Microsoft.Extensions.DependencyInjection + Microsoft.Extensions.Hosting
-- **本地数据库**: Entity Framework Core 8.0 + SQLite (`pos.db`)
+- **本地数据库**: Entity Framework Core 10.0 + SQLite (`pos.db`)
 - **Excel 引擎**: ClosedXML 0.104.2
 - **硬件通信**: System.IO.Ports (ESC/POS 指令集)
 
@@ -74,7 +74,7 @@ c:\Users\WKL\POS\
 
 ### 运行环境要求
 - Windows 10 (Build 19041+) 或 Windows 11
-- .NET 8.0 SDK
+- .NET 10.0 SDK
 
 ### 1. 编译整个解决方案
 ```powershell
