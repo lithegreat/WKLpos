@@ -1,8 +1,8 @@
-; Inno Setup Script for 万客隆 POS 智能收银系统
+﻿; Inno Setup Script for 万客隆 POS 智能收银系统
 ; Documentation: https://jrsoftware.org/isinfo.php
 
 #ifndef MyAppVersion
-  #define MyAppVersion "0.2.0"
+  #define MyAppVersion "0.2.1"
 #endif
 
 #ifndef OutputBaseFilename
