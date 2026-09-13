@@ -14,6 +14,7 @@ namespace WanKePos.WinUI
     public sealed partial class MainWindow : Window
     {
         public MainViewModel MainViewModel { get; }
+        private AppWindow? _appWindow;
 
         public MainWindow(MainViewModel viewModel)
         {
@@ -32,7 +33,7 @@ namespace WanKePos.WinUI
             }
             catch { }
 
-            // 将内容区域无缝扩展至标题栏并设置自定义拖拽区域 (PowerToys 风格)
+            // 将内容区域无缝扩展至标题栏并设置自定义拖拽区域
             this.ExtendsContentIntoTitleBar = true;
             this.SetTitleBar(AppTitleBar);
 
@@ -45,22 +46,16 @@ namespace WanKePos.WinUI
             var hwnd = WindowNative.GetWindowHandle(this);
             App.LogToFile($"MainWindow created. HWND: {hwnd}");
             var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-            var appWindow = AppWindow.GetFromWindowId(windowId);
-            if (appWindow != null)
+            _appWindow = AppWindow.GetFromWindowId(windowId);
+            if (_appWindow != null)
             {
-                appWindow.Title = "万客隆 POS 收银系统";
-                if (appWindow.TitleBar != null)
+                _appWindow.Title = "万客隆 POS 收银系统";
+                if (_appWindow.TitleBar != null)
                 {
-                    appWindow.TitleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
-                    appWindow.TitleBar.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
+                    // 设置为 WinUI 3 官方推荐的 Tall 标题栏模式（高度 48px），确保右上角三键高度与触摸/点击命中区域规范统一
+                    _appWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 
-                    void UpdateTitleBarInsets()
-                    {
-                        var rightInset = appWindow.TitleBar.RightInset;
-                        TitleBarWidgetsPanel.Margin = new Thickness(0, 0, Math.Max(140, rightInset), 0);
-                    }
-                    UpdateTitleBarInsets();
-                    appWindow.Changed += (s, args) =>
+                    _appWindow.Changed += (s, args) =>
                     {
                         if (args.DidSizeChange || args.DidPositionChange)
                         {
@@ -71,7 +66,7 @@ namespace WanKePos.WinUI
                 var iconPath = System.IO.Path.Combine(AppContext.BaseDirectory, "Assets", "pos_icon.ico");
                 if (System.IO.File.Exists(iconPath))
                 {
-                    appWindow.SetIcon(iconPath);
+                    _appWindow.SetIcon(iconPath);
 
                     // 显式为底层 Win32 HWND 设置大图标(32x32)与小图标(16x16)，并更新窗口类，强制任务栏脱离老旧缓存并实时呈现最新矢量图标
                     try
@@ -92,7 +87,7 @@ namespace WanKePos.WinUI
                     catch { }
                 }
                 // 窗口居中并设为1200x800
-                appWindow.Resize(new Windows.Graphics.SizeInt32(1200, 800));
+                _appWindow.Resize(new Windows.Graphics.SizeInt32(1200, 800));
 
                 var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
                 if (displayArea != null)
@@ -100,17 +95,31 @@ namespace WanKePos.WinUI
                     var centeredPosition = new Windows.Graphics.PointInt32(
                         displayArea.WorkArea.X + Math.Max(0, (displayArea.WorkArea.Width - 1200) / 2),
                         displayArea.WorkArea.Y + Math.Max(0, (displayArea.WorkArea.Height - 800) / 2));
-                    appWindow.Move(centeredPosition);
+                    _appWindow.Move(centeredPosition);
                 }
 
-                if (appWindow.Presenter is OverlappedPresenter presenter)
+                if (_appWindow.Presenter is OverlappedPresenter presenter)
                 {
                     presenter.IsAlwaysOnTop = true;
                 }
 
-                appWindow.Show(true);
+                _appWindow.Show(true);
                 SetForegroundWindow(hwnd);
             }
+
+            // 监听 Loaded 与 XamlRoot 缩放比变更（支持多显示器拖拽与 DPI 动态适配）
+            RootGrid.Loaded += (s, e) =>
+            {
+                UpdateTitleBarInsets();
+                UpdateCaptionButtonColors();
+                if (RootGrid.XamlRoot != null)
+                {
+                    RootGrid.XamlRoot.Changed += (sender, args) =>
+                    {
+                        DispatcherQueue?.TryEnqueue(UpdateTitleBarInsets);
+                    };
+                }
+            };
 
             // 注册全局功能快捷键 (F1~F6) 监听：使用 PreviewKeyDown 保证在任何输入焦点下均能优先拦截
             RootGrid.PreviewKeyDown += RootGrid_PreviewKeyDown;
@@ -120,10 +129,9 @@ namespace WanKePos.WinUI
             NavView.SelectedItem = NavView.MenuItems[0];
             SwitchToPage("Cashier");
 
-            // 初始化状态栏文本与时钟
+            // 初始化状态栏文本
             StoreNameTextBlock.Text = MainViewModel.CurrentStoreName;
             SyncStatusTextBlock.Text = MainViewModel.SyncStatusText;
-            ClockTextBlock.Text = MainViewModel.CurrentTime;
 
             // 监听 ViewModel 属性变更并安全同步到 UI
             MainViewModel.PropertyChanged += (s, e) =>
@@ -138,19 +146,17 @@ namespace WanKePos.WinUI
                         case nameof(MainViewModel.SyncStatusText):
                             SyncStatusTextBlock.Text = MainViewModel.SyncStatusText;
                             break;
-                        case nameof(MainViewModel.CurrentTime):
-                            ClockTextBlock.Text = MainViewModel.CurrentTime;
-                            break;
                     }
                 });
             };
 
-            // 在 UI 线程启动时钟
-            MainViewModel.StartClock();
-
-            // 监听全局主题变更并同步更新标题栏按钮颜色
-            App.ThemeService.ThemeChanged += (s, themeName) => UpdateThemeUI(themeName);
-            UpdateThemeUI(App.ThemeService.CurrentTheme);
+            // 监听实际主题变更与全局主题服务变更，自动重塑右上角系统三键配色
+            if (this.Content is FrameworkElement rootElement)
+            {
+                rootElement.ActualThemeChanged += (s, e) => UpdateCaptionButtonColors();
+            }
+            App.ThemeService.ThemeChanged += (s, themeName) => UpdateCaptionButtonColors(themeName);
+            UpdateCaptionButtonColors(App.ThemeService.CurrentTheme);
         }
 
         private void RootGrid_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
@@ -412,49 +418,79 @@ namespace WanKePos.WinUI
             }
         }
 
-        private async void ThemeMenuItem_Click(object sender, RoutedEventArgs e)
+        private void UpdateTitleBarInsets()
         {
-            if (sender is MenuFlyoutItem item && item.Tag is string themeTag)
+            if (_appWindow?.TitleBar == null) return;
+
+            double scale = RootGrid?.XamlRoot?.RasterizationScale ?? 1.0;
+            if (scale <= 0) scale = 1.0;
+
+            // 系统原生三键宽度避让（将物理像素精准转换为 XAML DIP，杜绝高分屏间隙过大或重叠）
+            double rightInsetDip = _appWindow.TitleBar.RightInset / scale;
+            if (rightInsetDip <= 0)
             {
-                await App.ThemeService.SetThemeAsync(themeTag);
+                rightInsetDip = 140.0;
+            }
+
+            if (TitleBarWidgetsPanel != null)
+            {
+                TitleBarWidgetsPanel.Margin = new Thickness(0, 0, rightInsetDip + 12, 0);
+            }
+
+            // 保持自定义标题栏高度与系统原生标题栏完全匹配 (Tall 模式下通常为 48 DIP)
+            double titleBarHeightDip = _appWindow.TitleBar.Height > 0
+                ? (_appWindow.TitleBar.Height / scale)
+                : 48.0;
+
+            if (AppTitleBarRow != null)
+            {
+                AppTitleBarRow.Height = new GridLength(titleBarHeightDip);
+            }
+            if (AppTitleBar != null)
+            {
+                AppTitleBar.Height = titleBarHeightDip;
             }
         }
 
-        private void UpdateThemeUI(string themeName)
+        /// <summary>
+        /// 配置符合 WinUI 3 / Windows 11 Fluent Design 规范的标题栏右上角系统三键（最小化、最大化、关闭）
+        /// </summary>
+        private void UpdateCaptionButtonColors(string? themeName = null)
         {
             DispatcherQueue?.TryEnqueue(() =>
             {
                 try
                 {
-                    switch (themeName)
-                    {
-                        case "Light":
-                            ThemeButtonIcon.Glyph = "\uE706";
-                            ThemeButtonText.Text = "浅色模式";
-                            break;
-                        case "Dark":
-                            ThemeButtonIcon.Glyph = "\uE708";
-                            ThemeButtonText.Text = "深色模式";
-                            break;
-                        default:
-                            ThemeButtonIcon.Glyph = "\uE790";
-                            ThemeButtonText.Text = "跟随系统";
-                            break;
-                    }
+                    if (_appWindow?.TitleBar == null) return;
 
-                    var hwnd = WindowNative.GetWindowHandle(this);
-                    if (hwnd != IntPtr.Zero)
-                    {
-                        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-                        var appWindow = AppWindow.GetFromWindowId(windowId);
-                        if (appWindow?.TitleBar != null)
-                        {
-                            bool isDark = themeName == "Dark" || (themeName == "Default" && (this.Content as FrameworkElement)?.ActualTheme == ElementTheme.Dark);
-                            var fgColor = isDark ? Windows.UI.Color.FromArgb(255, 240, 240, 240) : Windows.UI.Color.FromArgb(255, 30, 30, 30);
-                            appWindow.TitleBar.ButtonForegroundColor = fgColor;
-                            appWindow.TitleBar.ButtonHoverForegroundColor = fgColor;
-                        }
-                    }
+                    var currentTheme = themeName ?? App.ThemeService?.CurrentTheme ?? "Default";
+                    var rootFe = this.Content as FrameworkElement;
+                    bool isDark = currentTheme == "Dark" || (currentTheme == "Default" && rootFe?.ActualTheme == ElementTheme.Dark);
+
+                    var titleBar = _appWindow.TitleBar;
+
+                    // 1. 底色透明，与 Mica (云母) 原生材质无缝融合
+                    titleBar.ButtonBackgroundColor = Microsoft.UI.Colors.Transparent;
+                    titleBar.ButtonInactiveBackgroundColor = Microsoft.UI.Colors.Transparent;
+
+                    // 2. 符合 WinUI 3 规范的前景色（激活与非激活窗口状态自适应）
+                    var normalFg = isDark
+                        ? Windows.UI.Color.FromArgb(255, 255, 255, 255)
+                        : Windows.UI.Color.FromArgb(255, 26, 26, 26);
+
+                    var inactiveFg = isDark
+                        ? Windows.UI.Color.FromArgb(100, 255, 255, 255)
+                        : Windows.UI.Color.FromArgb(100, 0, 0, 0);
+
+                    titleBar.ButtonForegroundColor = normalFg;
+                    titleBar.ButtonInactiveForegroundColor = inactiveFg;
+
+                    // 3. 释放 Hover 与 Pressed 视觉控制权至 Windows 11 原生 DWM
+                    // 确保最小化/最大化按钮悬停微光半透明圆角矩形，关闭按钮标准红底白字高亮，以及 Snap Layouts 贴靠菜单完全正常运作
+                    titleBar.ButtonHoverBackgroundColor = null;
+                    titleBar.ButtonHoverForegroundColor = null;
+                    titleBar.ButtonPressedBackgroundColor = null;
+                    titleBar.ButtonPressedForegroundColor = null;
                 }
                 catch { }
             });
