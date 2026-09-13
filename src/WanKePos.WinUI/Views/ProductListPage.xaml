@@ -134,7 +134,7 @@
                             <ColumnDefinition Width="45"/>
                             <ColumnDefinition Width="55"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="95"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="条码" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="商品名称" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
@@ -158,7 +158,8 @@
                           BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                           BorderThickness="1,0,1,1"
                           CornerRadius="0,0,8,8"
-                          Padding="0">
+                          Padding="0"
+                          DoubleTapped="ProductListView_DoubleTapped">
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -169,6 +170,21 @@
                     <ListView.ItemTemplate>
                         <DataTemplate>
                             <Grid Padding="14,8">
+                                <Grid.ContextFlyout>
+                                    <MenuFlyout>
+                                        <MenuFlyoutItem Text="编辑商品" Click="EditProductMenuItem_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE70F;"/>
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                        <MenuFlyoutSeparator/>
+                                        <MenuFlyoutItem Text="删除商品" Click="DeleteProductMenuItem_Click">
+                                            <MenuFlyoutItem.Icon>
+                                                <FontIcon Glyph="&#xE74D;" Foreground="{ThemeResource CriticalTextBrush}"/>
+                                            </MenuFlyoutItem.Icon>
+                                        </MenuFlyoutItem>
+                                    </MenuFlyout>
+                                </Grid.ContextFlyout>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="120"/>
                                     <ColumnDefinition Width="2*"/>
@@ -180,7 +196,7 @@
                                     <ColumnDefinition Width="45"/>
                                     <ColumnDefinition Width="55"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="95"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="{Binding Barcode}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis"/>
@@ -193,16 +209,22 @@
                                 <TextBlock Grid.Column="8" Text="{Binding ShelfStatus}" VerticalAlignment="Center" FontSize="12"/>
                                 <TextBlock Grid.Column="9" Text="{Binding Supplier}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
                                 <!-- 操作按钮 -->
-                                <Button Grid.Column="10" 
-                                        Click="DeleteProductButton_Click"
-                                        Height="28" 
-                                        Padding="8,0" 
-                                        CornerRadius="4"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        ToolTipService.ToolTip="删除商品档案">
-                                    <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="{ThemeResource CriticalTextBrush}"/>
-                                </Button>
+                                <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Button Click="EditProductButton_Click"
+                                            Height="28" 
+                                            Padding="8,0" 
+                                            CornerRadius="4"
+                                            ToolTipService.ToolTip="编辑修改商品">
+                                        <FontIcon Glyph="&#xE70F;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                    </Button>
+                                    <Button Click="DeleteProductButton_Click"
+                                            Height="28" 
+                                            Padding="8,0" 
+                                            CornerRadius="4"
+                                            ToolTipService.ToolTip="删除商品档案">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="{ThemeResource CriticalTextBrush}"/>
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>

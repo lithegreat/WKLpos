@@ -10,10 +10,12 @@ namespace WanKePos.WinUI.Dialogs;
 public sealed partial class AddProductContentDialog : ContentDialog
 {
     public Product? CreatedProduct { get; private set; }
+    private readonly Product? _productToEdit;
 
-    public AddProductContentDialog(IEnumerable<string> existingCategories)
+    public AddProductContentDialog(IEnumerable<string> existingCategories, Product? productToEdit = null)
     {
         this.InitializeComponent();
+        _productToEdit = productToEdit;
 
         foreach (var cat in existingCategories)
         {
@@ -22,14 +24,55 @@ public sealed partial class AddProductContentDialog : ContentDialog
                 CategoryComboBox.Items.Add(cat);
             }
         }
-        if (CategoryComboBox.Items.Count > 0)
+
+        if (_productToEdit != null)
         {
-            CategoryComboBox.SelectedIndex = 0;
+            this.Title = "修改商品档案";
+            this.PrimaryButtonText = "保存修改";
+            StockLabelTextBlock.Text = "当前库存";
+
+            BarcodeTextBox.Text = _productToEdit.Barcode ?? string.Empty;
+            NameTextBox.Text = _productToEdit.Name ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(_productToEdit.StoreCategory))
+            {
+                if (!CategoryComboBox.Items.Contains(_productToEdit.StoreCategory))
+                {
+                    CategoryComboBox.Items.Add(_productToEdit.StoreCategory);
+                }
+                CategoryComboBox.SelectedItem = _productToEdit.StoreCategory;
+            }
+
+            SaleMethodComboBox.SelectedIndex = _productToEdit.SaleMethod == "称重售卖" ? 1 : 0;
+            ShelfStatusComboBox.SelectedIndex = _productToEdit.ShelfStatus == "已下架" ? 1 : 0;
+
+            RetailPriceTextBox.Text = _productToEdit.RetailPrice.ToString("0.##");
+            CostPriceTextBox.Text = _productToEdit.CostPrice > 0 ? _productToEdit.CostPrice.ToString("0.##") : string.Empty;
+            MemberPriceTextBox.Text = _productToEdit.MemberPrice.HasValue && _productToEdit.MemberPrice > 0 ? _productToEdit.MemberPrice.Value.ToString("0.##") : string.Empty;
+            StockTextBox.Text = _productToEdit.Stock.ToString("0.##");
+            SaleUnitTextBox.Text = _productToEdit.SaleUnit ?? "件";
+            SpecTextBox.Text = _productToEdit.Specification ?? string.Empty;
+            SupplierTextBox.Text = _productToEdit.Supplier ?? string.Empty;
+            BrandTextBox.Text = _productToEdit.Brand ?? string.Empty;
+        }
+        else
+        {
+            if (CategoryComboBox.Items.Count > 0)
+            {
+                CategoryComboBox.SelectedIndex = 0;
+            }
         }
 
         this.Loaded += (s, e) =>
         {
-            BarcodeTextBox.Focus(FocusState.Programmatic);
+            if (_productToEdit != null)
+            {
+                NameTextBox.Focus(FocusState.Programmatic);
+            }
+            else
+            {
+                BarcodeTextBox.Focus(FocusState.Programmatic);
+            }
         };
     }
 
@@ -75,28 +118,58 @@ public sealed partial class AddProductContentDialog : ContentDialog
         decimal.TryParse(StockTextBox.Text?.Trim(), out var stock);
         var saleUnit = string.IsNullOrWhiteSpace(SaleUnitTextBox.Text) ? "件" : SaleUnitTextBox.Text.Trim();
         var category = CategoryComboBox.Text?.Trim() ?? CategoryComboBox.SelectedItem?.ToString() ?? "美发用品";
+        var saleMethod = (SaleMethodComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "按件售卖";
+        var shelfStatus = (ShelfStatusComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "已上架";
 
-        CreatedProduct = new Product
+        if (_productToEdit != null)
         {
-            Barcode = barcode,
-            Name = name,
-            StoreCategory = category,
-            ProductType = "标品",
-            RetailPrice = retailPrice,
-            CostPrice = costPrice,
-            MemberPrice = memberPrice,
-            Stock = stock,
-            SaleUnit = saleUnit,
-            Specification = SpecTextBox.Text?.Trim(),
-            Supplier = SupplierTextBox.Text?.Trim(),
-            Brand = BrandTextBox.Text?.Trim(),
-            SaleMethod = (SaleMethodComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "按件售卖",
-            ShelfStatus = "已上架",
-            IsPointsEligible = true,
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
-            SyncStatus = SyncStatus.Pending
-        };
+            CreatedProduct = new Product
+            {
+                Id = _productToEdit.Id,
+                Barcode = barcode,
+                Name = name,
+                StoreCategory = category,
+                ProductType = _productToEdit.ProductType ?? "标品",
+                RetailPrice = retailPrice,
+                CostPrice = costPrice,
+                MemberPrice = memberPrice,
+                Stock = stock,
+                SaleUnit = saleUnit,
+                Specification = SpecTextBox.Text?.Trim(),
+                Supplier = SupplierTextBox.Text?.Trim(),
+                Brand = BrandTextBox.Text?.Trim(),
+                SaleMethod = saleMethod,
+                ShelfStatus = shelfStatus,
+                IsPointsEligible = _productToEdit.IsPointsEligible,
+                CreatedAt = _productToEdit.CreatedAt,
+                LastModified = DateTime.Now,
+                SyncStatus = SyncStatus.Pending
+            };
+        }
+        else
+        {
+            CreatedProduct = new Product
+            {
+                Barcode = barcode,
+                Name = name,
+                StoreCategory = category,
+                ProductType = "标品",
+                RetailPrice = retailPrice,
+                CostPrice = costPrice,
+                MemberPrice = memberPrice,
+                Stock = stock,
+                SaleUnit = saleUnit,
+                Specification = SpecTextBox.Text?.Trim(),
+                Supplier = SupplierTextBox.Text?.Trim(),
+                Brand = BrandTextBox.Text?.Trim(),
+                SaleMethod = saleMethod,
+                ShelfStatus = shelfStatus,
+                IsPointsEligible = true,
+                CreatedAt = DateTime.Now,
+                LastModified = DateTime.Now,
+                SyncStatus = SyncStatus.Pending
+            };
+        }
     }
 
     private void ShowError(string message)

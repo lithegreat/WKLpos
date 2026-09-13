@@ -85,4 +85,86 @@ public class ProductRepositoryTests
             connection.Dispose();
         }
     }
+
+    [Fact]
+    public async Task UpdateAsync_ShouldUpdateProductFields()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            var product = new Product
+            {
+                Barcode = "690001",
+                Name = "原始商品名",
+                StoreCategory = "洗护",
+                RetailPrice = 50.00m,
+                CostPrice = 25.00m,
+                Stock = 10,
+                SaleUnit = "瓶",
+                ShelfStatus = "已上架"
+            };
+            await repo.AddOrUpdateAsync(product);
+
+            // 修改商品属性
+            product.Name = "更新后的商品名";
+            product.RetailPrice = 58.00m;
+            product.CostPrice = 28.00m;
+            product.Stock = 15;
+            product.ShelfStatus = "已下架";
+
+            await repo.UpdateAsync(product);
+
+            var updated = await repo.GetByIdAsync(product.Id);
+            Assert.NotNull(updated);
+            Assert.Equal("更新后的商品名", updated.Name);
+            Assert.Equal(58.00m, updated.RetailPrice);
+            Assert.Equal(28.00m, updated.CostPrice);
+            Assert.Equal(15, updated.Stock);
+            Assert.Equal("已下架", updated.ShelfStatus);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DuplicateBarcode_ShouldThrowException()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            var product1 = new Product { Barcode = "690001", Name = "商品1", RetailPrice = 10m };
+            var product2 = new Product { Barcode = "690002", Name = "商品2", RetailPrice = 20m };
+            await repo.AddOrUpdateAsync(product1);
+            await repo.AddOrUpdateAsync(product2);
+
+            // 尝试把 product2 的条码改成 product1 的条码
+            product2.Barcode = "690001";
+            var ex = await Assert.ThrowsAsync<System.InvalidOperationException>(() => repo.UpdateAsync(product2));
+            Assert.Contains("已被其他商品使用", ex.Message);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NonExistentProduct_ShouldThrowException()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            var product = new Product { Id = 99999, Barcode = "99999", Name = "不存在的商品" };
+            await Assert.ThrowsAsync<System.InvalidOperationException>(() => repo.UpdateAsync(product));
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
 }

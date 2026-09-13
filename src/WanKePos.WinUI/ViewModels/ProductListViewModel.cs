@@ -32,6 +32,7 @@ public partial class ProductListViewModel : ObservableObject
 
     public Func<Task<string?>>? RequestOpenFileDialog { get; set; }
     public Func<Task<Product?>>? RequestAddProductDialog { get; set; }
+    public Func<Product, Task<Product?>>? RequestEditProductDialog { get; set; }
     public Func<string, string, Task<bool>>? RequestConfirm { get; set; }
     public Action<string, string>? ShowMessage { get; set; }
 
@@ -118,6 +119,31 @@ public partial class ProductListViewModel : ObservableObject
                 catch (Exception ex)
                 {
                     ShowMessage?.Invoke("保存失败", $"错误: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    [RelayCommand]
+    public async Task EditProductAsync(Product product)
+    {
+        if (product == null) return;
+
+        if (RequestEditProductDialog != null)
+        {
+            var updated = await RequestEditProductDialog.Invoke(product);
+            if (updated != null)
+            {
+                try
+                {
+                    await _productRepository.UpdateAsync(updated);
+                    ShowMessage?.Invoke("修改成功", $"商品【{updated.Name}】(条码: {updated.Barcode}) 信息已成功更新！");
+                    await ReloadAsync();
+                    WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
+                }
+                catch (Exception ex)
+                {
+                    ShowMessage?.Invoke("修改失败", $"错误: {ex.Message}");
                 }
             }
         }
