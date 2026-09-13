@@ -62,12 +62,13 @@ function Prune-UnusedLocales($targetDir) {
 }
 
 # 2. 编译并发布 WinUI 3 程序
-$env:PATH = [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 $dotnetCmd = "dotnet"
 if (Test-Path "$env:USERPROFILE\.dotnet\dotnet.exe") {
     $dotnetCmd = "$env:USERPROFILE\.dotnet\dotnet.exe"
     $env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"
     $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
+} else {
+    $env:PATH = "$env:PATH;" + [System.Environment]::GetEnvironmentVariable("PATH", "Machine") + ";" + [System.Environment]::GetEnvironmentVariable("PATH", "User")
 }
 
 # 检查源码或资产是否有变更（增量构建判断）
