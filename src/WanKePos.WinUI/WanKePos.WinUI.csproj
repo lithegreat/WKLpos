@@ -84,6 +84,9 @@
     <Page Include="Dialogs\PurchaseOrderDetailDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Dialogs\OrderDetailDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

@@ -96,5 +96,17 @@ namespace WanKePos.Infrastructure.Data.Repositories
                 await _context.SaveChangesAsync();
             }
         }
+
+        public async Task UpdateOrderAsync(Order order)
+        {
+            var existing = await _context.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == order.Id);
+            if (existing != null)
+            {
+                existing.PaymentMethod = order.PaymentMethod;
+                existing.Status = order.Status;
+                existing.Remark = order.Remark;
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

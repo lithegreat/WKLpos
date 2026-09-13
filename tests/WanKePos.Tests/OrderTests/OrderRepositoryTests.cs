@@ -66,4 +66,49 @@ public class OrderRepositoryTests
             connection.Dispose();
         }
     }
+
+    [Fact]
+    public async Task UpdateOrderAsync_ShouldUpdateStatusAndPaymentMethod()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var orderRepo = new OrderRepository(context);
+            var order = new Order
+            {
+                OrderNo = $"ORD{DateTime.Now:yyyyMMddHHmmss}002",
+                TotalAmount = 100.00m,
+                DiscountAmount = 0m,
+                PayableAmount = 100.00m,
+                PaymentMethod = PaymentMethod.Cash,
+                Status = OrderStatus.Normal,
+                Remark = "原始备注"
+            };
+
+            var created = await orderRepo.CreateAsync(order);
+            Assert.NotNull(created);
+
+            // 修改支付方式、状态和备注
+            created.PaymentMethod = PaymentMethod.MemberBalance;
+            created.Status = OrderStatus.Refunded;
+            created.Remark = "客户要求退款并改用余额记账";
+
+            await orderRepo.UpdateOrderAsync(created);
+
+            var updated = await orderRepo.GetByIdAsync(created.Id);
+            Assert.NotNull(updated);
+            Assert.Equal(PaymentMethod.MemberBalance, updated.PaymentMethod);
+            Assert.Equal(OrderStatus.Refunded, updated.Status);
+            Assert.Equal("客户要求退款并改用余额记账", updated.Remark);
+
+            // 验证已退款订单不计入当日正常营业汇总
+            var summary = await orderRepo.GetDailySummaryAsync(DateTime.Today);
+            Assert.Equal(0m, summary.totalSales);
+            Assert.Equal(0, summary.orderCount);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
 }

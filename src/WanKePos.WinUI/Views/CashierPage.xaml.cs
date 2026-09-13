@@ -87,11 +87,52 @@ namespace WanKePos.WinUI.Views
             }
         }
 
-        private void MemberPhoneTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        private async void MemberAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
-            if (e.Key == Windows.System.VirtualKey.Enter)
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                var query = sender.Text?.Trim();
+                if (string.IsNullOrWhiteSpace(query))
+                {
+                    sender.ItemsSource = null;
+                }
+                else
+                {
+                    var matches = await ViewModel.SuggestMembersAsync(query);
+                    sender.ItemsSource = matches;
+                }
+            }
+        }
+
+        private void MemberAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            if (args.SelectedItem is Member member)
+            {
+                sender.Text = member.Phone ?? string.Empty;
+                ViewModel.SelectMember(member);
+            }
+        }
+
+        private void MemberAutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+        {
+            if (args.ChosenSuggestion is Member member)
+            {
+                sender.Text = member.Phone ?? string.Empty;
+                ViewModel.SelectMember(member);
+            }
+            else
             {
                 ViewModel.SearchMemberCommand.Execute(null);
+            }
+        }
+
+        private void ClearMemberButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.ClearMemberCommand.Execute(null);
+            if (MemberAutoSuggestBox != null)
+            {
+                MemberAutoSuggestBox.Text = string.Empty;
+                MemberAutoSuggestBox.ItemsSource = null;
             }
         }
 

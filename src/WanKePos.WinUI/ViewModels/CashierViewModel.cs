@@ -266,21 +266,42 @@ namespace WanKePos.WinUI.ViewModels
             RecalculateTotals();
         }
 
+        public async Task<List<Member>> SuggestMembersAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return new List<Member>();
+            var list = await _memberRepo.SearchAsync(query.Trim());
+            return list.Where(m => m.Status == MemberStatusConstants.Normal).Take(10).ToList();
+        }
+
+        public void SelectMember(Member member)
+        {
+            if (member == null) return;
+            CurrentMember = member;
+            MemberPhoneInput = member.Phone ?? string.Empty;
+            foreach (var item in CartItems)
+            {
+                if (item.MemberPrice > 0)
+                    item.ActualPrice = item.MemberPrice;
+            }
+            RecalculateTotals();
+        }
+
         [RelayCommand]
         public async Task SearchMemberAsync()
         {
             if (string.IsNullOrWhiteSpace(MemberPhoneInput)) return;
 
-            var member = await _memberRepo.GetByPhoneAsync(MemberPhoneInput.Trim());
+            var keyword = MemberPhoneInput.Trim();
+            var member = await _memberRepo.GetByPhoneAsync(keyword);
+            if (member == null)
+            {
+                var matches = await _memberRepo.SearchAsync(keyword);
+                member = matches.FirstOrDefault(m => m.Status == MemberStatusConstants.Normal);
+            }
+
             if (member != null && member.Status == MemberStatusConstants.Normal)
             {
-                CurrentMember = member;
-                foreach (var item in CartItems)
-                {
-                    if (item.MemberPrice > 0)
-                        item.ActualPrice = item.MemberPrice;
-                }
-                RecalculateTotals();
+                SelectMember(member);
             }
             else
             {
@@ -354,6 +375,8 @@ namespace WanKePos.WinUI.ViewModels
                 await _memberRepo.UpdateBalanceAsync(CurrentMember.Id, -PayableAmount);
                 CurrentMember.Balance -= PayableAmount;
 
+                WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
+
                 ShowMessage?.Invoke("✅ 交易完成", $"余额支付成功！\n剩余余额: ¥{CurrentMember.Balance:F2}");
             }
         }
@@ -417,6 +440,11 @@ namespace WanKePos.WinUI.ViewModels
             {
                 await _memberRepo.UpdatePointsAsync(CurrentMember.Id, pointsEarned);
                 CurrentMember.TotalPoints += pointsEarned;
+            }
+
+            if (CurrentMember != null)
+            {
+                WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
             }
 
             try

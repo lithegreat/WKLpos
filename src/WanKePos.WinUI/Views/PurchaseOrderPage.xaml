@@ -711,15 +711,17 @@
                                                 <!-- 条码 -->
                                                 <TextBlock Grid.Column="0" 
                                                            Text="{Binding Barcode}" 
-                                                           FontSize="10" 
+                                                           FontSize="11" 
                                                            Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
                                                            VerticalAlignment="Center"/>
 
                                                 <!-- 进价输入 -->
-                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="3" VerticalAlignment="Center" Margin="0,0,8,0">
-                                                    <TextBlock Text="进价:" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                    <TextBlock Text="进价: ¥" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding CostPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                                             Width="60" Height="26" Padding="3,0" FontSize="11" CornerRadius="4"
+                                                             Width="72" Height="30" MinHeight="30" 
+                                                             Padding="6,0" FontSize="12" CornerRadius="4"
+                                                             VerticalContentAlignment="Center"
                                                              TextChanged="DraftCostPriceTextBox_TextChanged"
                                                              LostFocus="DraftCostPriceTextBox_LostFocus"
                                                              KeyDown="DraftNumericTextBox_KeyDown"/>
@@ -727,13 +729,16 @@
 
                                                 <!-- 数量步进器 -->
                                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
-                                                    <Button Content="-" Click="DecreaseDraftQuantityButton_Click" Height="26" Width="24" Padding="0" CornerRadius="3"/>
+                                                    <TextBlock Text="数量:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                                    <Button Content="-" Click="DecreaseDraftQuantityButton_Click" Height="30" Width="26" Padding="0" CornerRadius="4" FontSize="12"/>
                                                     <TextBox Text="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                                             Width="40" Height="26" TextAlignment="Center" Padding="1,0" FontSize="11" CornerRadius="3"
+                                                             Width="48" Height="30" MinHeight="30" 
+                                                             TextAlignment="Center" Padding="0" FontSize="12" CornerRadius="4"
+                                                             VerticalContentAlignment="Center"
                                                              TextChanged="DraftQuantityTextBox_TextChanged"
                                                              LostFocus="DraftQuantityTextBox_LostFocus"
                                                              KeyDown="DraftNumericTextBox_KeyDown"/>
-                                                    <Button Content="+" Click="IncreaseDraftQuantityButton_Click" Height="26" Width="24" Padding="0" CornerRadius="3"/>
+                                                    <Button Content="+" Click="IncreaseDraftQuantityButton_Click" Height="30" Width="26" Padding="0" CornerRadius="4" FontSize="12"/>
                                                 </StackPanel>
                                             </Grid>
                                         </Grid>

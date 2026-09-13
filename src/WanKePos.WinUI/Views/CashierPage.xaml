@@ -170,12 +170,44 @@
                     <TextBlock Text="收银购物车" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- 会员查找 -->
+                <!-- 会员查找 (实时联想下拉) -->
                 <StackPanel Grid.Row="1" Margin="0,0,0,10" Spacing="6">
-                    <TextBox Text="{Binding MemberPhoneInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                             PlaceholderText="输入手机号查找会员 (回车)" 
-                             Height="38"
-                             KeyDown="MemberPhoneTextBox_KeyDown"/>
+                    <AutoSuggestBox x:Name="MemberAutoSuggestBox" 
+                                    Text="{Binding MemberPhoneInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                    PlaceholderText="输入手机号/卡号/姓名 (下拉联想)" 
+                                    Height="38"
+                                    QueryIcon="Find"
+                                    TextChanged="MemberAutoSuggestBox_TextChanged"
+                                    SuggestionChosen="MemberAutoSuggestBox_SuggestionChosen"
+                                    QuerySubmitted="MemberAutoSuggestBox_QuerySubmitted">
+                        <AutoSuggestBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="6,4" MinWidth="260">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <TextBlock Text="{Binding Phone}" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding MemberNo}" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Spacing="2">
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="3">
+                                            <TextBlock Text="积分:" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding TotalPoints}" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="3">
+                                            <TextBlock Text="余额:" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                            <TextBlock Text="{Binding Balance, Converter={StaticResource CurrencyConverter}}" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource SuccessTextBrush}"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </AutoSuggestBox.ItemTemplate>
+                    </AutoSuggestBox>
 
                     <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -193,7 +225,7 @@
                                            Foreground="{ThemeResource SuccessTextBrush}"/>
                             </StackPanel>
                             <Button Content="清除" 
-                                    Command="{Binding ClearMemberCommand}" 
+                                    Click="ClearMemberButton_Click" 
                                     HorizontalAlignment="Right" 
                                     Padding="8,2" 
                                     FontSize="11"/>

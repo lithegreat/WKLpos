@@ -30,14 +30,35 @@ public partial class MemberListViewModel : ObservableObject
     {
         _memberRepository = memberRepository;
         _excelImporter = excelImporter;
+
+        WeakReferenceMessenger.Default.Register<MembersChangedMessage>(this, async (r, m) =>
+        {
+            if (_isInitialized)
+            {
+                await ReloadAsync();
+            }
+            else
+            {
+                _needsRefresh = true;
+            }
+        });
     }
 
     private bool _isInitialized;
+    private bool _needsRefresh;
 
     [RelayCommand]
     public async Task InitializeAsync()
     {
-        if (_isInitialized) return;
+        if (_isInitialized)
+        {
+            if (_needsRefresh)
+            {
+                _needsRefresh = false;
+                await ReloadAsync();
+            }
+            return;
+        }
         _isInitialized = true;
         await ReloadAsync();
     }
