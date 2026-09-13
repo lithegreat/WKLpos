@@ -173,6 +173,7 @@
                             <TextBlock x:Name="TotalQuantityTextBlock" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
                         </StackPanel>
 
+                        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="6">
                             <TextBlock Text="采购总金额:" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
                             <TextBlock x:Name="TotalAmountTextBlock" FontWeight="Bold" FontSize="15" Foreground="{ThemeResource PriceHighlightBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
