@@ -517,16 +517,35 @@
                             </StackPanel>
                         </Grid>
 
-                        <TextBox Header="供货商名称:" 
-                                 PlaceholderText="例如：广州博美美发用品有限公司" 
-                                 Text="{Binding SupplierInput, Mode=TwoWay}"
-                                 Height="30"
-                                 FontSize="12"/>
-                        <TextBox Header="采购备注:" 
-                                 PlaceholderText="例如：加急发货 / 纸箱包装" 
-                                 Text="{Binding RemarkInput, Mode=TwoWay}"
-                                 Height="30"
-                                 FontSize="12"/>
+                        <!-- 供货商名称输入 -->
+                        <Grid ColumnSpacing="8" Margin="0,2,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="供货商:" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBox x:Name="SupplierTextBox"
+                                     Grid.Column="1" 
+                                     PlaceholderText="例如：广州博美美发用品有限公司" 
+                                     Text="{Binding SupplierInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="12"
+                                     KeyDown="SupplierTextBox_KeyDown"/>
+                        </Grid>
+
+                        <!-- 采购备注输入 -->
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="备　注:" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBox x:Name="RemarkTextBox"
+                                     Grid.Column="1" 
+                                     PlaceholderText="例如：加急发货 / 纸箱包装 (可选)" 
+                                     Text="{Binding RemarkInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="12"
+                                     KeyDown="RemarkTextBox_KeyDown"/>
+                        </Grid>
                     </StackPanel>
 
                     <!-- 中部已选采购明细 -->

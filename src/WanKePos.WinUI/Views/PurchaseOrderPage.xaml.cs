@@ -309,6 +309,24 @@ public sealed partial class PurchaseOrderPage : Page
         }
     }
 
+    private void SupplierTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            RemarkTextBox.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+    }
+
+    private void RemarkTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            this.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+    }
+
     private void CreatePurchaseOrderButton_Click(object sender, RoutedEventArgs e)
     {
         this.Focus(FocusState.Programmatic);
