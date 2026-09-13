@@ -77,13 +77,17 @@
 - **每次做完更改并生成 Setup 程序后，必须自动运行安装程序并打开**，以便即时进行端到端体验与功能验收。
 - 执行打包发布与自动运行安装程序命令：
   ```powershell
+  # 默认极速增量模式（~15秒完成构建、打包与自启安装）：
   powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
+
+  # 正式发版极限压缩模式（生成 ~23.6MB 最小生产安装包）：
+  powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1 -Speed Max
   ```
-  该脚本已内置全流程自动化逻辑：
+  该脚本已内置全流程自动化与增量优化逻辑：
   1. 自动终止正在运行的 `WanKePos.WinUI` 进程，防止文件占用锁定；
-  2. 默认执行 WinUI 3 轻量框架依赖编译发布 (`dotnet publish -c Release -r win-x64 --self-contained false -o publish_winui_slim`)；
-  3. 清理临时锁与日志，并自动清洗剥除 80+ 个无用外语本地化 MUI 目录（仅保留简体中文）；
-  4. 自动定位 Inno Setup 编译器，生成单文件轻量安装包 `output_installer\WanKePos_Setup_v{version}.exe`（体积约 23.6 MB）；
+  2. **智能增量感知与发布**：自动比对 `src/` 源码及资产最后修改时间，源码未改动时跳过编译（耗时 0s）；改动时使用 `--no-restore` 执行快速增量编译；
+  3. 清理临时锁与日志，并自动清洗剥除 80+ 个无用外语本地化 MUI 目录（仅保留必要中文资源）；
+  4. 自动定位 Inno Setup 编译器，支持分级压缩（日常默认 `Fast` 仅需 ~6-7 秒，正式发版可指定 `-Speed Max` 深度压缩至 ~23.6 MB）；
   5. **自动启动运行生成的 Setup 安装程序并打开应用** (`Start-Process`)。
 
 ---

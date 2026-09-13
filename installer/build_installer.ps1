@@ -1,9 +1,14 @@
 ﻿param(
     [string]$Version = "0.2.0-preview",
-    [bool]$RunInstaller = $true,
+    $RunInstaller = $true,
     [ValidateSet("FrameworkDependent", "SelfContained", "Both")]
-    [string]$PackageMode = "FrameworkDependent"
+    [string]$PackageMode = "FrameworkDependent",
+    [ValidateSet("Fast", "Normal", "Max")]
+    [string]$Speed = "Fast",
+    [switch]$ForceRebuild = $false
 )
+
+$RunInstaller = [System.Convert]::ToBoolean($RunInstaller)
 
 # 规范化版本号 (移除前导 v 或 V)
 $cleanVersion = $Version.TrimStart('v', 'V')
@@ -17,10 +22,18 @@ $parts = $rawNumeric -split '\.'
 while ($parts.Length -lt 3) { $parts += "0" }
 $numericVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
 
+# 根据打包速度档位设置 Inno Setup 压缩级别
+$compressionLevel = switch ($Speed) {
+    "Fast"   { "lzma2/fast" }
+    "Normal" { "lzma2/normal" }
+    "Max"    { "lzma2/ultra64" }
+    Default  { "lzma2/fast" }
+}
+
 # 自动化构建万客隆 POS Windows Setup 安装包脚本
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "  万客隆 POS 系统 - Windows 安装包打包流水线" -ForegroundColor Cyan
-Write-Host "  目标版本: v$cleanVersion | 打包规格: $PackageMode" -ForegroundColor Cyan
+Write-Host "  目标版本: v$cleanVersion | 打包规格: $PackageMode | 压缩档位: $Speed ($compressionLevel)" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. 停止运行中的进程
@@ -57,39 +70,97 @@ if (Test-Path "$env:USERPROFILE\.dotnet\dotnet.exe") {
     $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
 }
 
-# 2.1 自包含版发布 (可选完整版 Self-Contained)
-if ($PackageMode -eq "SelfContained" -or $PackageMode -eq "Both") {
-    Write-Host "`n[1/3] 正在发布 WinUI 3 独立自包含免依赖程序 (Self-Contained)..." -ForegroundColor Yellow
-    & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$numericVersion /p:FileVersion=$numericVersion
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "自包含版本编译发布失败，请检查代码错误!" -ForegroundColor Red
-        exit 1
+# 检查源码或资产是否有变更（增量构建判断）
+function Test-ProjectNeedsPublish($targetDir) {
+    if ($ForceRebuild) { 
+        Write-Host "检测到 -ForceRebuild 参数，执行全量编译发布。" -ForegroundColor Gray
+        return $true 
+    }
+    $targetExe = Join-Path $targetDir "WanKePos.WinUI.exe"
+    $targetDll = Join-Path $targetDir "WanKePos.WinUI.dll"
+    if (-not (Test-Path $targetExe) -or -not (Test-Path $targetDll)) {
+        return $true
     }
 
-    # 清理临时锁文件、日志、PDB 与无用多语言资源
-    Remove-Item -Path "$rootDir\publish_winui\*.db-shm" -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "$rootDir\publish_winui\*.db-wal" -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "$rootDir\publish_winui\*.log" -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "$rootDir\publish_winui\*.pdb" -Force -ErrorAction SilentlyContinue
-    Prune-UnusedLocales "$rootDir\publish_winui"
+    try {
+        $fileVer = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($targetExe).FileVersion
+        if ($fileVer -ne $numericVersion) {
+            Write-Host "检测到版本号变更 ($fileVer -> $numericVersion)，执行重新编译。" -ForegroundColor Gray
+            return $true
+        }
+    } catch {
+        return $true
+    }
+
+    $targetTime = (Get-Item $targetDll).LastWriteTime
+
+    # 扫描 src 目录下的源码、配置与关键资产文件
+    $srcFiles = Get-ChildItem -Path "$rootDir\src" -Recurse -File -ErrorAction SilentlyContinue | Where-Object {
+        $_.Extension -in @(".cs", ".xaml", ".csproj", ".props", ".targets", ".json", ".manifest") -or 
+        $_.FullName -like "*\Templates\*" -or 
+        $_.FullName -like "*\Assets\*"
+    }
+
+    if ($srcFiles.Count -eq 0) { return $false }
+    $maxSrcTime = ($srcFiles | Measure-Object -Property LastWriteTime -Maximum).Maximum
+
+    if ($maxSrcTime -gt $targetTime) {
+        Write-Host "检测到源码或资产有更新 (代码更新: $($maxSrcTime.ToString('HH:mm:ss')), 上次发布: $($targetTime.ToString('HH:mm:ss')))，触发增量发布。" -ForegroundColor Gray
+        return $true
+    }
+
+    return $false
+}
+
+# 2.1 自包含版发布 (可选完整版 Self-Contained)
+if ($PackageMode -eq "SelfContained" -or $PackageMode -eq "Both") {
+    if (Test-ProjectNeedsPublish "$rootDir\publish_winui") {
+        Write-Host "`n[1/3] 正在发布 WinUI 3 独立自包含免依赖程序 (Self-Contained)..." -ForegroundColor Yellow
+        & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true --no-restore -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$numericVersion /p:FileVersion=$numericVersion
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "尝试全量还原发布..." -ForegroundColor Yellow
+            & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$numericVersion /p:FileVersion=$numericVersion
+        }
+
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "自包含版本编译发布失败，请检查代码错误!" -ForegroundColor Red
+            exit 1
+        }
+
+        # 清理临时锁文件、日志、PDB 与无用多语言资源
+        Remove-Item -Path "$rootDir\publish_winui\*.db-shm" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$rootDir\publish_winui\*.db-wal" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$rootDir\publish_winui\*.log" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$rootDir\publish_winui\*.pdb" -Force -ErrorAction SilentlyContinue
+        Prune-UnusedLocales "$rootDir\publish_winui"
+    } else {
+        Write-Host "`n[1/3] 增量检查: 源码与资产未变动，复用现有自包含发布产物 (耗时: 0s)。" -ForegroundColor Green
+    }
 }
 
 # 2.2 轻量框架依赖版发布 (默认发布规格: 极小体积 Framework-Dependent, ~23MB)
 if ($PackageMode -eq "FrameworkDependent" -or $PackageMode -eq "Both") {
-    Write-Host "`n[1/3] 正在发布 WinUI 3 轻量框架依赖程序 (Framework-Dependent)..." -ForegroundColor Yellow
-    & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained false -o publish_winui_slim /p:Version=$cleanVersion /p:AssemblyVersion=$numericVersion /p:FileVersion=$numericVersion
+    if (Test-ProjectNeedsPublish "$rootDir\publish_winui_slim") {
+        Write-Host "`n[1/3] 正在发布 WinUI 3 轻量框架依赖程序 (Framework-Dependent)..." -ForegroundColor Yellow
+        & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained false --no-restore -o publish_winui_slim /p:Version=$cleanVersion /p:AssemblyVersion=$numericVersion /p:FileVersion=$numericVersion
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "尝试全量还原发布..." -ForegroundColor Yellow
+            & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained false -o publish_winui_slim /p:Version=$cleanVersion /p:AssemblyVersion=$numericVersion /p:FileVersion=$numericVersion
+        }
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "轻量框架依赖版编译发布失败，请检查代码错误!" -ForegroundColor Red
-        exit 1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "轻量框架依赖版编译发布失败，请检查代码错误!" -ForegroundColor Red
+            exit 1
+        }
+
+        Remove-Item -Path "$rootDir\publish_winui_slim\*.db-shm" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$rootDir\publish_winui_slim\*.db-wal" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$rootDir\publish_winui_slim\*.log" -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "$rootDir\publish_winui_slim\*.pdb" -Force -ErrorAction SilentlyContinue
+        Prune-UnusedLocales "$rootDir\publish_winui_slim"
+    } else {
+        Write-Host "`n[1/3] 增量检查: 源码与资产未变动，复用现有轻量发布产物 (耗时: 0s)。" -ForegroundColor Green
     }
-
-    Remove-Item -Path "$rootDir\publish_winui_slim\*.db-shm" -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "$rootDir\publish_winui_slim\*.db-wal" -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "$rootDir\publish_winui_slim\*.log" -Force -ErrorAction SilentlyContinue
-    Remove-Item -Path "$rootDir\publish_winui_slim\*.pdb" -Force -ErrorAction SilentlyContinue
-    Prune-UnusedLocales "$rootDir\publish_winui_slim"
 }
 
 # 3. 定位 Inno Setup 编译器 ISCC.exe
@@ -144,33 +215,41 @@ if (-not (Test-Path "$rootDir\output_installer")) {
     New-Item -ItemType Directory -Path "$rootDir\output_installer" | Out-Null
 }
 
+# 确保目标发布目录无多余语言包干扰
+if ($PackageMode -eq "FrameworkDependent" -or $PackageMode -eq "Both") {
+    Prune-UnusedLocales "$rootDir\publish_winui_slim"
+}
+if ($PackageMode -eq "SelfContained" -or $PackageMode -eq "Both") {
+    Prune-UnusedLocales "$rootDir\publish_winui"
+}
+
 $outputBaseFilename = "WanKePos_Setup_v$cleanVersion"
 
 if ($PackageMode -eq "FrameworkDependent") {
-    Write-Host "--> 打包标准轻量安装包: $outputBaseFilename.exe" -ForegroundColor Cyan
-    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui_slim" "$rootDir\installer\WanKePosSetup.iss"
+    Write-Host "--> 打包标准轻量安装包: $outputBaseFilename.exe (压缩模式: $compressionLevel)" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui_slim" "/DCompressionLevel=$compressionLevel" "$rootDir\installer\WanKePosSetup.iss"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "生成轻量安装包失败!" -ForegroundColor Red
         exit 1
     }
 } elseif ($PackageMode -eq "SelfContained") {
-    Write-Host "--> 打包自包含安装包: $outputBaseFilename.exe" -ForegroundColor Cyan
-    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui" "$rootDir\installer\WanKePosSetup.iss"
+    Write-Host "--> 打包自包含安装包: $outputBaseFilename.exe (压缩模式: $compressionLevel)" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui" "/DCompressionLevel=$compressionLevel" "$rootDir\installer\WanKePosSetup.iss"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "生成自包含安装包失败!" -ForegroundColor Red
         exit 1
     }
 } elseif ($PackageMode -eq "Both") {
-    Write-Host "--> 打包标准轻量安装包: $outputBaseFilename.exe" -ForegroundColor Cyan
-    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui_slim" "$rootDir\installer\WanKePosSetup.iss"
+    Write-Host "--> 打包标准轻量安装包: $outputBaseFilename.exe (压缩模式: $compressionLevel)" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui_slim" "/DCompressionLevel=$compressionLevel" "$rootDir\installer\WanKePosSetup.iss"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "生成轻量安装包失败!" -ForegroundColor Red
         exit 1
     }
 
     $fullBaseFilename = "WanKePos_Setup_v${cleanVersion}_Full"
-    Write-Host "--> 打包自包含完整安装包: $fullBaseFilename.exe" -ForegroundColor Cyan
-    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$fullBaseFilename" "/DSourceDir=..\publish_winui" "$rootDir\installer\WanKePosSetup.iss"
+    Write-Host "--> 打包自包含完整安装包: $fullBaseFilename.exe (压缩模式: $compressionLevel)" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$fullBaseFilename" "/DSourceDir=..\publish_winui" "/DCompressionLevel=$compressionLevel" "$rootDir\installer\WanKePosSetup.iss"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "生成自包含安装包失败!" -ForegroundColor Red
         exit 1

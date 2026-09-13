@@ -13,6 +13,10 @@
   #define SourceDir "..\publish_winui_slim"
 #endif
 
+#ifndef CompressionLevel
+  #define CompressionLevel "lzma2/fast"
+#endif
+
 #define MyAppName "万客隆 POS 智能收银系统"
 #define MyAppPublisher "万客隆软件"
 #define MyAppExeName "WanKePos.WinUI.exe"
@@ -31,7 +35,7 @@ OutputDir=..\output_installer
 OutputBaseFilename={#OutputBaseFilename}
 SetupIconFile=pos_icon.ico
 UninstallDisplayIcon={app}\Assets\pos_icon.ico
-Compression=lzma2/ultra64
+Compression={#CompressionLevel}
 SolidCompression=yes
 ChangesAssociations=yes
 
