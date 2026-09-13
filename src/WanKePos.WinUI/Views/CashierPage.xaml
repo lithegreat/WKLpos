@@ -31,37 +31,24 @@
                     <FontIcon Glyph="&#xE8EC;" FontSize="15" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
                     <TextBlock Text="商品品类" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </StackPanel>
-                <ListView x:Name="CategoryListView"
-                          Grid.Row="1"
-                          ItemsSource="{Binding Categories}"
-                          SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
-                          SelectionChanged="CategoryListView_SelectionChanged"
-                          SelectionMode="Single"
-                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          Padding="0">
-                    <ListView.ItemContainerTransitions>
-                        <TransitionCollection>
-                            <EntranceThemeTransition FromVerticalOffset="16" IsStaggeringEnabled="True"/>
-                            <RepositionThemeTransition/>
-                        </TransitionCollection>
-                    </ListView.ItemContainerTransitions>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="MinHeight" Value="36"/>
-                            <Setter Property="Height" Value="36"/>
-                            <Setter Property="Padding" Value="12,0"/>
-                            <Setter Property="Margin" Value="0,0,0,3"/>
-                            <Setter Property="CornerRadius" Value="6"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                            <Setter Property="FontSize" Value="13"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" VerticalAlignment="Center" FontSize="13"/>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="CategoryItemsControl" ItemsSource="{Binding Categories}">
+                        <ItemsControl.ItemContainerTransitions>
+                            <TransitionCollection>
+                                <EntranceThemeTransition FromVerticalOffset="20" IsStaggeringEnabled="True"/>
+                                <RepositionThemeTransition/>
+                            </TransitionCollection>
+                        </ItemsControl.ItemContainerTransitions>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Content="{Binding}" 
+                                        Click="CategoryButton_Click" 
+                                        Style="{StaticResource CategoryItemButtonStyle}"
+                                        Margin="0,0,0,3"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
             </Grid>
         </Border>
 
@@ -79,14 +66,56 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- 扫码与搜索栏 -->
+                <!-- 扫码与搜索栏 + 当前分类指示胶囊 (带切换弹性微动效) -->
                 <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     <TextBox x:Name="BarcodeTextBox" 
+                             Grid.Column="0"
                              Text="{Binding BarcodeInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
                              PlaceholderText="输入条码/商品名后按回车，或使用扫码枪直接扫码" 
                              FontSize="14" 
                              Height="42" 
                              KeyDown="BarcodeTextBox_KeyDown"/>
+                    <Border Grid.Column="1"
+                            x:Name="CurrentCategoryBadge"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="12"
+                            Padding="12,4"
+                            VerticalAlignment="Center"
+                            Margin="10,0,0,0"
+                            RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <CompositeTransform x:Name="CategoryBadgeTransform" ScaleX="1" ScaleY="1"/>
+                        </Border.RenderTransform>
+                        <Border.Resources>
+                            <Storyboard x:Name="CategoryBadgePulseStoryboard">
+                                <DoubleAnimation Storyboard.TargetName="CategoryBadgeTransform"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 From="0.86" To="1.0" Duration="0:0:0.25">
+                                    <DoubleAnimation.EasingFunction>
+                                        <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetName="CategoryBadgeTransform"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 From="0.86" To="1.0" Duration="0:0:0.25">
+                                    <DoubleAnimation.EasingFunction>
+                                        <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </Border.Resources>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE8EC;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                            <TextBlock Text="当前分类:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="{Binding SelectedCategory}" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource PriceHighlightBrush}"/>
+                        </StackPanel>
+                    </Border>
                 </Grid>
 
                 <!-- 商品卡片列表 (带品类切换丝滑动效) -->

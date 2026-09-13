@@ -428,6 +428,7 @@ namespace WanKePos.WinUI.ViewModels
             };
 
             await _orderRepo.CreateAsync(order);
+            WeakReferenceMessenger.Default.Send(new OrdersChangedMessage(order.Id));
 
             // 批量扣减库存并立即刷新收银台与商品管理页
             var stockChanges = CartItems.ToDictionary(ci => ci.ProductId, ci => -ci.Quantity);

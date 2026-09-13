@@ -37,7 +37,7 @@ namespace WanKePos.WinUI.ViewModels
         [NotifyPropertyChangedFor(nameof(SalesCardTitle))]
         [NotifyPropertyChangedFor(nameof(OrderCountCardTitle))]
         [NotifyPropertyChangedFor(nameof(ProfitCardTitle))]
-        private DateTimeOffset? _selectedDate = DateTimeOffset.Now;
+        private DateTimeOffset? _selectedDate = DateTimeOffset.Now.Date;
 
         public bool IsToday => SelectedDate.HasValue && SelectedDate.Value.Date == DateTime.Today;
         public string DateTitleText => SelectedDate.HasValue ? (IsToday ? "今日" : SelectedDate.Value.ToString("yyyy-MM-dd ")) : "当日";
@@ -63,57 +63,97 @@ namespace WanKePos.WinUI.ViewModels
             _memberRepository = memberRepository;
             _settingsRepository = settingsRepository;
             _printer = printer;
+
+            WeakReferenceMessenger.Default.Register<OrdersChangedMessage>(this, async (r, m) =>
+            {
+                if (_isInitialized)
+                {
+                    if (IsToday)
+                    {
+                        await RefreshAsync();
+                    }
+                    else
+                    {
+                        _needsRefresh = true;
+                    }
+                }
+                else
+                {
+                    _needsRefresh = true;
+                }
+            });
         }
 
         private bool _isInitialized;
+        private bool _needsRefresh;
+        private int _queryVersion;
 
         [RelayCommand]
         public async Task InitializeAsync()
         {
-            _isInitialized = true;
+            if (_isInitialized)
+            {
+                if (_needsRefresh)
+                {
+                    _needsRefresh = false;
+                    await RefreshAsync();
+                }
+                return;
+            }
             await RefreshAsync();
         }
 
         async partial void OnSelectedDateChanged(DateTimeOffset? value)
         {
-            if (_isInitialized)
-            {
-                await RefreshAsync();
-            }
+            await RefreshAsync();
         }
 
         [RelayCommand]
         public void PreviousDay()
         {
-            SelectedDate = (SelectedDate ?? DateTimeOffset.Now).AddDays(-1);
+            SelectedDate = (SelectedDate ?? DateTimeOffset.Now.Date).Date.AddDays(-1);
         }
 
         [RelayCommand]
         public void NextDay()
         {
-            SelectedDate = (SelectedDate ?? DateTimeOffset.Now).AddDays(1);
+            SelectedDate = (SelectedDate ?? DateTimeOffset.Now.Date).Date.AddDays(1);
         }
 
         [RelayCommand]
         public void GoToToday()
         {
-            SelectedDate = DateTimeOffset.Now;
+            SelectedDate = DateTimeOffset.Now.Date;
         }
 
         [RelayCommand]
         public async Task RefreshAsync()
         {
-            var date = (SelectedDate ?? DateTimeOffset.Now).DateTime.Date;
-            var nextDate = date.AddDays(1);
+            _isInitialized = true;
+            var currentVersion = ++_queryVersion;
 
-            var orders = await _orderRepository.GetByDateRangeAsync(date, nextDate);
+            var date = (SelectedDate ?? DateTimeOffset.Now.Date).DateTime.Date;
+            var nextDate = date.AddDays(1).AddTicks(-1);
+
+            var ordersTask = _orderRepository.GetByDateRangeAsync(date, nextDate);
+            var summaryTask = _orderRepository.GetDailySummaryAsync(date);
+
+            await Task.WhenAll(ordersTask, summaryTask);
+
+            if (currentVersion != _queryVersion)
+            {
+                return;
+            }
+
+            var orders = await ordersTask;
+            var summary = await summaryTask;
+
             Orders.Clear();
             foreach (var o in orders)
             {
                 Orders.Add(o);
             }
 
-            var summary = await _orderRepository.GetDailySummaryAsync(date);
             SelectedDateTotalSales = summary.totalSales;
             SelectedDateOrderCount = summary.orderCount;
             SelectedDateProfit = summary.totalProfit;
@@ -176,6 +216,7 @@ namespace WanKePos.WinUI.ViewModels
 
                         // 保存订单状态与信息到数据库
                         await _orderRepository.UpdateOrderAsync(fullOrder);
+                        WeakReferenceMessenger.Default.Send(new OrdersChangedMessage(fullOrder.Id));
                         ShowMessage?.Invoke("保存成功", $"订单【{fullOrder.OrderNo}】信息已成功更新。");
 
                         await RefreshAsync();

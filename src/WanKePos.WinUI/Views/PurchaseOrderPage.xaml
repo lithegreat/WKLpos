@@ -356,6 +356,12 @@
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <ItemsControl x:Name="CategoryItemsControl" ItemsSource="{Binding Categories}">
+                            <ItemsControl.ItemContainerTransitions>
+                                <TransitionCollection>
+                                    <EntranceThemeTransition FromVerticalOffset="20" IsStaggeringEnabled="True"/>
+                                    <RepositionThemeTransition/>
+                                </TransitionCollection>
+                            </ItemsControl.ItemContainerTransitions>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button Content="{Binding}" 
@@ -401,14 +407,38 @@
                                             QuerySubmitted="ProductSearchBox_QuerySubmitted"/>
                             <Button Content="重置" Command="{Binding ResetProductSearchCommand}" Height="32" Padding="10,0" CornerRadius="4"/>
 
-                            <!-- 当前分类指示胶囊 -->
-                            <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                            <!-- 当前分类指示胶囊 (带切换弹性微动效) -->
+                            <Border x:Name="CurrentCategoryBadge"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                                     BorderThickness="1" 
                                     CornerRadius="10" 
                                     Padding="8,2" 
-                                    VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                    VerticalAlignment="Center"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <CompositeTransform x:Name="CategoryBadgeTransform" ScaleX="1" ScaleY="1"/>
+                                </Border.RenderTransform>
+                                <Border.Resources>
+                                    <Storyboard x:Name="CategoryBadgePulseStoryboard">
+                                        <DoubleAnimation Storyboard.TargetName="CategoryBadgeTransform"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         From="0.86" To="1.0" Duration="0:0:0.25">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="CategoryBadgeTransform"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         From="0.86" To="1.0" Duration="0:0:0.25">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </Border.Resources>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <FontIcon Glyph="&#xE8EC;" FontSize="10" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
                                     <TextBlock Text="分类:" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                     <TextBlock Text="{Binding SelectedCategory}" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
                                 </StackPanel>
@@ -436,93 +466,122 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- 商品列表 (卡片行布局：商品名全展开换行不折叠，价格库存清晰，采购按钮大号独立) -->
-                    <ListView Grid.Row="1" 
-                              ItemsSource="{Binding AvailableProducts}" 
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              SelectionMode="None"
-                              Padding="0">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="Padding" Value="0"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
-                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
-                                        BorderThickness="1" 
-                                        CornerRadius="6" 
-                                        Padding="10,8" 
-                                        Margin="0,0,0,5"
-                                        DoubleTapped="ProductRow_DoubleTapped">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*" />     <!-- 商品名称与分类条码 -->
-                                            <ColumnDefinition Width="Auto" />  <!-- 进货价与库存 -->
-                                            <ColumnDefinition Width="Auto" />  <!-- 采购按钮 -->
-                                        </Grid.ColumnDefinitions>
+                    <!-- 商品列表 (卡片行布局 + 切换分类流畅入场过渡) -->
+                    <Grid Grid.Row="1">
+                        <Grid.Resources>
+                            <Storyboard x:Name="AvailableProductsEntranceStoryboard">
+                                <DoubleAnimation Storyboard.TargetName="AvailableProductsTranslate"
+                                                 Storyboard.TargetProperty="Y"
+                                                 From="14" To="0" Duration="0:0:0.22">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetName="AvailableProductsListView"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 From="0.3" To="1" Duration="0:0:0.2">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </Grid.Resources>
+                        <ListView x:Name="AvailableProductsListView"
+                                  ItemsSource="{Binding AvailableProducts}" 
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  SelectionMode="None"
+                                  Padding="0">
+                            <ListView.RenderTransform>
+                                <TranslateTransform x:Name="AvailableProductsTranslate" Y="0"/>
+                            </ListView.RenderTransform>
+                            <ListView.ItemContainerTransitions>
+                                <TransitionCollection>
+                                    <EntranceThemeTransition FromVerticalOffset="16" IsStaggeringEnabled="True"/>
+                                    <RepositionThemeTransition/>
+                                </TransitionCollection>
+                            </ListView.ItemContainerTransitions>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="6" 
+                                            Padding="10,8" 
+                                            Margin="0,0,0,5"
+                                            DoubleTapped="ProductRow_DoubleTapped">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />     <!-- 商品名称与分类条码 -->
+                                                <ColumnDefinition Width="Auto" />  <!-- 进货价与库存 -->
+                                                <ColumnDefinition Width="Auto" />  <!-- 采购按钮 -->
+                                            </Grid.ColumnDefinitions>
 
-                                        <!-- 左侧：商品名称 (全宽展开，TextWrapping="Wrap"，绝不折叠截断) -->
-                                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="4" Margin="0,0,10,0">
-                                            <TextBlock Text="{Binding Name}" 
-                                                       FontWeight="SemiBold" 
-                                                       FontSize="13" 
-                                                       TextWrapping="Wrap"
-                                                       ToolTipService.ToolTip="{Binding Name}"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                                <!-- 条码 -->
-                                                <Border Background="{ThemeResource PillNeutralBackgroundBrush}" CornerRadius="3" Padding="5,1">
-                                                    <TextBlock Text="{Binding Barcode}" FontSize="10" Foreground="{ThemeResource PillNeutralForegroundBrush}"/>
-                                                </Border>
-                                                <!-- 分类 -->
-                                                <Border Background="{ThemeResource PillInfoBackgroundBrush}" CornerRadius="3" Padding="5,1">
-                                                    <TextBlock Text="{Binding StoreCategory}" FontSize="10" Foreground="{ThemeResource PillInfoForegroundBrush}"/>
-                                                </Border>
-                                                <!-- 供应商 (如有) -->
-                                                <TextBlock Text="{Binding Supplier}" 
-                                                           FontSize="10" 
-                                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
-                                                           VerticalAlignment="Center" 
-                                                           TextTrimming="CharacterEllipsis" 
-                                                           MaxWidth="110"/>
+                                            <!-- 左侧：商品名称 (全宽展开，TextWrapping="Wrap"，绝不折叠截断) -->
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="{Binding Name}" 
+                                                           FontWeight="SemiBold" 
+                                                           FontSize="13" 
+                                                           TextWrapping="Wrap"
+                                                           ToolTipService.ToolTip="{Binding Name}"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <!-- 条码 -->
+                                                    <Border Background="{ThemeResource PillNeutralBackgroundBrush}" CornerRadius="3" Padding="5,1">
+                                                        <TextBlock Text="{Binding Barcode}" FontSize="10" Foreground="{ThemeResource PillNeutralForegroundBrush}"/>
+                                                    </Border>
+                                                    <!-- 分类 -->
+                                                    <Border Background="{ThemeResource PillInfoBackgroundBrush}" CornerRadius="3" Padding="5,1">
+                                                        <TextBlock Text="{Binding StoreCategory}" FontSize="10" Foreground="{ThemeResource PillInfoForegroundBrush}"/>
+                                                    </Border>
+                                                    <!-- 供应商 (如有) -->
+                                                    <TextBlock Text="{Binding Supplier}" 
+                                                               FontSize="10" 
+                                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
+                                                               VerticalAlignment="Center" 
+                                                               TextTrimming="CharacterEllipsis" 
+                                                               MaxWidth="110"/>
+                                                </StackPanel>
                                             </StackPanel>
-                                        </StackPanel>
 
-                                        <!-- 中间：进货价与当前库存 -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0" HorizontalAlignment="Right" Spacing="2">
-                                            <TextBlock Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" 
-                                                       FontWeight="Bold" 
-                                                       FontSize="14" 
-                                                       Foreground="{ThemeResource PriceHighlightBrush}" 
-                                                       HorizontalAlignment="Right"/>
-                                            <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
-                                                <TextBlock Text="库存:" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
-                                                <TextBlock Text="{Binding Stock}" FontSize="10" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                                <TextBlock Text="{Binding SaleUnit}" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                                            <!-- 中间：进货价与当前库存 -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0" HorizontalAlignment="Right" Spacing="2">
+                                                <TextBlock Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" 
+                                                           FontWeight="Bold" 
+                                                           FontSize="14" 
+                                                           Foreground="{ThemeResource PriceHighlightBrush}" 
+                                                           HorizontalAlignment="Right"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
+                                                    <TextBlock Text="库存:" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                                                    <TextBlock Text="{Binding Stock}" FontSize="10" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                    <TextBlock Text="{Binding SaleUnit}" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                                                </StackPanel>
                                             </StackPanel>
-                                        </StackPanel>
 
-                                        <!-- 右侧：采购按钮 (独立宽幅，清晰可见，绝不折叠) -->
-                                        <Button Grid.Column="2" 
-                                                Click="AddProductToDraftButton_Click"
-                                                Style="{StaticResource AccentButtonStyle}"
-                                                Height="30" 
-                                                MinWidth="70"
-                                                Padding="8,0" 
-                                                CornerRadius="4"
-                                                VerticalAlignment="Center">
-                                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                                <FontIcon Glyph="&#xE710;" FontSize="10"/>
-                                                <TextBlock Text="采购" FontSize="12" FontWeight="SemiBold"/>
-                                            </StackPanel>
-                                        </Button>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                                            <!-- 右侧：采购按钮 (独立宽幅，清晰可见，绝不折叠) -->
+                                            <Button Grid.Column="2" 
+                                                    Click="AddProductToDraftButton_Click"
+                                                    Style="{StaticResource AccentButtonStyle}"
+                                                    Height="30" 
+                                                    MinWidth="70"
+                                                    Padding="8,0" 
+                                                    CornerRadius="4"
+                                                    VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <FontIcon Glyph="&#xE710;" FontSize="10"/>
+                                                    <TextBlock Text="采购" FontSize="12" FontWeight="SemiBold"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
                 </Grid>
             </Border>
 

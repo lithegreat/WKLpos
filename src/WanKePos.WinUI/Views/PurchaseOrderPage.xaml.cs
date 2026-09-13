@@ -312,7 +312,18 @@ public sealed partial class PurchaseOrderPage : Page
         {
             await ViewModel.FilterByCategoryAsync(category);
             UpdateCategoryButtonsHighlight();
+            PlayCategorySwitchAnimation();
         }
+    }
+
+    public void PlayCategorySwitchAnimation()
+    {
+        try
+        {
+            AvailableProductsEntranceStoryboard?.Begin();
+            CategoryBadgePulseStoryboard?.Begin();
+        }
+        catch { }
     }
 
     private void UpdateCategoryButtonsHighlight()

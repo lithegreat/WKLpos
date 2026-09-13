@@ -25,7 +25,7 @@ namespace WanKePos.WinUI.Views
 
             this.Loaded += async (s, e) =>
             {
-                await ViewModel.RefreshAsync();
+                await ViewModel.InitializeAsync();
             };
         }
 

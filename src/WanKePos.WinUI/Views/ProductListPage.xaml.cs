@@ -121,7 +121,18 @@ public sealed partial class ProductListPage : Page
         {
             await ViewModel.FilterByCategoryAsync(category);
             UpdateCategoryButtonsHighlight();
+            PlayCategorySwitchAnimation();
         }
+    }
+
+    public void PlayCategorySwitchAnimation()
+    {
+        try
+        {
+            ProductTableEntranceStoryboard?.Begin();
+            CategoryBadgePulseStoryboard?.Begin();
+        }
+        catch { }
     }
 
     private void UpdateCategoryButtonsHighlight()
