@@ -50,13 +50,14 @@ public class AiPurchaseOrderParser
    - quantity 必须提取为最小库存销售单位的数字（如“支”、“瓶”、“盒”、“件”）。
    - 若单据底部注有大件换算（例如“共840支 7件”），数量提取为 840，单位填“支”；整件说明可记录在 remark 中。
 
-6. 算术核验与金额反算（极其关键）：
-   - 手写数字若字迹潦草难以分辨（例如 1 与 7，0 与 6 或 8，3 与 5），必须通过公式：
-     【单价 × 数量 = 小计】反推校验，确保乘积精确无误！
-   - 若单据未逐行写单价，但单据段落或底部【圈出总金额】（例如圈出 2340、5280）：
-     请反算单价：costPrice = round(该段总金额 / 该段总数量, 2)，并计算 subtotal；若完全无金额信息则填 0。
+6. 算术核验、进货价与单据金额规则（极其关键）：
+   - 【未写明细单价的手写单】（如常见的多栏色号订货单只书写了色号和数量，未逐行写单价）：
+     明细 items 中的 costPrice 与 subtotal 请全部填 0！
+     【绝密警告】：严禁使用圈出总金额除以数量去强行反算平均单价！系统在导入时会自动精准匹配店铺本地商品库中已维护的历史真实进价（如 3.90、4.00 等），强行反算会破坏真实进价与小计算术！
+   - 【有明确逐行单价的单据】：按书写数值提取单价，并通过【单价 × 数量 = 小计】校验。
+   - 单据底部或段落圈出的总额（如圈定 2340、5280，总计 7620）：
+     直接如实记录在单据表头的 totalAmount 中，并在 remark 备注中详细注明（如“新发芯圈定2340，汇纯圈定5280”），仅供核对参考。
    - totalQuantity 必须精确等于所有 items 的 quantity 之和。
-   - totalAmount 必须精确等于所有 items 的 subtotal 之和，并与单据底部的“合计/总计/圈定总额”严格核对一致。
 
 7. 输出要求：
    - 必须且仅输出标准 JSON 格式数据，不得包含任何开场白、解释性废话或额外问候语。
@@ -65,7 +66,7 @@ public class AiPurchaseOrderParser
 {
   ""supplier"": ""广州博美美发用品有限公司"",
   ""orderDate"": ""2026-09-12"",
-  ""remark"": ""手写单拍照识别（新发芯840支/7件，汇纯1560支/13件，合计20件）"",
+  ""remark"": ""手写单拍照识别（新发芯840支/7件圈定2340，汇纯1560支/13件圈定5280，合计20件）"",
   ""totalQuantity"": 2400,
   ""totalAmount"": 7620.00,
   ""items"": [
@@ -74,36 +75,36 @@ public class AiPurchaseOrderParser
       ""name"": ""新发芯单支染膏 607-74"",
       ""specification"": ""607-74"",
       ""saleUnit"": ""支"",
-      ""costPrice"": 2.79,
+      ""costPrice"": 0,
       ""quantity"": 40,
-      ""subtotal"": 111.43
+      ""subtotal"": 0
     },
     {
       ""barcode"": """",
       ""name"": ""新发芯单支染膏 4/0"",
       ""specification"": ""4/0"",
       ""saleUnit"": ""支"",
-      ""costPrice"": 2.79,
+      ""costPrice"": 0,
       ""quantity"": 120,
-      ""subtotal"": 334.29
+      ""subtotal"": 0
     },
     {
       ""barcode"": """",
       ""name"": ""汇纯单支染膏 d27"",
       ""specification"": ""d27"",
       ""saleUnit"": ""支"",
-      ""costPrice"": 3.38,
+      ""costPrice"": 0,
       ""quantity"": 20,
-      ""subtotal"": 67.69
+      ""subtotal"": 0
     },
     {
       ""barcode"": """",
       ""name"": ""汇纯单支染膏 4/77"",
       ""specification"": ""4/77"",
       ""saleUnit"": ""支"",
-      ""costPrice"": 3.38,
+      ""costPrice"": 0,
       ""quantity"": 80,
-      ""subtotal"": 270.77
+      ""subtotal"": 0
     }
   ]
 }";
@@ -253,6 +254,11 @@ public class AiPurchaseOrderParser
         }
 
         dto.Items = validItems;
+
+        for (int i = 0; i < dto.Items.Count; i++)
+        {
+            dto.Items[i].Index = i + 1;
+        }
 
         var calculatedTotalQty = dto.Items.Sum(i => i.Quantity);
         var calculatedTotalAmt = dto.Items.Sum(i => i.Subtotal);

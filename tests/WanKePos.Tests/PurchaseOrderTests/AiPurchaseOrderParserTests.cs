@@ -1,7 +1,10 @@
 using System;
 using System.Linq;
+using WanKePos.Domain.Models;
+using Microsoft.EntityFrameworkCore;
 using WanKePos.Infrastructure.Import;
 using Xunit;
+using YamlDotNet.Serialization;
 
 namespace WanKePos.Tests.PurchaseOrderTests;
 
@@ -54,6 +57,8 @@ public class AiPurchaseOrderParserTests
         Assert.Equal(750.00m, result.Items[0].Subtotal);
         Assert.Equal(50m, result.TotalQuantity);
         Assert.Equal(1250.00m, result.TotalAmount);
+        Assert.Equal(1, result.Items[0].Index);
+        Assert.Equal(2, result.Items[1].Index);
     }
 
     [Fact]
@@ -331,6 +336,37 @@ items:
         Assert.Equal("4/0", result.Items[1].Specification);
         Assert.Equal("汇纯单支染膏 4/77", result.Items[2].Name);
         Assert.Equal(200m, result.TotalQuantity);
+    }
+
+    [Fact]
+    public void Parse_WhenItemsHaveZeroCostPrice_ShouldPreserveZeroWithoutError()
+    {
+        var zeroCostJson = @"
+{
+  ""supplier"": ""广州博美美发用品有限公司"",
+  ""orderDate"": ""2026-09-12"",
+  ""remark"": ""手写单未写单价，圈定2340"",
+  ""totalQuantity"": 40,
+  ""totalAmount"": 2340.00,
+  ""items"": [
+    {
+      ""name"": ""新发芯单支染膏 607-74"",
+      ""specification"": ""607-74"",
+      ""saleUnit"": ""支"",
+      ""costPrice"": 0,
+      ""quantity"": 40,
+      ""subtotal"": 0
+    }
+  ]
+}";
+
+        var result = _parser.Parse(zeroCostJson);
+        Assert.NotNull(result);
+        Assert.Single(result.Items);
+        Assert.Equal(0m, result.Items[0].CostPrice);
+        Assert.Equal(0m, result.Items[0].Subtotal);
+        Assert.Equal(40m, result.Items[0].Quantity);
+        Assert.Equal(2340.00m, result.TotalAmount);
     }
 }
 

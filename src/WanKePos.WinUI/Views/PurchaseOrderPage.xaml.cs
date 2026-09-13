@@ -52,7 +52,8 @@ public sealed partial class PurchaseOrderPage : Page
 
     private async Task<AiPurchaseOrderDto?> ShowAiImportDialogAsync()
     {
-        var dialog = new AiImportPurchaseOrderContentDialog
+        var allProducts = await ViewModel.GetAllProductsAsync();
+        var dialog = new AiImportPurchaseOrderContentDialog(allProducts)
         {
             XamlRoot = this.XamlRoot,
             RequestedTheme = this.ActualTheme

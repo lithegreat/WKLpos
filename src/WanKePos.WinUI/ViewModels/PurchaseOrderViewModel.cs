@@ -13,6 +13,7 @@ using WanKePos.Domain.Entities;
 using WanKePos.Domain.Enums;
 using WanKePos.Domain.Interfaces;
 using WanKePos.Domain.Models;
+using WanKePos.Domain.Services;
 using WanKePos.Infrastructure.Export;
 using WanKePos.WinUI.Messages;
 using WanKePos.WinUI.Models;
@@ -529,6 +530,12 @@ public partial class PurchaseOrderViewModel : ObservableObject
         await ProcessAiImportedOrderAsync(dto);
     }
 
+    public async Task<List<Product>> GetAllProductsAsync()
+    {
+        var products = await _productRepo.GetAllAsync();
+        return products.ToList();
+    }
+
     public async Task ProcessAiImportedOrderAsync(AiPurchaseOrderDto dto)
     {
         if (dto == null || dto.Items.Count == 0) return;
@@ -549,7 +556,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
         }
 
         // 2. 匹配已有商品库或自动为新商品建档
-        var allProducts = await _productRepo.GetAllAsync();
+        var allProducts = (await _productRepo.GetAllAsync()).ToList();
         var barcodeDict = allProducts
             .Where(p => !string.IsNullOrWhiteSpace(p.Barcode))
             .ToDictionary(p => p.Barcode, p => p);
@@ -564,19 +571,30 @@ public partial class PurchaseOrderViewModel : ObservableObject
         {
             Product? targetProduct = null;
 
-            // 优先按条码匹配
+            // 优先按条码精确匹配
             if (!string.IsNullOrWhiteSpace(item.Barcode) && barcodeDict.TryGetValue(item.Barcode, out var byBarcode))
             {
                 targetProduct = byBarcode;
                 matchedCount++;
             }
-            // 其次按商品名称匹配
+            // 其次按商品名称完全匹配
             else if (!string.IsNullOrWhiteSpace(item.Name) && nameDict.TryGetValue(item.Name, out var byName))
             {
                 targetProduct = byName;
                 matchedCount++;
             }
+            // 再次通过 ProductMatcher 智能模糊匹配（多栏色号、品牌别名、规格代码）
             else
+            {
+                var matched = ProductMatcher.Match(item, allProducts);
+                if (matched != null)
+                {
+                    targetProduct = matched;
+                    matchedCount++;
+                }
+            }
+
+            if (targetProduct == null)
             {
                 // 本地库未找到该商品：自动在商品库中建档预存，分配条码
                 var newBarcode = !string.IsNullOrWhiteSpace(item.Barcode)
@@ -590,7 +608,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
                     Specification = item.Specification,
                     SaleUnit = string.IsNullOrWhiteSpace(item.SaleUnit) ? "件" : item.SaleUnit,
                     CostPrice = item.CostPrice,
-                    RetailPrice = Math.Round(item.CostPrice * 1.35m, 2), // 默认预设参考售价
+                    RetailPrice = item.CostPrice > 0 ? Math.Round(item.CostPrice * 1.35m, 2) : 0,
                     Stock = 0,
                     StoreCategory = "其他",
                     Supplier = dto.Supplier,
@@ -606,17 +624,24 @@ public partial class PurchaseOrderViewModel : ObservableObject
                 // 注册到本地字典防止同单内重复项二次创建
                 barcodeDict[targetProduct.Barcode] = targetProduct;
                 nameDict[targetProduct.Name] = targetProduct;
+                allProducts.Add(targetProduct);
                 newProductCount++;
             }
+
+            // 进价决策：如果目标商品在商品库中有真实进价（>0），优先沿用商品库内的真实进价；
+            // 只有当商品库内进价为0且单据中明确有进价时，才使用单据进价
+            decimal resolvedCostPrice = targetProduct.CostPrice > 0 
+                ? targetProduct.CostPrice 
+                : (item.CostPrice > 0 ? item.CostPrice : 0);
 
             // 加入待制采购明细 (CartItems)
             var existingCartItem = CartItems.FirstOrDefault(c => c.ProductId == targetProduct.Id);
             if (existingCartItem != null)
             {
                 existingCartItem.Quantity += item.Quantity;
-                if (item.CostPrice > 0)
+                if (resolvedCostPrice > 0)
                 {
-                    existingCartItem.CostPrice = item.CostPrice;
+                    existingCartItem.CostPrice = resolvedCostPrice;
                 }
             }
             else
@@ -628,7 +653,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
                     ProductName = targetProduct.Name,
                     Specification = targetProduct.Specification ?? item.Specification,
                     SaleUnit = targetProduct.SaleUnit ?? item.SaleUnit,
-                    CostPrice = item.CostPrice > 0 ? item.CostPrice : targetProduct.CostPrice,
+                    CostPrice = resolvedCostPrice,
                     Quantity = item.Quantity > 0 ? item.Quantity : 1,
                     OnItemChanged = RecalculateDraftTotals
                 });
