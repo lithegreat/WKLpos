@@ -23,6 +23,7 @@ public sealed partial class MemberListPage : Page
 
         ViewModel.RequestOpenFileDialog = OpenFileDialogAsync;
         ViewModel.RequestAddMemberDialog = ShowAddMemberDialogAsync;
+        ViewModel.RequestEditMemberDialog = ShowEditMemberDialogAsync;
         ViewModel.RequestConfirm = ShowConfirmDialogAsync;
         ViewModel.ShowMessage = ShowMessageAsync;
 
@@ -35,6 +36,21 @@ public sealed partial class MemberListPage : Page
     private async Task<Member?> ShowAddMemberDialogAsync()
     {
         var dialog = new AddMemberContentDialog
+        {
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
+        };
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            return dialog.CreatedMember;
+        }
+        return null;
+    }
+
+    private async Task<Member?> ShowEditMemberDialogAsync(Member member)
+    {
+        var dialog = new AddMemberContentDialog(member)
         {
             XamlRoot = this.XamlRoot,
             RequestedTheme = this.ActualTheme
@@ -98,9 +114,41 @@ public sealed partial class MemberListPage : Page
         }
     }
 
+    private void EditMemberButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.DataContext is Member member)
+        {
+            ViewModel.EditMemberCommand.Execute(member);
+        }
+    }
+
     private void DeleteMemberButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement elem && elem.DataContext is Member member)
+        {
+            ViewModel.DeleteMemberCommand.Execute(member);
+        }
+    }
+
+    private void MemberListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (e.OriginalSource is FrameworkElement { DataContext: Member member })
+        {
+            ViewModel.EditMemberCommand.Execute(member);
+        }
+    }
+
+    private void EditMemberMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (MemberListView.SelectedItem is Member member)
+        {
+            ViewModel.EditMemberCommand.Execute(member);
+        }
+    }
+
+    private void DeleteMemberMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (MemberListView.SelectedItem is Member member)
         {
             ViewModel.DeleteMemberCommand.Execute(member);
         }

@@ -16,5 +16,6 @@ public interface IMemberRepository
     Task RecordConsumptionAsync(int memberId, decimal spentAmount, decimal pointsChange);
     Task<Member?> GetByIdAsync(int id);
     Task DeleteAsync(int memberId);
+    Task UpdateAsync(Member member);
     Task<int> ImportFromListAsync(List<Member> members);
 }

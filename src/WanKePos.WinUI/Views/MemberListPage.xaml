@@ -87,7 +87,7 @@
                             <ColumnDefinition Width="90"/>
                             <ColumnDefinition Width="70"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="90"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="会员卡号" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="手机号" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
@@ -103,14 +103,30 @@
                 </Border>
 
                 <!-- 数据行 -->
-                <ListView Grid.Row="1" 
+                <ListView x:Name="MemberListView"
+                          Grid.Row="1" 
                           ItemsSource="{Binding Members}" 
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          SelectionMode="None"
+                          SelectionMode="Single"
+                          DoubleTapped="MemberListView_DoubleTapped"
                           BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                           BorderThickness="1,0,1,1"
                           CornerRadius="0,0,8,8"
                           Padding="0">
+                    <ListView.ContextFlyout>
+                        <MenuFlyout>
+                            <MenuFlyoutItem Text="编辑修改会员" Click="EditMemberMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE70F;"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem Text="注销会员档案" Click="DeleteMemberMenuItem_Click">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE74D;" Foreground="{ThemeResource CriticalTextBrush}"/>
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyout>
+                    </ListView.ContextFlyout>
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -131,7 +147,7 @@
                                     <ColumnDefinition Width="90"/>
                                     <ColumnDefinition Width="70"/>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="90"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="{Binding MemberNo}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Grid.Column="1" Text="{Binding Phone}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis"/>
@@ -144,16 +160,22 @@
                                 <TextBlock Grid.Column="8" Text="{Binding GuideName}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
                                 
                                 <!-- 操作按钮 -->
-                                <Button Grid.Column="9" 
-                                        Click="DeleteMemberButton_Click"
-                                        Height="28" 
-                                        Padding="8,0" 
-                                        CornerRadius="4"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        ToolTipService.ToolTip="注销会员档案">
-                                    <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="{ThemeResource CriticalTextBrush}"/>
-                                </Button>
+                                <StackPanel Grid.Column="9" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                    <Button Click="EditMemberButton_Click"
+                                            Height="28" 
+                                            Padding="8,0" 
+                                            CornerRadius="4"
+                                            ToolTipService.ToolTip="编辑修改会员">
+                                        <FontIcon Glyph="&#xE70F;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                    </Button>
+                                    <Button Click="DeleteMemberButton_Click"
+                                            Height="28" 
+                                            Padding="8,0" 
+                                            CornerRadius="4"
+                                            ToolTipService.ToolTip="注销会员档案">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="{ThemeResource CriticalTextBrush}"/>
+                                    </Button>
+                                </StackPanel>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>

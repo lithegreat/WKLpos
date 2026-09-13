@@ -457,6 +457,7 @@ namespace WanKePos.WinUI.ViewModels
             }
 
             ClearCart();
+            ClearMember();
         }
 
         private void RecalculateTotals()

@@ -115,6 +115,40 @@ namespace WanKePos.Infrastructure.Data.Repositories
             }
         }
 
+        public async Task UpdateAsync(Member member)
+        {
+            var existing = await _context.Members.FindAsync(member.Id);
+            if (existing == null)
+            {
+                throw new InvalidOperationException($"未找到 ID 为 {member.Id} 的会员。");
+            }
+
+            if (!string.IsNullOrWhiteSpace(member.Phone))
+            {
+                var phoneConflict = await _context.Members.AnyAsync(m => m.Phone == member.Phone && m.Id != member.Id);
+                if (phoneConflict)
+                {
+                    throw new InvalidOperationException($"手机号【{member.Phone}】已被其他会员使用！");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(member.MemberNo))
+            {
+                var noConflict = await _context.Members.AnyAsync(m => m.MemberNo == member.MemberNo && m.Id != member.Id);
+                if (noConflict)
+                {
+                    throw new InvalidOperationException($"会员卡号【{member.MemberNo}】已被其他会员使用！");
+                }
+            }
+
+            member.LastModified = DateTime.Now;
+            if (existing != member)
+            {
+                _context.Entry(existing).CurrentValues.SetValues(member);
+            }
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<int> ImportFromListAsync(List<Member> members)
         {
             var memberNos = members.Where(m => !string.IsNullOrWhiteSpace(m.MemberNo)).Select(m => m.MemberNo).ToList();

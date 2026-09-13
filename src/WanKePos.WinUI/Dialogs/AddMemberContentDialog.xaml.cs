@@ -8,18 +8,67 @@ namespace WanKePos.WinUI.Dialogs;
 
 public sealed partial class AddMemberContentDialog : ContentDialog
 {
+    private readonly Member? _editingMember;
     public Member? CreatedMember { get; private set; }
+    public bool IsEditMode => _editingMember != null;
 
-    public AddMemberContentDialog()
+    public AddMemberContentDialog(Member? editingMember = null)
     {
         this.InitializeComponent();
+        _editingMember = editingMember;
 
-        MemberNoTextBox.Text = $"HY{DateTime.Now:yyMMdd}{Random.Shared.Next(1000, 9999)}";
+        if (IsEditMode && _editingMember != null)
+        {
+            this.Title = "修改会员档案";
+            this.PrimaryButtonText = "保存修改";
+
+            PhoneTextBox.Text = _editingMember.Phone ?? string.Empty;
+            NameTextBox.Text = _editingMember.Name ?? string.Empty;
+            MemberNoTextBox.Text = _editingMember.MemberNo ?? string.Empty;
+
+            // 性别
+            SelectComboBoxItem(GenderComboBox, _editingMember.Gender ?? "保密");
+
+            // 生日
+            if (_editingMember.Birthday.HasValue)
+            {
+                BirthdayPicker.SelectedDate = new DateTimeOffset(_editingMember.Birthday.Value);
+            }
+
+            BalanceTextBox.Text = _editingMember.Balance.ToString("F2");
+            PointsTextBox.Text = _editingMember.TotalPoints.ToString("0");
+
+            // 会员身份
+            SelectComboBoxItem(IdentityComboBox, _editingMember.Identity ?? "普通会员");
+
+            // 状态
+            SelectComboBoxItem(StatusComboBox, string.IsNullOrEmpty(_editingMember.Status) ? "正常" : _editingMember.Status);
+
+            GuideNameTextBox.Text = _editingMember.GuideName ?? string.Empty;
+            AddressTextBox.Text = _editingMember.Address ?? string.Empty;
+        }
+        else
+        {
+            MemberNoTextBox.Text = $"HY{DateTime.Now:yyMMdd}{Random.Shared.Next(1000, 9999)}";
+        }
 
         this.Loaded += (s, e) =>
         {
             PhoneTextBox.Focus(FocusState.Programmatic);
         };
+    }
+
+    private static void SelectComboBoxItem(ComboBox comboBox, string text)
+    {
+        for (int i = 0; i < comboBox.Items.Count; i++)
+        {
+            if (comboBox.Items[i] is ComboBoxItem item && string.Equals(item.Content?.ToString(), text, StringComparison.OrdinalIgnoreCase))
+            {
+                comboBox.SelectedIndex = i;
+                return;
+            }
+        }
+        if (comboBox.Items.Count > 0) comboBox.SelectedIndex = 0;
     }
 
     private void GenerateMemberNoButton_Click(object sender, RoutedEventArgs e)
@@ -55,27 +104,48 @@ public sealed partial class AddMemberContentDialog : ContentDialog
 
         var gender = (GenderComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "保密";
         var identity = (IdentityComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "普通会员";
+        var status = (StatusComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "正常";
 
-        CreatedMember = new Member
+        if (IsEditMode && _editingMember != null)
         {
-            Phone = phone,
-            Name = name,
-            MemberNo = memberNo,
-            Gender = gender,
-            Birthday = BirthdayPicker.SelectedDate?.DateTime,
-            Balance = balance,
-            TotalPoints = points,
-            TotalSpent = 0,
-            Identity = identity,
-            Status = "正常",
-            GuideName = GuideNameTextBox.Text?.Trim(),
-            Address = AddressTextBox.Text?.Trim(),
-            StoreName = "万客隆美发用品专卖",
-            RegisterTime = DateTime.Now,
-            CreatedAt = DateTime.Now,
-            LastModified = DateTime.Now,
-            SyncStatus = SyncStatus.Pending
-        };
+            _editingMember.Phone = phone;
+            _editingMember.Name = name;
+            _editingMember.MemberNo = memberNo;
+            _editingMember.Gender = gender;
+            _editingMember.Birthday = BirthdayPicker.SelectedDate?.DateTime;
+            _editingMember.Balance = balance;
+            _editingMember.TotalPoints = points;
+            _editingMember.Identity = identity;
+            _editingMember.Status = status;
+            _editingMember.GuideName = GuideNameTextBox.Text?.Trim();
+            _editingMember.Address = AddressTextBox.Text?.Trim();
+            _editingMember.LastModified = DateTime.Now;
+
+            CreatedMember = _editingMember;
+        }
+        else
+        {
+            CreatedMember = new Member
+            {
+                Phone = phone,
+                Name = name,
+                MemberNo = memberNo,
+                Gender = gender,
+                Birthday = BirthdayPicker.SelectedDate?.DateTime,
+                Balance = balance,
+                TotalPoints = points,
+                TotalSpent = 0,
+                Identity = identity,
+                Status = status,
+                GuideName = GuideNameTextBox.Text?.Trim(),
+                Address = AddressTextBox.Text?.Trim(),
+                StoreName = "万客隆美发用品专卖",
+                RegisterTime = DateTime.Now,
+                CreatedAt = DateTime.Now,
+                LastModified = DateTime.Now,
+                SyncStatus = SyncStatus.Pending
+            };
+        }
     }
 
     private void ShowError(string message)

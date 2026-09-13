@@ -25,11 +25,40 @@ namespace WanKePos.WinUI.Views
             ViewModel.RequestConfirmDialog = ShowConfirmDialogAsync;
             ViewModel.ShowMessage = ShowMessageAsync;
 
+            ViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e?.PropertyName == nameof(CashierViewModel.CurrentMember) && ViewModel.CurrentMember == null)
+                {
+                    DispatcherQueue?.TryEnqueue(() =>
+                    {
+                        if (MemberAutoSuggestBox != null)
+                        {
+                            MemberAutoSuggestBox.Text = string.Empty;
+                            MemberAutoSuggestBox.ItemsSource = null;
+                        }
+                    });
+                }
+                else if (e?.PropertyName == nameof(CashierViewModel.SelectedCategory))
+                {
+                    DispatcherQueue?.TryEnqueue(() =>
+                    {
+                        if (CategoryListView != null && (string?)CategoryListView.SelectedItem != ViewModel.SelectedCategory)
+                        {
+                            CategoryListView.SelectedItem = ViewModel.SelectedCategory;
+                        }
+                        PlayProductListAnimation();
+                    });
+                }
+            };
+
             this.Loaded += async (s, e) =>
             {
                 await ViewModel.InitializeAsync();
                 BarcodeTextBox.Focus(FocusState.Programmatic);
-                DispatcherQueue.TryEnqueue(UpdateCategoryButtonsHighlight);
+                if (CategoryListView != null && ViewModel.SelectedCategory != null)
+                {
+                    CategoryListView.SelectedItem = ViewModel.SelectedCategory;
+                }
             };
         }
 
@@ -136,48 +165,22 @@ namespace WanKePos.WinUI.Views
             }
         }
 
-        private async void CategoryButton_Click(object sender, RoutedEventArgs e)
+        private async void CategoryListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is Button btn && btn.Content is string category)
+            if (CategoryListView?.SelectedItem is string category && category != ViewModel.SelectedCategory)
             {
                 await ViewModel.SelectCategoryAsync(category);
-                UpdateCategoryButtonsHighlight();
+                PlayProductListAnimation();
             }
         }
 
-        private void UpdateCategoryButtonsHighlight()
+        public void PlayProductListAnimation()
         {
-            if (CategoryItemsControl == null) return;
-            var selected = ViewModel.SelectedCategory ?? "";
-            var selectedStyle = Application.Current.Resources.TryGetValue("CategoryItemSelectedStyle", out var aStyle) ? aStyle as Style : null;
-            var defaultStyle = Application.Current.Resources.TryGetValue("CategoryItemButtonStyle", out var dStyle) ? dStyle as Style : null;
-
-            FindAndStyleCategoryButtons(CategoryItemsControl, selected, selectedStyle, defaultStyle);
-        }
-
-        private void FindAndStyleCategoryButtons(DependencyObject parent, string selected, Style? accentStyle, Style? defaultStyle)
-        {
-            int count = VisualTreeHelper.GetChildrenCount(parent);
-            for (int i = 0; i < count; i++)
+            try
             {
-                var child = VisualTreeHelper.GetChild(parent, i);
-                if (child is Button btn && btn.Content is string cat)
-                {
-                    bool isMatch = string.Equals(cat, selected, StringComparison.OrdinalIgnoreCase);
-                    if (isMatch && accentStyle != null)
-                    {
-                        btn.Style = accentStyle;
-                    }
-                    else if (!isMatch && defaultStyle != null)
-                    {
-                        btn.Style = defaultStyle;
-                    }
-                }
-                else
-                {
-                    FindAndStyleCategoryButtons(child, selected, accentStyle, defaultStyle);
-                }
+                ProductListEntranceStoryboard?.Begin();
             }
+            catch { }
         }
 
         private void AddProductButton_Click(object sender, RoutedEventArgs e)

@@ -39,6 +39,7 @@ namespace WanKePos.WinUI
 
             this.Closed += (s, e) =>
             {
+                SaveWindowState();
                 App.LogToFile($"MainWindow.Closed! StackTrace:\n{Environment.StackTrace}");
             };
 
@@ -60,6 +61,13 @@ namespace WanKePos.WinUI
                         if (args.DidSizeChange || args.DidPositionChange)
                         {
                             DispatcherQueue?.TryEnqueue(UpdateTitleBarInsets);
+                            if (_appWindow.Presenter is OverlappedPresenter p && p.State == OverlappedPresenterState.Restored)
+                            {
+                                if (_appWindow.Size.Width >= 900) _lastNormalWidth = _appWindow.Size.Width;
+                                if (_appWindow.Size.Height >= 600) _lastNormalHeight = _appWindow.Size.Height;
+                                _lastNormalX = _appWindow.Position.X;
+                                _lastNormalY = _appWindow.Position.Y;
+                            }
                         }
                     };
                 }
@@ -86,21 +94,50 @@ namespace WanKePos.WinUI
                     }
                     catch { }
                 }
-                // 窗口居中并设为1200x800
-                _appWindow.Resize(new Windows.Graphics.SizeInt32(1200, 800));
+                
+                // 读取并还原上次关闭时的窗口大小与位置
+                var savedState = LoadWindowState();
+                int targetWidth = savedState != null && savedState.Width >= 900 ? savedState.Width : 1200;
+                int targetHeight = savedState != null && savedState.Height >= 600 ? savedState.Height : 800;
 
-                var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
-                if (displayArea != null)
+                _lastNormalWidth = targetWidth;
+                _lastNormalHeight = targetHeight;
+                _lastNormalX = savedState?.X;
+                _lastNormalY = savedState?.Y;
+
+                _appWindow.Resize(new Windows.Graphics.SizeInt32(targetWidth, targetHeight));
+
+                bool positionRestored = false;
+                if (savedState?.X != null && savedState?.Y != null)
                 {
-                    var centeredPosition = new Windows.Graphics.PointInt32(
-                        displayArea.WorkArea.X + Math.Max(0, (displayArea.WorkArea.Width - 1200) / 2),
-                        displayArea.WorkArea.Y + Math.Max(0, (displayArea.WorkArea.Height - 800) / 2));
-                    _appWindow.Move(centeredPosition);
+                    var savedPoint = new Windows.Graphics.PointInt32(savedState.X.Value, savedState.Y.Value);
+                    var area = DisplayArea.GetFromPoint(savedPoint, DisplayAreaFallback.None);
+                    if (area != null)
+                    {
+                        _appWindow.Move(savedPoint);
+                        positionRestored = true;
+                    }
+                }
+
+                if (!positionRestored)
+                {
+                    var displayArea = DisplayArea.GetFromWindowId(windowId, DisplayAreaFallback.Primary);
+                    if (displayArea != null)
+                    {
+                        var centeredPosition = new Windows.Graphics.PointInt32(
+                            displayArea.WorkArea.X + Math.Max(0, (displayArea.WorkArea.Width - targetWidth) / 2),
+                            displayArea.WorkArea.Y + Math.Max(0, (displayArea.WorkArea.Height - targetHeight) / 2));
+                        _appWindow.Move(centeredPosition);
+                    }
                 }
 
                 if (_appWindow.Presenter is OverlappedPresenter presenter)
                 {
                     presenter.IsAlwaysOnTop = true;
+                    if (savedState != null && savedState.IsMaximized)
+                    {
+                        presenter.Maximize();
+                    }
                 }
 
                 _appWindow.Show(true);
@@ -494,6 +531,76 @@ namespace WanKePos.WinUI
                 }
                 catch { }
             });
+        }
+
+        private class SavedWindowState
+        {
+            public int Width { get; set; } = 1200;
+            public int Height { get; set; } = 800;
+            public int? X { get; set; }
+            public int? Y { get; set; }
+            public bool IsMaximized { get; set; }
+        }
+
+        private int _lastNormalWidth = 1200;
+        private int _lastNormalHeight = 800;
+        private int? _lastNormalX;
+        private int? _lastNormalY;
+
+        private static string GetWindowStateFilePath()
+        {
+            var dir = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WanKePos");
+            if (!System.IO.Directory.Exists(dir))
+            {
+                System.IO.Directory.CreateDirectory(dir);
+            }
+            return System.IO.Path.Combine(dir, "window_state.json");
+        }
+
+        private void SaveWindowState()
+        {
+            try
+            {
+                if (_appWindow == null) return;
+                var presenter = _appWindow.Presenter as OverlappedPresenter;
+                bool isMaximized = presenter?.State == OverlappedPresenterState.Maximized;
+
+                var state = new SavedWindowState
+                {
+                    Width = _lastNormalWidth >= 900 ? _lastNormalWidth : 1200,
+                    Height = _lastNormalHeight >= 600 ? _lastNormalHeight : 800,
+                    X = _lastNormalX,
+                    Y = _lastNormalY,
+                    IsMaximized = isMaximized
+                };
+                var json = System.Text.Json.JsonSerializer.Serialize(state, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+                System.IO.File.WriteAllText(GetWindowStateFilePath(), json);
+                App.LogToFile($"Saved WindowState: Width={state.Width}, Height={state.Height}, X={state.X}, Y={state.Y}, IsMaximized={state.IsMaximized}");
+            }
+            catch (Exception ex)
+            {
+                App.LogToFile($"Failed to save window state: {ex.Message}");
+            }
+        }
+
+        private SavedWindowState? LoadWindowState()
+        {
+            try
+            {
+                var filePath = GetWindowStateFilePath();
+                if (System.IO.File.Exists(filePath))
+                {
+                    var json = System.IO.File.ReadAllText(filePath);
+                    return System.Text.Json.JsonSerializer.Deserialize<SavedWindowState>(json);
+                }
+            }
+            catch (Exception ex)
+            {
+                App.LogToFile($"Failed to load window state: {ex.Message}");
+            }
+            return null;
         }
     }
 }
