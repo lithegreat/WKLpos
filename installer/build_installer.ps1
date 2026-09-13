@@ -1,15 +1,21 @@
 ﻿param(
-    [string]$Version = "0.1.0",
+    [string]$Version = "0.2.0-preview",
     [bool]$RunInstaller = $true,
-    [ValidateSet("SelfContained", "FrameworkDependent", "Both")]
-    [string]$PackageMode = "Both"
+    [ValidateSet("FrameworkDependent", "SelfContained", "Both")]
+    [string]$PackageMode = "FrameworkDependent"
 )
 
 # 规范化版本号 (移除前导 v 或 V)
 $cleanVersion = $Version.TrimStart('v', 'V')
 if ([string]::IsNullOrWhiteSpace($cleanVersion)) {
-    $cleanVersion = "0.1.0"
+    $cleanVersion = "0.2.0-preview"
 }
+
+# 提取纯数字版本用于 Windows 文件与程序集属性 (如 0.2.0-preview -> 0.2.0.0)
+$rawNumeric = ($cleanVersion -split '-')[0]
+$parts = $rawNumeric -split '\.'
+while ($parts.Length -lt 3) { $parts += "0" }
+$numericVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
 
 # 自动化构建万客隆 POS Windows Setup 安装包脚本
 Write-Host "==========================================" -ForegroundColor Cyan
@@ -51,10 +57,10 @@ if (Test-Path "$env:USERPROFILE\.dotnet\dotnet.exe") {
     $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
 }
 
-# 2.1 自包含版发布 (方案 A: 零环境依赖 + 依赖剥离优化)
+# 2.1 自包含版发布 (可选完整版 Self-Contained)
 if ($PackageMode -eq "SelfContained" -or $PackageMode -eq "Both") {
     Write-Host "`n[1/3] 正在发布 WinUI 3 独立自包含免依赖程序 (Self-Contained)..." -ForegroundColor Yellow
-    & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$cleanVersion /p:FileVersion=$cleanVersion
+    & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui /p:Version=$cleanVersion /p:AssemblyVersion=$numericVersion /p:FileVersion=$numericVersion
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "自包含版本编译发布失败，请检查代码错误!" -ForegroundColor Red
@@ -69,10 +75,10 @@ if ($PackageMode -eq "SelfContained" -or $PackageMode -eq "Both") {
     Prune-UnusedLocales "$rootDir\publish_winui"
 }
 
-# 2.2 轻量框架依赖版发布 (方案 B: 极小体积 Framework-Dependent)
+# 2.2 轻量框架依赖版发布 (默认发布规格: 极小体积 Framework-Dependent, ~23MB)
 if ($PackageMode -eq "FrameworkDependent" -or $PackageMode -eq "Both") {
     Write-Host "`n[1/3] 正在发布 WinUI 3 轻量框架依赖程序 (Framework-Dependent)..." -ForegroundColor Yellow
-    & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained false -o publish_winui_slim /p:Version=$cleanVersion /p:AssemblyVersion=$cleanVersion /p:FileVersion=$cleanVersion
+    & $dotnetCmd publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained false -o publish_winui_slim /p:Version=$cleanVersion /p:AssemblyVersion=$numericVersion /p:FileVersion=$numericVersion
 
     if ($LASTEXITCODE -ne 0) {
         Write-Host "轻量框架依赖版编译发布失败，请检查代码错误!" -ForegroundColor Red
@@ -140,19 +146,35 @@ if (-not (Test-Path "$rootDir\output_installer")) {
 
 $outputBaseFilename = "WanKePos_Setup_v$cleanVersion"
 
-if ($PackageMode -eq "FrameworkDependent" -or $PackageMode -eq "Both") {
-    $slimBaseFilename = "WanKePos_Setup_v${cleanVersion}_Slim"
-    Write-Host "--> 打包轻量依赖版: $slimBaseFilename.exe" -ForegroundColor Cyan
-    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$slimBaseFilename" "/DSourceDir=..\publish_winui_slim" "$rootDir\installer\WanKePosSetup.iss"
+if ($PackageMode -eq "FrameworkDependent") {
+    Write-Host "--> 打包标准轻量安装包: $outputBaseFilename.exe" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui_slim" "$rootDir\installer\WanKePosSetup.iss"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "生成轻量安装包失败!" -ForegroundColor Red
         exit 1
     }
-}
-
-if ($PackageMode -eq "SelfContained" -or $PackageMode -eq "Both") {
-    Write-Host "--> 打包标准自包含版: $outputBaseFilename.exe" -ForegroundColor Cyan
+} elseif ($PackageMode -eq "SelfContained") {
+    Write-Host "--> 打包自包含安装包: $outputBaseFilename.exe" -ForegroundColor Cyan
     & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui" "$rootDir\installer\WanKePosSetup.iss"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "生成自包含安装包失败!" -ForegroundColor Red
+        exit 1
+    }
+} elseif ($PackageMode -eq "Both") {
+    Write-Host "--> 打包标准轻量安装包: $outputBaseFilename.exe" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$outputBaseFilename" "/DSourceDir=..\publish_winui_slim" "$rootDir\installer\WanKePosSetup.iss"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "生成轻量安装包失败!" -ForegroundColor Red
+        exit 1
+    }
+
+    $fullBaseFilename = "WanKePos_Setup_v${cleanVersion}_Full"
+    Write-Host "--> 打包自包含完整安装包: $fullBaseFilename.exe" -ForegroundColor Cyan
+    & $iscc "/DMyAppVersion=$cleanVersion" "/DOutputBaseFilename=$fullBaseFilename" "/DSourceDir=..\publish_winui" "$rootDir\installer\WanKePosSetup.iss"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "生成自包含安装包失败!" -ForegroundColor Red
+        exit 1
+    }
 }
 
 if ($LASTEXITCODE -eq 0) {
@@ -161,11 +183,11 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "`n==========================================" -ForegroundColor Green
     Write-Host "  安装包制作成功!" -ForegroundColor Green
     Write-Host "  版本: v$cleanVersion" -ForegroundColor Green
-    Write-Host "  标准自包含安装包: $($setupFile.FullName) ($fileSizeMB MB)" -ForegroundColor White
-    if (Test-Path "$rootDir\output_installer\WanKePos_Setup_v${cleanVersion}_Slim.exe") {
-        $slimFile = Get-Item "$rootDir\output_installer\WanKePos_Setup_v${cleanVersion}_Slim.exe"
-        $slimSizeMB = [Math]::Round($slimFile.Length / 1MB, 2)
-        Write-Host "  轻量依赖安装包: $($slimFile.FullName) ($slimSizeMB MB)" -ForegroundColor White
+    Write-Host "  发布安装包 ($PackageMode): $($setupFile.FullName) ($fileSizeMB MB)" -ForegroundColor White
+    if (Test-Path "$rootDir\output_installer\WanKePos_Setup_v${cleanVersion}_Full.exe") {
+        $fullFile = Get-Item "$rootDir\output_installer\WanKePos_Setup_v${cleanVersion}_Full.exe"
+        $fullSizeMB = [Math]::Round($fullFile.Length / 1MB, 2)
+        Write-Host "  自包含全量包: $($fullFile.FullName) ($fullSizeMB MB)" -ForegroundColor White
     }
     Write-Host "==========================================" -ForegroundColor Green
 
@@ -192,8 +214,10 @@ if ($LASTEXITCODE -eq 0) {
 
         # Step 2: Locate installed executable
         $localAppExe = "$env:LOCALAPPDATA\Programs\WanKePos\WanKePos.WinUI.exe"
-        $progFilesExe = "C:\Program Files\WanKePos\WanKePos.WinUI.exe"
-        $publishExe = "$rootDir\publish_winui\WanKePos.WinUI.exe"
+        $publishExe = "$rootDir\publish_winui_slim\WanKePos.WinUI.exe"
+        if (-not (Test-Path -Path $publishExe)) {
+            $publishExe = "$rootDir\publish_winui\WanKePos.WinUI.exe"
+        }
 
         $targetExe = $null
         if (Test-Path -Path $localAppExe) {

@@ -71,8 +71,9 @@
 ## 5. 持续交付、自动打包与即时运行规范 (CI/CD, Packaging & Auto-Run)
 
 **核心约束与强制要求 (Mandatory Rule for AI Agents)**：
+- **发布规格规范（v0.2.0 起强制约定）**：**系统全局统一推行轻量安装包 (Framework-Dependent) 发布策略**，安装包体积由原本的 52MB+ 骤降至 **~23.6 MB**（解压部署体积由 200MB 降至 107MB）。目标运行机需具备 **.NET 10 Desktop Runtime (x64)**。
 - **每次代码或界面修改验证通过后，必须自动执行打包发布**。
-- 禁止仅执行 `dotnet build` 就结束任务，必须确保生成最终可交付的独立发布文件与 Windows 安装包，保证 `output_installer\` 下始终为最新版本。
+- 禁止仅执行 `dotnet build` 就结束任务，必须确保生成最终可交付的轻量 Windows 安装包，保证 `output_installer\` 下始终为最新版本。
 - **每次做完更改并生成 Setup 程序后，必须自动运行安装程序并打开**，以便即时进行端到端体验与功能验收。
 - 执行打包发布与自动运行安装程序命令：
   ```powershell
@@ -80,9 +81,9 @@
   ```
   该脚本已内置全流程自动化逻辑：
   1. 自动终止正在运行的 `WanKePos.WinUI` 进程，防止文件占用锁定；
-  2. 执行 WinUI 3 独立免依赖编译发布 (`dotnet publish -c Release -r win-x64 --self-contained true -o publish_winui`)；
-  3. 清理 `publish_winui\` 中的临时锁与日志文件 (`*.db-shm`, `*.db-wal`, `*.log`)；
-  4. 自动定位 Inno Setup 编译器 (或自动安装)，生成单文件安装包 `output_installer\WanKePos_Setup_v0.1.0.exe`；
+  2. 默认执行 WinUI 3 轻量框架依赖编译发布 (`dotnet publish -c Release -r win-x64 --self-contained false -o publish_winui_slim`)；
+  3. 清理临时锁与日志，并自动清洗剥除 80+ 个无用外语本地化 MUI 目录（仅保留简体中文）；
+  4. 自动定位 Inno Setup 编译器，生成单文件轻量安装包 `output_installer\WanKePos_Setup_v{version}.exe`（体积约 23.6 MB）；
   5. **自动启动运行生成的 Setup 安装程序并打开应用** (`Start-Process`)。
 
 ---
