@@ -45,6 +45,11 @@ public class AiPurchaseOrderDto
 public class AiPurchaseOrderItemDto
 {
     /// <summary>
+    /// 项序号 (从 1 开始，对应单据行号)
+    /// </summary>
+    public int Index { get; set; }
+
+    /// <summary>
     /// 商品条码 (手写单通常为空)
     /// </summary>
     public string? Barcode { get; set; }

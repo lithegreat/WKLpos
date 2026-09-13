@@ -13,6 +13,7 @@ using WanKePos.Domain.Entities;
 using WanKePos.Domain.Enums;
 using WanKePos.Domain.Interfaces;
 using WanKePos.Domain.Models;
+using WanKePos.Domain.Services;
 using WanKePos.Infrastructure.Export;
 using WanKePos.WinUI.Messages;
 using WanKePos.WinUI.Models;
@@ -62,7 +63,16 @@ public partial class PurchaseOrderViewModel : ObservableObject
     private PurchaseOrder? _selectedOrder;
 
     [ObservableProperty]
-    private int _selectedTabIndex; // 0 = 采购单列表, 1 = 新建采购单
+    private int _selectedTabIndex; // 0 = 采购单记录与入库, 1 = 快速制作与待制采购单
+
+    [RelayCommand]
+    public void GoToOrders() => SelectedTabIndex = 0;
+
+    [RelayCommand]
+    public void GoToQuickCreate() => SelectedTabIndex = 1;
+
+    [RelayCommand]
+    public void GoToDraft() => SelectedTabIndex = 1;
 
     /// <summary>
     /// 入库操作进行中标志 (防止重复点击)
@@ -74,6 +84,21 @@ public partial class PurchaseOrderViewModel : ObservableObject
     public Func<string, string, Task<bool>>? RequestConfirm { get; set; }
     public Func<string, string, Task<string?>>? RequestSaveFileDialog { get; set; }
     public Func<Task<AiPurchaseOrderDto?>>? RequestAiImportDialog { get; set; }
+    public Func<string, PurchaseOrder, Task>? RequestExportSuccessDialog { get; set; }
+
+    [ObservableProperty]
+    private string? _lastExportedFilePath;
+
+    [ObservableProperty]
+    private string? _lastExportedOrderNo;
+
+    [ObservableProperty]
+    private bool _hasExportedOrder;
+
+    [ObservableProperty]
+    private string _exportSuccessBarMessage = string.Empty;
+
+    private readonly Dictionary<string, string> _orderExportedPaths = new();
 
     public PurchaseOrderViewModel(
         IPurchaseOrderRepository purchaseRepo,
@@ -173,6 +198,14 @@ public partial class PurchaseOrderViewModel : ObservableObject
         {
             PurchaseOrders.Add(o);
         }
+    }
+
+    /// <summary>
+    /// 获取采购单完整信息（含所有明细商品）
+    /// </summary>
+    public async Task<PurchaseOrder?> GetOrderDetailsAsync(int orderId)
+    {
+        return await _purchaseRepo.GetByIdAsync(orderId);
     }
 
     [RelayCommand]
@@ -408,7 +441,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
                 return;
             }
 
-            var defaultFileName = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_{(string.IsNullOrEmpty(order.Supplier) ? "通用供货商" : order.Supplier)}_{DateTime.Now:yyyyMMdd}.xlsx";
+            var defaultFileName = PurchaseOrderExporter.GenerateDefaultFileName(order);
             var defaultFolder = PurchaseOrderExporter.DefaultExportDirectory;
             string? savePath = null;
 
@@ -421,19 +454,33 @@ public partial class PurchaseOrderViewModel : ObservableObject
             var settings = await _settingsRepo.GetSettingsAsync();
             var exportedPath = await _exporter.ExportToExcelAsync(order, settings, savePath);
 
-            PostExportActions(exportedPath);
+            // 记录导出信息与状态
+            _orderExportedPaths[order.PurchaseOrderNo] = exportedPath;
+            LastExportedFilePath = exportedPath;
+            LastExportedOrderNo = order.PurchaseOrderNo;
+            HasExportedOrder = true;
+            ExportSuccessBarMessage = $"采购单【{order.PurchaseOrderNo}】Excel 导出成功！保存路径：{exportedPath}";
 
-            // 提示用户并在弹窗中清晰给出操作指引
-            ShowMessage?.Invoke("导出成功",
-                $"采购收货单已生成并保存在【我的文档\\采购单】！\n\n" +
-                $"文件路径：\n{exportedPath}\n\n" +
-                $"📋 文件路径已自动复制到剪贴板！\n" +
-                $"🌐 已为您打开【店铺商品管理 (https://estore.jd.com/goods/list)】。\n" +
-                $"📁 已在文件夹中高亮选中该文件。\n\n" +
-                $"【后续操作指引】：\n" +
-                $"1. 点击网页右上角的【批量操作】按钮；\n" +
-                $"2. 点击下拉列表中的【批量收货】；\n" +
-                $"3. 在弹窗中点击【点击选择Excel文件】，直接按 Ctrl+V 粘贴文件路径（或拖入文件）即可完成批量收货！");
+            // 复制文件路径到系统剪贴板，方便随时粘贴
+            CopyPathToClipboard(exportedPath);
+
+            // 弹出提示或专用对话框（提供手动打开文件夹与浏览器按钮，绝不自动弹出干扰用户）
+            if (RequestExportSuccessDialog != null)
+            {
+                await RequestExportSuccessDialog.Invoke(exportedPath, order);
+            }
+            else
+            {
+                ShowMessage?.Invoke("导出成功",
+                    $"采购收货单已生成并保存在【我的文档\\采购单】！\n\n" +
+                    $"文件路径：\n{exportedPath}\n\n" +
+                    $"📋 文件路径已自动复制到剪贴板！\n" +
+                    $"💡 系统未自动弹出窗口，您可随时点击操作按钮打开文件夹与店铺后台。\n\n" +
+                    $"【后续操作指引】：\n" +
+                    $"1. 点击【打开文件夹及网页】；\n" +
+                    $"2. 在打开的京东网页右上角点击【批量操作】->【批量收货】；\n" +
+                    $"3. 点击【点击选择Excel文件】，直接按 Ctrl+V 粘贴文件路径（或拖入文件）即可完成批量收货！");
+            }
         }
         catch (Exception ex)
         {
@@ -442,20 +489,64 @@ public partial class PurchaseOrderViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 导出后置协同操作：自动复制路径、唤起管理网页、定位文件并置顶系统窗口
+    /// 手动打开文件资源管理器定位选中导出的 Excel 文件，并同时唤起默认浏览器打开店铺后台
     /// </summary>
-    private void PostExportActions(string exportedPath)
+    [RelayCommand]
+    public void OpenExportLocationAndBrowser(string? filePath)
     {
-        // 1. 复制文件路径到系统剪贴板
+        var targetPath = !string.IsNullOrWhiteSpace(filePath) ? filePath : LastExportedFilePath;
+        CopyPathToClipboard(targetPath);
+        OpenBrowserToStore();
+        OpenFileLocation(targetPath);
+    }
+
+    /// <summary>
+    /// 仅手动在文件资源管理器中定位导出的 Excel 文件
+    /// </summary>
+    [RelayCommand]
+    public void OpenExportLocationOnly(string? filePath)
+    {
+        var targetPath = !string.IsNullOrWhiteSpace(filePath) ? filePath : LastExportedFilePath;
+        OpenFileLocation(targetPath);
+    }
+
+    /// <summary>
+    /// 仅在浏览器中打开店铺商品管理网页
+    /// </summary>
+    [RelayCommand]
+    public void OpenStoreWebsiteOnly()
+    {
+        OpenBrowserToStore();
+    }
+
+    /// <summary>
+    /// 复制指定文件路径到系统剪贴板
+    /// </summary>
+    [RelayCommand]
+    public void CopyExportPath(string? filePath)
+    {
+        var targetPath = !string.IsNullOrWhiteSpace(filePath) ? filePath : LastExportedFilePath;
+        if (!string.IsNullOrEmpty(targetPath))
+        {
+            CopyPathToClipboard(targetPath);
+            ShowMessage?.Invoke("提示", $"文件路径已复制到剪贴板：\n{targetPath}");
+        }
+    }
+
+    public static void CopyPathToClipboard(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
         try
         {
             var dataPackage = new DataPackage();
-            dataPackage.SetText(exportedPath);
+            dataPackage.SetText(path);
             Clipboard.SetContent(dataPackage);
         }
         catch { }
+    }
 
-        // 2. 在浏览器中打开店铺商品管理
+    public static void OpenBrowserToStore()
+    {
         try
         {
             Process.Start(new ProcessStartInfo
@@ -465,28 +556,66 @@ public partial class PurchaseOrderViewModel : ObservableObject
             });
         }
         catch { }
+    }
 
-        // 3. 在资源管理器中定位并高亮选中导出的 Excel 文件
+    public static void OpenFileLocation(string? filePath)
+    {
         try
         {
-            Process.Start(new ProcessStartInfo
+            if (!string.IsNullOrEmpty(filePath) && System.IO.File.Exists(filePath))
             {
-                FileName = "explorer.exe",
-                Arguments = $"/select,\"{exportedPath}\"",
-                UseShellExecute = true
-            });
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{filePath}\"",
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                var folder = PurchaseOrderExporter.DefaultExportDirectory;
+                if (!System.IO.Directory.Exists(folder))
+                {
+                    System.IO.Directory.CreateDirectory(folder);
+                }
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"\"{folder}\"",
+                    UseShellExecute = true
+                });
+            }
+        }
+        catch { }
+    }
+
+    public string? GetExportedFilePathForOrder(PurchaseOrder order)
+    {
+        if (order == null) return null;
+        if (_orderExportedPaths.TryGetValue(order.PurchaseOrderNo, out var path) && System.IO.File.Exists(path))
+        {
+            return path;
+        }
+        return LocateExportedExcelFile(order);
+    }
+
+    public static string? LocateExportedExcelFile(PurchaseOrder order)
+    {
+        var exportDir = PurchaseOrderExporter.DefaultExportDirectory;
+        if (!System.IO.Directory.Exists(exportDir)) return null;
+
+        var pattern = $"*{order.PurchaseOrderNo}*.xlsx";
+        try
+        {
+            var files = System.IO.Directory.GetFiles(exportDir, pattern);
+            if (files.Length > 0)
+            {
+                return files.OrderByDescending(f => new System.IO.FileInfo(f).LastWriteTime).First();
+            }
         }
         catch { }
 
-        // 4. 保持软件窗口在浏览器和文件夹上方
-        App.EnsureMainWindowOnTop();
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(400);
-            App.EnsureMainWindowOnTop();
-            await Task.Delay(800);
-            App.EnsureMainWindowOnTop();
-        });
+        return null;
     }
 
     [RelayCommand]
@@ -529,6 +658,12 @@ public partial class PurchaseOrderViewModel : ObservableObject
         await ProcessAiImportedOrderAsync(dto);
     }
 
+    public async Task<List<Product>> GetAllProductsAsync()
+    {
+        var products = await _productRepo.GetAllAsync();
+        return products.ToList();
+    }
+
     public async Task ProcessAiImportedOrderAsync(AiPurchaseOrderDto dto)
     {
         if (dto == null || dto.Items.Count == 0) return;
@@ -549,7 +684,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
         }
 
         // 2. 匹配已有商品库或自动为新商品建档
-        var allProducts = await _productRepo.GetAllAsync();
+        var allProducts = (await _productRepo.GetAllAsync()).ToList();
         var barcodeDict = allProducts
             .Where(p => !string.IsNullOrWhiteSpace(p.Barcode))
             .ToDictionary(p => p.Barcode, p => p);
@@ -564,19 +699,30 @@ public partial class PurchaseOrderViewModel : ObservableObject
         {
             Product? targetProduct = null;
 
-            // 优先按条码匹配
+            // 优先按条码精确匹配
             if (!string.IsNullOrWhiteSpace(item.Barcode) && barcodeDict.TryGetValue(item.Barcode, out var byBarcode))
             {
                 targetProduct = byBarcode;
                 matchedCount++;
             }
-            // 其次按商品名称匹配
+            // 其次按商品名称完全匹配
             else if (!string.IsNullOrWhiteSpace(item.Name) && nameDict.TryGetValue(item.Name, out var byName))
             {
                 targetProduct = byName;
                 matchedCount++;
             }
+            // 再次通过 ProductMatcher 智能模糊匹配（多栏色号、品牌别名、规格代码）
             else
+            {
+                var matched = ProductMatcher.Match(item, allProducts);
+                if (matched != null)
+                {
+                    targetProduct = matched;
+                    matchedCount++;
+                }
+            }
+
+            if (targetProduct == null)
             {
                 // 本地库未找到该商品：自动在商品库中建档预存，分配条码
                 var newBarcode = !string.IsNullOrWhiteSpace(item.Barcode)
@@ -590,7 +736,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
                     Specification = item.Specification,
                     SaleUnit = string.IsNullOrWhiteSpace(item.SaleUnit) ? "件" : item.SaleUnit,
                     CostPrice = item.CostPrice,
-                    RetailPrice = Math.Round(item.CostPrice * 1.35m, 2), // 默认预设参考售价
+                    RetailPrice = item.CostPrice > 0 ? Math.Round(item.CostPrice * 1.35m, 2) : 0,
                     Stock = 0,
                     StoreCategory = "其他",
                     Supplier = dto.Supplier,
@@ -606,17 +752,24 @@ public partial class PurchaseOrderViewModel : ObservableObject
                 // 注册到本地字典防止同单内重复项二次创建
                 barcodeDict[targetProduct.Barcode] = targetProduct;
                 nameDict[targetProduct.Name] = targetProduct;
+                allProducts.Add(targetProduct);
                 newProductCount++;
             }
+
+            // 进价决策：如果目标商品在商品库中有真实进价（>0），优先沿用商品库内的真实进价；
+            // 只有当商品库内进价为0且单据中明确有进价时，才使用单据进价
+            decimal resolvedCostPrice = targetProduct.CostPrice > 0 
+                ? targetProduct.CostPrice 
+                : (item.CostPrice > 0 ? item.CostPrice : 0);
 
             // 加入待制采购明细 (CartItems)
             var existingCartItem = CartItems.FirstOrDefault(c => c.ProductId == targetProduct.Id);
             if (existingCartItem != null)
             {
                 existingCartItem.Quantity += item.Quantity;
-                if (item.CostPrice > 0)
+                if (resolvedCostPrice > 0)
                 {
-                    existingCartItem.CostPrice = item.CostPrice;
+                    existingCartItem.CostPrice = resolvedCostPrice;
                 }
             }
             else
@@ -628,7 +781,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
                     ProductName = targetProduct.Name,
                     Specification = targetProduct.Specification ?? item.Specification,
                     SaleUnit = targetProduct.SaleUnit ?? item.SaleUnit,
-                    CostPrice = item.CostPrice > 0 ? item.CostPrice : targetProduct.CostPrice,
+                    CostPrice = resolvedCostPrice,
                     Quantity = item.Quantity > 0 ? item.Quantity : 1,
                     OnItemChanged = RecalculateDraftTotals
                 });
@@ -637,7 +790,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
 
         RecalculateDraftTotals();
 
-        // 切换到【快速制作采购单】工作台
+        // 切换到【制作采购单】工作台（快速制作与待制采购单同屏显示）
         SelectedTabIndex = 1;
 
         if (newProductCount > 0)

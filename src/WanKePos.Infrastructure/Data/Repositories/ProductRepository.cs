@@ -23,7 +23,7 @@ namespace WanKePos.Infrastructure.Data.Repositories
 
         public async Task<List<Product>> GetAllAsync()
         {
-            return await _context.Products.ToListAsync();
+            return await _context.Products.AsNoTracking().ToListAsync();
         }
 
         public async Task<Product?> GetByIdAsync(int id)
@@ -39,10 +39,11 @@ namespace WanKePos.Infrastructure.Data.Repositories
         public async Task<List<Product>> SearchAsync(string keyword)
         {
             if (string.IsNullOrWhiteSpace(keyword))
-                return await _context.Products.ToListAsync();
+                return await _context.Products.AsNoTracking().ToListAsync();
 
             var lower = keyword.ToLower();
             return await _context.Products
+                .AsNoTracking()
                 .Where(p => p.Barcode.ToLower().Contains(lower) || p.Name.ToLower().Contains(lower))
                 .ToListAsync();
         }
@@ -50,9 +51,10 @@ namespace WanKePos.Infrastructure.Data.Repositories
         public async Task<List<Product>> GetByCategoryAsync(string category)
         {
             if (string.IsNullOrWhiteSpace(category) || category == WanKePos.Domain.CategoryConstants.All)
-                return await _context.Products.ToListAsync();
+                return await _context.Products.AsNoTracking().ToListAsync();
 
             return await _context.Products
+                .AsNoTracking()
                 .Where(p => p.StoreCategory == category)
                 .ToListAsync();
         }
@@ -69,17 +71,59 @@ namespace WanKePos.Infrastructure.Data.Repositories
 
         public async Task AddOrUpdateAsync(Product product)
         {
-            var existing = await _context.Products.FirstOrDefaultAsync(p => p.Barcode == product.Barcode);
+            Product? existing = null;
+            if (product.Id > 0)
+            {
+                existing = await _context.Products.FindAsync(product.Id);
+            }
+            if (existing == null && !string.IsNullOrEmpty(product.Barcode))
+            {
+                existing = await _context.Products.FirstOrDefaultAsync(p => p.Barcode == product.Barcode);
+            }
+
             if (existing != null)
             {
+                var existingId = existing.Id;
                 _context.Entry(existing).CurrentValues.SetValues(product);
-                existing.Id = existing.Id; // preserve PK
+                existing.Id = existingId; // preserve PK
             }
             else
             {
                 await _context.Products.AddAsync(product);
             }
             await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateAsync(Product product)
+        {
+            var existing = await _context.Products.FindAsync(product.Id);
+            if (existing == null)
+            {
+                throw new InvalidOperationException($"未找到 ID 为 {product.Id} 的商品。");
+            }
+
+            if (!string.IsNullOrWhiteSpace(product.Barcode))
+            {
+                var barcodeConflict = await _context.Products.AnyAsync(p => p.Barcode == product.Barcode && p.Id != product.Id);
+                if (barcodeConflict)
+                {
+                    throw new InvalidOperationException($"条码【{product.Barcode}】已被其他商品使用！");
+                }
+            }
+
+            if (existing != product)
+            {
+                _context.Entry(existing).CurrentValues.SetValues(product);
+            }
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new InvalidOperationException("保存商品修改失败，可能存在重复的条码或数据冲突。", ex);
+            }
         }
 
         public async Task UpdateStockAsync(int productId, decimal quantityChange)

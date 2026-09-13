@@ -1,8 +1,10 @@
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using WanKePos.Domain.Entities;
@@ -29,6 +31,7 @@ public sealed partial class PurchaseOrderPage : Page
         ViewModel.RequestConfirm = ShowConfirmDialogAsync;
         ViewModel.RequestSaveFileDialog = OpenSaveFileDialogAsync;
         ViewModel.RequestAiImportDialog = ShowAiImportDialogAsync;
+        ViewModel.RequestExportSuccessDialog = ShowExportSuccessDialogAsync;
 
         ViewModel.PropertyChanged += (s, e) =>
         {
@@ -47,12 +50,14 @@ public sealed partial class PurchaseOrderPage : Page
             await ViewModel.InitializeAsync();
             UpdateCategoryButtonsHighlight();
             UpdateTabButtonStyles();
+            InitializeSplitter();
         };
     }
 
     private async Task<AiPurchaseOrderDto?> ShowAiImportDialogAsync()
     {
-        var dialog = new AiImportPurchaseOrderContentDialog
+        var allProducts = await ViewModel.GetAllProductsAsync();
+        var dialog = new AiImportPurchaseOrderContentDialog(allProducts)
         {
             XamlRoot = this.XamlRoot,
             RequestedTheme = this.ActualTheme
@@ -65,10 +70,23 @@ public sealed partial class PurchaseOrderPage : Page
         return null;
     }
 
-    private Visibility GetTab1Visibility(int tabIndex) => tabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
-    private Visibility GetTab2Visibility(int tabIndex) => tabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+    private async Task ShowExportSuccessDialogAsync(string exportedPath, PurchaseOrder order)
+    {
+        var dialog = new PurchaseOrderExportSuccessDialog(exportedPath, order, ViewModel)
+        {
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
+        };
+        await dialog.ShowAsync();
+    }
+
+    private Visibility GetTab0Visibility(int tabIndex) => tabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
+    private Visibility GetTab1Visibility(int tabIndex) => tabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
+    private Visibility GetTab2Visibility(int tabIndex) => tabIndex == 2 ? Visibility.Visible : Visibility.Collapsed;
     private Visibility GetEmptyOrdersVisibility(int count) => count == 0 ? Visibility.Visible : Visibility.Collapsed;
     private Visibility GetCartBadgeVisibility(int count) => count > 0 ? Visibility.Visible : Visibility.Collapsed;
+    private Visibility GetEmptyCartVisibility(int count) => count == 0 ? Visibility.Visible : Visibility.Collapsed;
+    private Visibility GetHasCartItemsVisibility(int count) => count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     private async void ShowMessageAsync(string title, string content)
     {
@@ -123,6 +141,58 @@ public sealed partial class PurchaseOrderPage : Page
         }
     }
 
+    private async void PurchaseOrderListView_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is PurchaseOrder order)
+        {
+            await OpenOrderDetailDialogAsync(order);
+        }
+    }
+
+    private async void OrderRow_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.DataContext is PurchaseOrder order)
+        {
+            await OpenOrderDetailDialogAsync(order);
+        }
+    }
+
+    private async void ViewOrderDetailButton_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            await OpenOrderDetailDialogAsync(order);
+        }
+    }
+
+    private async Task OpenOrderDetailDialogAsync(PurchaseOrder order)
+    {
+        // 确保单据已加载商品明细（从列表点击时仅有摘要，需拉取完整明细项）
+        var fullOrder = await ViewModel.GetOrderDetailsAsync(order.Id);
+        if (fullOrder == null)
+        {
+            fullOrder = order;
+        }
+
+        var dialog = new PurchaseOrderDetailDialog(fullOrder)
+        {
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
+        };
+
+        await dialog.ShowAsync();
+
+        if (dialog.ResultAction == PurchaseOrderDetailAction.StockIn)
+        {
+            await ViewModel.StockInAsync(fullOrder);
+        }
+        else if (dialog.ResultAction == PurchaseOrderDetailAction.ExportExcel)
+        {
+            await ViewModel.ExportExcelAsync(fullOrder);
+        }
+    }
+
     private void StockInButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement elem && elem.DataContext is PurchaseOrder order)
@@ -131,12 +201,101 @@ public sealed partial class PurchaseOrderPage : Page
         }
     }
 
-    private void ExportExcelButton_Click(object sender, RoutedEventArgs e)
+    private PurchaseOrder? GetOrderFromSender(object sender)
     {
-        if (sender is FrameworkElement elem && elem.DataContext is PurchaseOrder order)
+        if (sender is FrameworkElement elem)
+        {
+            if (elem.Tag is PurchaseOrder tagOrder) return tagOrder;
+            if (elem.DataContext is PurchaseOrder ctxOrder) return ctxOrder;
+        }
+        return null;
+    }
+
+    private void ExportExcelButton_Click(SplitButton sender, SplitButtonClickEventArgs args)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
         {
             ViewModel.ExportExcelCommand.Execute(order);
         }
+    }
+
+    private void ExportExcelFlyoutItem_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            ViewModel.ExportExcelCommand.Execute(order);
+        }
+    }
+
+    private void RowOpenFolderAndBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            var filePath = ViewModel.GetExportedFilePathForOrder(order);
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                ViewModel.OpenExportLocationAndBrowser(filePath);
+            }
+            else
+            {
+                ShowMessageAsync("提示", $"采购单【{order.PurchaseOrderNo}】尚未导出过 Excel 文件。\n\n请先点击【导出Excel】生成文件。");
+            }
+        }
+    }
+
+    private void RowOpenFolderOnly_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            var filePath = ViewModel.GetExportedFilePathForOrder(order);
+            ViewModel.OpenExportLocationOnly(filePath);
+        }
+    }
+
+    private void RowOpenBrowserOnly_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenStoreWebsiteOnly();
+    }
+
+    private void RowCopyPath_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            var filePath = ViewModel.GetExportedFilePathForOrder(order);
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                ViewModel.CopyExportPath(filePath);
+            }
+            else
+            {
+                ShowMessageAsync("提示", $"采购单【{order.PurchaseOrderNo}】尚未导出过 Excel 文件，暂无保存路径。");
+            }
+        }
+    }
+
+    private void InfoBarOpenFolderAndBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenExportLocationAndBrowser(ViewModel.LastExportedFilePath);
+    }
+
+    private void InfoBarOpenFolderOnly_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenExportLocationOnly(ViewModel.LastExportedFilePath);
+    }
+
+    private void InfoBarOpenBrowserOnly_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenStoreWebsiteOnly();
+    }
+
+    private void InfoBarCopyPath_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.CopyExportPath(ViewModel.LastExportedFilePath);
     }
 
     private void DeleteOrderButton_Click(object sender, RoutedEventArgs e)
@@ -153,7 +312,18 @@ public sealed partial class PurchaseOrderPage : Page
         {
             await ViewModel.FilterByCategoryAsync(category);
             UpdateCategoryButtonsHighlight();
+            PlayCategorySwitchAnimation();
         }
+    }
+
+    public void PlayCategorySwitchAnimation()
+    {
+        try
+        {
+            AvailableProductsEntranceStoryboard?.Begin();
+            CategoryBadgePulseStoryboard?.Begin();
+        }
+        catch { }
     }
 
     private void UpdateCategoryButtonsHighlight()
@@ -302,114 +472,28 @@ public sealed partial class PurchaseOrderPage : Page
         }
     }
 
+    private void SupplierTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            RemarkTextBox.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+    }
+
+    private void RemarkTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Enter)
+        {
+            this.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+    }
+
     private void CreatePurchaseOrderButton_Click(object sender, RoutedEventArgs e)
     {
         this.Focus(FocusState.Programmatic);
         ViewModel.CreatePurchaseOrderCommand.Execute(null);
-    }
-
-    #region 动态布局与分割条调整 (Dynamic Splitter & Layout)
-
-    private bool _isDraggingCartSplitter = false;
-    private double _dragStartPointerX;
-    private double _dragStartCartWidth;
-    private const double DefaultCartWidth = 520.0;
-    private const double MinCartWidth = 380.0;
-
-    private void CartSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
-    {
-        this.ProtectedCursor = Microsoft.UI.Input.InputSystemCursor.Create(Microsoft.UI.Input.InputSystemCursorShape.SizeWestEast);
-        HighlightSplitter(true);
-    }
-
-    private void CartSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
-    {
-        if (!_isDraggingCartSplitter)
-        {
-            this.ProtectedCursor = null;
-            HighlightSplitter(false);
-        }
-    }
-
-    private void CartSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
-    {
-        if (sender is UIElement elem)
-        {
-            _isDraggingCartSplitter = true;
-            elem.CapturePointer(e.Pointer);
-            _dragStartPointerX = e.GetCurrentPoint(WorkbenchGrid).Position.X;
-            _dragStartCartWidth = CartColumn.ActualWidth > 0 ? CartColumn.ActualWidth : DefaultCartWidth;
-            HighlightSplitter(true);
-            e.Handled = true;
-        }
-    }
-
-    private void CartSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
-    {
-        if (_isDraggingCartSplitter)
-        {
-            double currentX = e.GetCurrentPoint(WorkbenchGrid).Position.X;
-            double deltaX = currentX - _dragStartPointerX;
-
-            // 向左拖拽 (deltaX < 0) 增加待制单宽度，向右拖拽减少待制单宽度
-            double newWidth = _dragStartCartWidth - deltaX;
-
-            // 动态限制最大宽度，确保中间商品浏览列表至少保留 280px 宽度
-            double catWidth = CategoryColumn.Width.Value > 0 ? CategoryColumn.ActualWidth : 0;
-            double gridWidth = WorkbenchGrid.ActualWidth > 0 ? WorkbenchGrid.ActualWidth : 1200;
-            double maxCartWidth = Math.Max(MinCartWidth, gridWidth - catWidth - 280 - 12);
-
-            newWidth = Math.Clamp(newWidth, MinCartWidth, maxCartWidth);
-            CartColumn.Width = new GridLength(newWidth, GridUnitType.Pixel);
-            UpdateToggleExpandButtonState(newWidth);
-            e.Handled = true;
-        }
-    }
-
-    private void CartSplitter_PointerReleased(object sender, PointerRoutedEventArgs e)
-    {
-        if (_isDraggingCartSplitter && sender is UIElement elem)
-        {
-            _isDraggingCartSplitter = false;
-            elem.ReleasePointerCapture(e.Pointer);
-            HighlightSplitter(false);
-            this.ProtectedCursor = null;
-            e.Handled = true;
-        }
-    }
-
-    private void CartSplitter_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
-    {
-        _isDraggingCartSplitter = false;
-        HighlightSplitter(false);
-        this.ProtectedCursor = null;
-    }
-
-    private void CartSplitter_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
-    {
-        CartColumn.Width = new GridLength(DefaultCartWidth, GridUnitType.Pixel);
-        UpdateToggleExpandButtonState(DefaultCartWidth);
-        e.Handled = true;
-    }
-
-    private void ToggleCartExpandButton_Click(object sender, RoutedEventArgs e)
-    {
-        double currentWidth = CartColumn.ActualWidth > 0 ? CartColumn.ActualWidth : CartColumn.Width.Value;
-        if (currentWidth < 640)
-        {
-            // 切换为宽屏展开模式 (占满舒适大宽度，同时保护商品列表)
-            double catWidth = CategoryColumn.Width.Value > 0 ? CategoryColumn.ActualWidth : 0;
-            double gridWidth = WorkbenchGrid.ActualWidth > 0 ? WorkbenchGrid.ActualWidth : 1200;
-            double targetWidth = Math.Min(740, Math.Max(DefaultCartWidth, gridWidth - catWidth - 320));
-            CartColumn.Width = new GridLength(targetWidth, GridUnitType.Pixel);
-            UpdateToggleExpandButtonState(targetWidth);
-        }
-        else
-        {
-            // 恢复默认宽度
-            CartColumn.Width = new GridLength(DefaultCartWidth, GridUnitType.Pixel);
-            UpdateToggleExpandButtonState(DefaultCartWidth);
-        }
     }
 
     private void TabOrdersButton_Click(object sender, RoutedEventArgs e)
@@ -429,87 +513,122 @@ public sealed partial class PurchaseOrderPage : Page
         if (TabOrdersButton == null || TabCreateOrderButton == null) return;
         var accentStyle = Application.Current.Resources.TryGetValue("AccentButtonStyle", out var aStyle) ? aStyle as Style : null;
 
-        if (ViewModel.SelectedTabIndex == 0)
+        TabOrdersButton.Style = ViewModel.SelectedTabIndex == 0 ? accentStyle : null;
+        TabCreateOrderButton.Style = ViewModel.SelectedTabIndex == 1 ? accentStyle : null;
+    }
+
+    #region Splitter Logic (拖动调整选品区与待制单宽度)
+    private bool _isDraggingSplitter;
+    private double _dragStartPointerX;
+    private double _dragStartCartWidth;
+    private const double DefaultCartWidth = 380;
+    private const double MinCartWidth = 300;
+    private const double MinProductWidth = 320;
+    private const double MaxCartWidth = 750;
+
+    private void InitializeSplitter()
+    {
+        try
         {
-            TabOrdersButton.Style = accentStyle;
-            TabCreateOrderButton.Style = null;
+            var cursor = InputSystemCursor.Create(InputSystemCursorShape.SizeWestEast);
+            typeof(UIElement).GetProperty("ProtectedCursor", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)?
+                .SetValue(CartSplitter, cursor);
         }
-        else
+        catch
         {
-            TabOrdersButton.Style = null;
-            TabCreateOrderButton.Style = accentStyle;
+            // 在不支持 ProtectedCursor 的平台优雅降级
         }
     }
 
-    private void UpdateToggleExpandButtonState(double width)
+    private void CartSplitter_PointerEntered(object sender, PointerRoutedEventArgs e)
     {
-        if (ToggleCartExpandBtn != null)
+        if (!_isDraggingSplitter)
         {
-            var icon = new FontIcon { Glyph = "\uE740", FontSize = 10 };
-            var text = new TextBlock { Text = width >= 640 ? "紧凑" : "宽屏" };
-            var panel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-            panel.Children.Add(icon);
-            panel.Children.Add(text);
-            ToggleCartExpandBtn.Content = panel;
+            SplitterHandle.Background = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
+            SplitterHandle.Width = 6;
         }
     }
 
-    private void CollapseCategoryButton_Click(object sender, RoutedEventArgs e)
+    private void CartSplitter_PointerExited(object sender, PointerRoutedEventArgs e)
     {
-        if (CollapseCategoryStoryboard != null)
+        if (!_isDraggingSplitter)
         {
-            CollapseCategoryStoryboard.Completed -= CollapseCategoryStoryboard_Completed;
-            CollapseCategoryStoryboard.Completed += CollapseCategoryStoryboard_Completed;
-            CollapseCategoryStoryboard.Begin();
-        }
-        else
-        {
-            CategoryPanel.Visibility = Visibility.Collapsed;
-            ExpandCategoryBtn.Visibility = Visibility.Visible;
+            SplitterHandle.Background = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+            SplitterHandle.Width = 4;
         }
     }
 
-    private void CollapseCategoryStoryboard_Completed(object? sender, object e)
+    private void CartSplitter_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
-        if (CollapseCategoryStoryboard != null)
+        var properties = e.GetCurrentPoint(CartSplitter).Properties;
+        if (properties.IsLeftButtonPressed)
         {
-            CollapseCategoryStoryboard.Completed -= CollapseCategoryStoryboard_Completed;
+            _isDraggingSplitter = true;
+            _dragStartPointerX = e.GetCurrentPoint(this).Position.X;
+            _dragStartCartWidth = CartColumn.ActualWidth > 0 ? CartColumn.ActualWidth : DefaultCartWidth;
+            CartSplitter.CapturePointer(e.Pointer);
+
+            SplitterHandle.Background = (Brush)Application.Current.Resources["AccentFillColorDefaultBrush"];
+            SplitterHandle.Width = 6;
+            e.Handled = true;
         }
-        CategoryPanel.Visibility = Visibility.Collapsed;
-        ExpandCategoryBtn.Visibility = Visibility.Visible;
     }
 
-    private void ExpandCategoryButton_Click(object sender, RoutedEventArgs e)
+    private void CartSplitter_PointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        CategoryPanel.Visibility = Visibility.Visible;
-        ExpandCategoryBtn.Visibility = Visibility.Collapsed;
-        ExpandCategoryStoryboard?.Begin();
-    }
-
-    private void HighlightSplitter(bool isHighlighted)
-    {
-        if (SplitterBar == null || SplitterGrip == null) return;
-
-        if (isHighlighted)
+        if (_isDraggingSplitter)
         {
-            if (Application.Current.Resources.TryGetValue("AccentFillColorDefaultBrush", out var accent))
+            var currentX = e.GetCurrentPoint(this).Position.X;
+            var deltaX = currentX - _dragStartPointerX;
+
+            // 向左拖动 (deltaX < 0) -> 待制单变宽；向右拖动 (deltaX > 0) -> 待制单变窄
+            var newCartWidth = _dragStartCartWidth - deltaX;
+
+            // 动态限制最大宽度，确保选品区留有充足的保底宽度
+            double maxAllowedCartWidth = MaxCartWidth;
+            if (WorkbenchGrid.ActualWidth > 0)
             {
-                SplitterBar.Background = accent as Brush;
-                SplitterGrip.Background = accent as Brush;
+                // WorkbenchGrid 总宽 - 分类列(150) - 分割条(14) - 选品区保底宽度(MinProductWidth) - 留白(20)
+                double availableForCart = WorkbenchGrid.ActualWidth - 150 - 14 - MinProductWidth - 20;
+                if (availableForCart > MinCartWidth)
+                {
+                    maxAllowedCartWidth = Math.Min(MaxCartWidth, availableForCart);
+                }
             }
-        }
-        else
-        {
-            if (Application.Current.Resources.TryGetValue("DividerStrokeColorDefaultBrush", out var divider))
-            {
-                SplitterBar.Background = divider as Brush;
-            }
-            if (Application.Current.Resources.TryGetValue("ControlStrokeColorDefaultBrush", out var grip))
-            {
-                SplitterGrip.Background = grip as Brush;
-            }
+
+            newCartWidth = Math.Clamp(newCartWidth, MinCartWidth, maxAllowedCartWidth);
+            CartColumn.Width = new GridLength(newCartWidth);
+            e.Handled = true;
         }
     }
 
+    private void CartSplitter_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (_isDraggingSplitter)
+        {
+            _isDraggingSplitter = false;
+            CartSplitter.ReleasePointerCapture(e.Pointer);
+            SplitterHandle.Background = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+            SplitterHandle.Width = 4;
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+    {
+        if (_isDraggingSplitter)
+        {
+            _isDraggingSplitter = false;
+            SplitterHandle.Background = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"];
+            SplitterHandle.Width = 4;
+            e.Handled = true;
+        }
+    }
+
+    private void CartSplitter_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        CartColumn.Width = new GridLength(DefaultCartWidth);
+        e.Handled = true;
+    }
     #endregion
 }

@@ -331,4 +331,79 @@ public class PurchaseOrderWorkflowTests
             connection.Dispose();
         }
     }
+
+    [Fact]
+    public async Task PurchaseOrder_GetOrderDetails_ShouldReturnFullOrderWithItems()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var productRepo = new ProductRepository(context);
+            var purchaseRepo = new PurchaseOrderRepository(context);
+
+            var product1 = new Product { Barcode = "PO_DETAIL_001", Name = "洗发水 500ml", CostPrice = 20.00m, RetailPrice = 38.00m, Stock = 5 };
+            var product2 = new Product { Barcode = "PO_DETAIL_002", Name = "护发素 500ml", CostPrice = 22.00m, RetailPrice = 42.00m, Stock = 10 };
+            await productRepo.AddOrUpdateAsync(product1);
+            await productRepo.AddOrUpdateAsync(product2);
+
+            var order = new PurchaseOrder
+            {
+                PurchaseOrderNo = "PO_DETAIL_TEST_999",
+                Supplier = "高丝美妆供应部",
+                Remark = "采购单详情查看测试",
+                Items = new List<PurchaseOrderItem>
+                {
+                    new()
+                    {
+                        ProductId = product1.Id,
+                        Barcode = product1.Barcode,
+                        ProductName = product1.Name,
+                        Specification = "500ml",
+                        SaleUnit = "瓶",
+                        CostPrice = 18.00m,
+                        Quantity = 30m,
+                        Subtotal = 540.00m
+                    },
+                    new()
+                    {
+                        ProductId = product2.Id,
+                        Barcode = product2.Barcode,
+                        ProductName = product2.Name,
+                        Specification = "500ml",
+                        SaleUnit = "瓶",
+                        CostPrice = 20.00m,
+                        Quantity = 20m,
+                        Subtotal = 400.00m
+                    }
+                }
+            };
+            var created = await purchaseRepo.CreateAsync(order);
+
+            // 验证摘要读取时不包含 Items (性能优化)
+            var summaries = await purchaseRepo.GetAllSummaryAsync();
+            var summaryOrder = summaries.First(s => s.Id == created.Id);
+            Assert.Empty(summaryOrder.Items);
+
+            // 验证点击详情查看时调用 GetByIdAsync 能完整获取到 Items 明细
+            var detailedOrder = await purchaseRepo.GetByIdAsync(created.Id);
+            Assert.NotNull(detailedOrder);
+            Assert.Equal("PO_DETAIL_TEST_999", detailedOrder.PurchaseOrderNo);
+            Assert.Equal("高丝美妆供应部", detailedOrder.Supplier);
+            Assert.Equal(2, detailedOrder.Items.Count);
+            Assert.Equal(50m, detailedOrder.TotalQuantity);
+            Assert.Equal(940.00m, detailedOrder.TotalAmount);
+
+            var item1 = detailedOrder.Items.First(i => i.Barcode == "PO_DETAIL_001");
+            Assert.Equal("洗发水 500ml", item1.ProductName);
+            Assert.Equal("500ml", item1.Specification);
+            Assert.Equal("瓶", item1.SaleUnit);
+            Assert.Equal(18.00m, item1.CostPrice);
+            Assert.Equal(30m, item1.Quantity);
+            Assert.Equal(540.00m, item1.Subtotal);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
 }

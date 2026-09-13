@@ -61,7 +61,7 @@
         </Setter>
     </Style>
 
-    <!-- Fluent 2 品类筛选导航项默认样式 (未选中) -->
+    <!-- Fluent 2 品类筛选导航项默认样式 (未选中：带微交互平移与缩放动效) -->
     <Style x:Key="CategoryItemButtonStyle" TargetType="Button">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -77,20 +77,62 @@
                     <Border x:Name="RootBorder" 
                             Background="{TemplateBinding Background}"
                             CornerRadius="{TemplateBinding CornerRadius}"
-                            Padding="{TemplateBinding Padding}">
+                            Padding="{TemplateBinding Padding}"
+                            RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <CompositeTransform x:Name="RootTransform" TranslateX="0" ScaleX="1" ScaleY="1"/>
+                        </Border.RenderTransform>
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
+                                <VisualStateGroup.Transitions>
+                                    <VisualTransition To="PointerOver" GeneratedDuration="0:0:0.16">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="RootTransform"
+                                                             Storyboard.TargetProperty="TranslateX"
+                                                             To="3" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition From="PointerOver" To="Normal" GeneratedDuration="0:0:0.2">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="RootTransform"
+                                                             Storyboard.TargetProperty="TranslateX"
+                                                             To="0" Duration="0:0:0.2">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition To="Pressed" GeneratedDuration="0:0:0.08">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="RootTransform"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="0.98" Duration="0:0:0.08"/>
+                                            <DoubleAnimation Storyboard.TargetName="RootTransform"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="0.98" Duration="0:0:0.08"/>
+                                        </Storyboard>
+                                    </VisualTransition>
+                                </VisualStateGroup.Transitions>
                                 <VisualState x:Name="Normal"/>
                                 <VisualState x:Name="PointerOver">
                                     <VisualState.Setters>
                                         <Setter Target="RootBorder.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}"/>
                                         <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}"/>
+                                        <Setter Target="RootTransform.TranslateX" Value="3"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Pressed">
                                     <VisualState.Setters>
                                         <Setter Target="RootBorder.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}"/>
                                         <Setter Target="ContentPresenter.Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}"/>
+                                        <Setter Target="RootTransform.ScaleX" Value="0.98"/>
+                                        <Setter Target="RootTransform.ScaleY" Value="0.98"/>
+                                        <Setter Target="RootTransform.TranslateX" Value="1.5"/>
                                     </VisualState.Setters>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
@@ -113,7 +155,7 @@
         </Setter>
     </Style>
 
-    <!-- Fluent 2 品类筛选导航项选中样式 (带左侧 Accent 竖指示条，轻量半透明背景) -->
+    <!-- Fluent 2 品类筛选导航项选中样式 (带左侧 Accent 竖指示条弹性生长、轻量半透明背景与平移微动效) -->
     <Style x:Key="CategoryItemSelectedStyle" TargetType="Button">
         <Setter Property="Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}"/>
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}"/>
@@ -129,20 +171,85 @@
                     <Border x:Name="RootBorder" 
                             Background="{TemplateBinding Background}"
                             CornerRadius="{TemplateBinding CornerRadius}"
-                            Padding="{TemplateBinding Padding}">
+                            Padding="{TemplateBinding Padding}"
+                            RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform>
+                            <CompositeTransform x:Name="RootTransform" TranslateX="0" ScaleX="1" ScaleY="1"/>
+                        </Border.RenderTransform>
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualStateGroup.Transitions>
+                                    <VisualTransition To="PointerOver" GeneratedDuration="0:0:0.16">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="RootTransform"
+                                                             Storyboard.TargetProperty="TranslateX"
+                                                             To="2" Duration="0:0:0.16">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition From="PointerOver" To="Normal" GeneratedDuration="0:0:0.2">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="RootTransform"
+                                                             Storyboard.TargetProperty="TranslateX"
+                                                             To="0" Duration="0:0:0.2">
+                                                <DoubleAnimation.EasingFunction>
+                                                    <CubicEase EasingMode="EaseOut"/>
+                                                </DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </VisualTransition>
+                                    <VisualTransition To="Pressed" GeneratedDuration="0:0:0.08">
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="RootTransform"
+                                                             Storyboard.TargetProperty="ScaleX"
+                                                             To="0.98" Duration="0:0:0.08"/>
+                                            <DoubleAnimation Storyboard.TargetName="RootTransform"
+                                                             Storyboard.TargetProperty="ScaleY"
+                                                             To="0.98" Duration="0:0:0.08"/>
+                                        </Storyboard>
+                                    </VisualTransition>
+                                </VisualStateGroup.Transitions>
+                                <VisualState x:Name="Normal"/>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootBorder.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}"/>
+                                        <Setter Target="RootTransform.TranslateX" Value="2"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="RootBorder.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}"/>
+                                        <Setter Target="RootTransform.ScaleX" Value="0.98"/>
+                                        <Setter Target="RootTransform.ScaleY" Value="0.98"/>
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled"/>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <!-- Windows 11 原生侧边栏指示条 -->
+                            <!-- Windows 11 原生侧边栏指示条 (带弹性展开动画) -->
                             <Border Grid.Column="0" 
+                                    x:Name="SelectionIndicator"
                                     Width="3" 
                                     Height="16" 
                                     CornerRadius="1.5" 
                                     Background="{ThemeResource AccentFillColorDefaultBrush}" 
                                     VerticalAlignment="Center" 
-                                    Margin="0,0,8,0"/>
+                                    Margin="0,0,8,0">
+                                <Border.Transitions>
+                                    <TransitionCollection>
+                                        <EntranceThemeTransition FromVerticalOffset="6"/>
+                                        <RepositionThemeTransition/>
+                                    </TransitionCollection>
+                                </Border.Transitions>
+                            </Border>
                             <ContentPresenter x:Name="ContentPresenter"
                                               Grid.Column="1"
                                               Content="{TemplateBinding Content}"

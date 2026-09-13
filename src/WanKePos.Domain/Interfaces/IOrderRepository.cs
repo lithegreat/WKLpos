@@ -15,4 +15,5 @@ public interface IOrderRepository
     Task<List<Order>> GetTodayOrdersAsync();
     Task<(decimal totalSales, int orderCount, decimal totalProfit)> GetDailySummaryAsync(DateTime date);
     Task UpdateStatusAsync(int orderId, OrderStatus status);
+    Task UpdateOrderAsync(Order order);
 }

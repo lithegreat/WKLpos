@@ -266,21 +266,42 @@ namespace WanKePos.WinUI.ViewModels
             RecalculateTotals();
         }
 
+        public async Task<List<Member>> SuggestMembersAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return new List<Member>();
+            var list = await _memberRepo.SearchAsync(query.Trim());
+            return list.Where(m => m.Status == MemberStatusConstants.Normal).Take(10).ToList();
+        }
+
+        public void SelectMember(Member member)
+        {
+            if (member == null) return;
+            CurrentMember = member;
+            MemberPhoneInput = member.Phone ?? string.Empty;
+            foreach (var item in CartItems)
+            {
+                if (item.MemberPrice > 0)
+                    item.ActualPrice = item.MemberPrice;
+            }
+            RecalculateTotals();
+        }
+
         [RelayCommand]
         public async Task SearchMemberAsync()
         {
             if (string.IsNullOrWhiteSpace(MemberPhoneInput)) return;
 
-            var member = await _memberRepo.GetByPhoneAsync(MemberPhoneInput.Trim());
+            var keyword = MemberPhoneInput.Trim();
+            var member = await _memberRepo.GetByPhoneAsync(keyword);
+            if (member == null)
+            {
+                var matches = await _memberRepo.SearchAsync(keyword);
+                member = matches.FirstOrDefault(m => m.Status == MemberStatusConstants.Normal);
+            }
+
             if (member != null && member.Status == MemberStatusConstants.Normal)
             {
-                CurrentMember = member;
-                foreach (var item in CartItems)
-                {
-                    if (item.MemberPrice > 0)
-                        item.ActualPrice = item.MemberPrice;
-                }
-                RecalculateTotals();
+                SelectMember(member);
             }
             else
             {
@@ -354,6 +375,8 @@ namespace WanKePos.WinUI.ViewModels
                 await _memberRepo.UpdateBalanceAsync(CurrentMember.Id, -PayableAmount);
                 CurrentMember.Balance -= PayableAmount;
 
+                WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
+
                 ShowMessage?.Invoke("✅ 交易完成", $"余额支付成功！\n剩余余额: ¥{CurrentMember.Balance:F2}");
             }
         }
@@ -362,11 +385,8 @@ namespace WanKePos.WinUI.ViewModels
         {
             var settings = await _settingsRepo.GetSettingsAsync();
 
-            decimal pointsEarned = 0;
-            if (settings.PointsPerYuan > 0)
-            {
-                pointsEarned = Math.Floor(PayableAmount / settings.PointsPerYuan);
-            }
+            var pointsRate = settings.PointsPerYuan > 0 ? settings.PointsPerYuan : 1m;
+            decimal pointsEarned = Math.Floor(PayableAmount / pointsRate);
 
             // 获取商品当前进货价用于快照
             var productIds = CartItems.Select(ci => ci.ProductId).ToList();
@@ -408,15 +428,21 @@ namespace WanKePos.WinUI.ViewModels
             };
 
             await _orderRepo.CreateAsync(order);
+            WeakReferenceMessenger.Default.Send(new OrdersChangedMessage(order.Id));
 
-            // 批量扣减库存
+            // 批量扣减库存并立即刷新收银台与商品管理页
             var stockChanges = CartItems.ToDictionary(ci => ci.ProductId, ci => -ci.Quantity);
             await _productRepo.BatchUpdateStockAsync(stockChanges);
+            await LoadProductsAsync();
+            WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
 
-            if (CurrentMember != null && pointsEarned > 0)
+            // 记录会员累计消费与积分变动并广播
+            if (CurrentMember != null)
             {
-                await _memberRepo.UpdatePointsAsync(CurrentMember.Id, pointsEarned);
+                await _memberRepo.RecordConsumptionAsync(CurrentMember.Id, PayableAmount, pointsEarned);
+                CurrentMember.TotalSpent += PayableAmount;
                 CurrentMember.TotalPoints += pointsEarned;
+                WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
             }
 
             try
@@ -432,6 +458,7 @@ namespace WanKePos.WinUI.ViewModels
             }
 
             ClearCart();
+            ClearMember();
         }
 
         private void RecalculateTotals()

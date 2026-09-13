@@ -1,102 +1,89 @@
 using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using WanKePos.Domain.Enums;
-
 using WanKePos.Domain.Interfaces;
 
 namespace WanKePos.Domain.Entities;
 
 /// <summary>
-/// 会员实体
+/// 会员实体 (实现 INotifyPropertyChanged 确保 UI 绑定在属性变更时毫秒级自动响应刷新)
 /// </summary>
-public class Member : IAuditableEntity
+public class Member : IAuditableEntity, INotifyPropertyChanged
 {
-    public int Id { get; set; }
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    protected bool SetField<T>(ref T field, T value, [CallerMemberName] string? propertyName = null)
+    {
+        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
+        field = value;
+        OnPropertyChanged(propertyName);
+        return true;
+    }
+
+    private int _id;
+    public int Id { get => _id; set => SetField(ref _id, value); }
     
-    /// <summary>
-    /// 会员编号
-    /// </summary>
-    public string MemberNo { get; set; } = string.Empty;
+    private string _memberNo = string.Empty;
+    public string MemberNo { get => _memberNo; set => SetField(ref _memberNo, value); }
     
-    /// <summary>
-    /// 会员手机号
-    /// </summary>
-    public string Phone { get; set; } = string.Empty;
+    private string _phone = string.Empty;
+    public string Phone { get => _phone; set => SetField(ref _phone, value); }
     
-    /// <summary>
-    /// 会员名称
-    /// </summary>
-    public string Name { get; set; } = string.Empty;
+    private string _name = string.Empty;
+    public string Name { get => _name; set => SetField(ref _name, value); }
     
-    /// <summary>
-    /// 会员性别
-    /// </summary>
-    public string? Gender { get; set; }
+    private string? _gender;
+    public string? Gender { get => _gender; set => SetField(ref _gender, value); }
     
-    /// <summary>
-    /// 会员生日
-    /// </summary>
-    public DateTime? Birthday { get; set; }
+    private DateTime? _birthday;
+    public DateTime? Birthday { get => _birthday; set => SetField(ref _birthday, value); }
     
-    /// <summary>
-    /// 注册时间
-    /// </summary>
-    public DateTime RegisterTime { get; set; }
+    private DateTime _registerTime;
+    public DateTime RegisterTime { get => _registerTime; set => SetField(ref _registerTime, value); }
     
-    /// <summary>
-    /// 所属门店
-    /// </summary>
-    public string? StoreName { get; set; }
+    private string? _storeName;
+    public string? StoreName { get => _storeName; set => SetField(ref _storeName, value); }
     
-    /// <summary>
-    /// bpin
-    /// </summary>
-    public string? Bpin { get; set; }
+    private string? _bpin;
+    public string? Bpin { get => _bpin; set => SetField(ref _bpin, value); }
     
-    /// <summary>
-    /// 当前总积分
-    /// </summary>
-    public decimal TotalPoints { get; set; }
+    private decimal _totalPoints;
+    public decimal TotalPoints { get => _totalPoints; set => SetField(ref _totalPoints, value); }
     
-    /// <summary>
-    /// 当前余额
-    /// </summary>
-    public decimal Balance { get; set; }
+    private decimal _balance;
+    public decimal Balance { get => _balance; set => SetField(ref _balance, value); }
     
-    /// <summary>
-    /// 累计消费
-    /// </summary>
-    public decimal TotalSpent { get; set; }
+    private decimal _totalSpent;
+    public decimal TotalSpent { get => _totalSpent; set => SetField(ref _totalSpent, value); }
     
-    /// <summary>
-    /// 会员状态 (正常/禁用)
-    /// </summary>
-    public string Status { get; set; } = string.Empty;
+    private string _status = string.Empty;
+    public string Status { get => _status; set => SetField(ref _status, value); }
     
-    /// <summary>
-    /// 会员身份
-    /// </summary>
-    public string? Identity { get; set; }
+    private string? _identity;
+    public string? Identity { get => _identity; set => SetField(ref _identity, value); }
     
-    /// <summary>
-    /// 家庭住址
-    /// </summary>
-    public string? Address { get; set; }
+    private string? _address;
+    public string? Address { get => _address; set => SetField(ref _address, value); }
     
-    /// <summary>
-    /// 专属导购(cpin)
-    /// </summary>
-    public string? GuidePin { get; set; }
+    private string? _guidePin;
+    public string? GuidePin { get => _guidePin; set => SetField(ref _guidePin, value); }
     
-    /// <summary>
-    /// 导购姓名
-    /// </summary>
-    public string? GuideName { get; set; }
+    private string? _guideName;
+    public string? GuideName { get => _guideName; set => SetField(ref _guideName, value); }
     
-    /// <summary>
-    /// 同步状态
-    /// </summary>
-    public SyncStatus SyncStatus { get; set; }
+    private SyncStatus _syncStatus;
+    public SyncStatus SyncStatus { get => _syncStatus; set => SetField(ref _syncStatus, value); }
     
-    public DateTime LastModified { get; set; }
-    public DateTime CreatedAt { get; set; }
+    private DateTime _lastModified;
+    public DateTime LastModified { get => _lastModified; set => SetField(ref _lastModified, value); }
+
+    private DateTime _createdAt;
+    public DateTime CreatedAt { get => _createdAt; set => SetField(ref _createdAt, value); }
 }

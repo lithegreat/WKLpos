@@ -11,51 +11,7 @@
     Background="Transparent"
     mc:Ignorable="d">
 
-    <Page.Resources>
-        <!-- 平滑折叠品类动画 -->
-        <Storyboard x:Name="CollapseCategoryStoryboard">
-            <DoubleAnimation Storyboard.TargetName="CategoryPanel"
-                             Storyboard.TargetProperty="Width"
-                             EnableDependentAnimation="True"
-                             To="0"
-                             Duration="0:0:0.25">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseInOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="CategoryPanel"
-                             Storyboard.TargetProperty="Opacity"
-                             EnableDependentAnimation="True"
-                             To="0"
-                             Duration="0:0:0.18">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
 
-        <!-- 平滑展开品类动画 -->
-        <Storyboard x:Name="ExpandCategoryStoryboard">
-            <DoubleAnimation Storyboard.TargetName="CategoryPanel"
-                             Storyboard.TargetProperty="Width"
-                             EnableDependentAnimation="True"
-                             To="170"
-                             Duration="0:0:0.25">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseInOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetName="CategoryPanel"
-                             Storyboard.TargetProperty="Opacity"
-                             EnableDependentAnimation="True"
-                             To="1"
-                             Duration="0:0:0.22">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseIn"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
-    </Page.Resources>
 
     <Grid Padding="24,18,24,20">
         <Grid.RowDefinitions>
@@ -81,7 +37,7 @@
             </Button>
         </controls:PageHeader>
 
-        <!-- 顶部功能切换原生 WinUI 按钮组 -->
+        <!-- 顶部功能切换原生 WinUI 选项卡按钮组 -->
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,16">
             <Button x:Name="TabOrdersButton" 
                     Click="TabOrdersButton_Click"
@@ -100,21 +56,74 @@
                     CornerRadius="6">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="&#xE710;" FontSize="14"/>
-                    <TextBlock Text="快速制作采购单" FontWeight="SemiBold"/>
+                    <TextBlock Text="制作采购单 (快速制作与待制单)" FontWeight="SemiBold"/>
+                    <Border Background="{ThemeResource AccentFillColorDefaultBrush}" 
+                            CornerRadius="10" 
+                            Padding="7,1" 
+                            VerticalAlignment="Center"
+                            Visibility="{x:Bind GetCartBadgeVisibility(ViewModel.CartItems.Count), Mode=OneWay}">
+                        <TextBlock Text="{x:Bind ViewModel.CartItems.Count, Mode=OneWay}" 
+                                   FontSize="11" 
+                                   FontWeight="Bold" 
+                                   Foreground="White"/>
+                    </Border>
                 </StackPanel>
             </Button>
         </StackPanel>
 
-        <!-- TAB 1: 采购单列表与一键入库 -->
-        <Grid Grid.Row="2" Visibility="{x:Bind GetTab1Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
+        <!-- TAB 0: 采购单列表与一键入库 -->
+        <Grid Grid.Row="2" Visibility="{x:Bind GetTab0Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="36"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
+            <!-- 导出成功提示栏 (带手动打开按钮) -->
+            <InfoBar Grid.Row="0"
+                     x:Name="ExportSuccessInfoBar" 
+                     Margin="0,0,0,10"
+                     Severity="Success" 
+                     IsOpen="{x:Bind ViewModel.HasExportedOrder, Mode=TwoWay}"
+                     Title="采购收货单已生成 Excel" 
+                     Message="{x:Bind ViewModel.ExportSuccessBarMessage, Mode=OneWay}">
+                <InfoBar.ActionButton>
+                    <Button Click="InfoBarOpenFolderAndBrowser_Click"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Height="30" Padding="12,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE8A7;" FontSize="12"/>
+                            <TextBlock Text="打开文件夹及网页" FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                </InfoBar.ActionButton>
+                <InfoBar.Content>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,2">
+                        <Button Click="InfoBarOpenFolderOnly_Click" Height="28" Padding="8,0">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xED25;" FontSize="11"/>
+                                <TextBlock Text="定位文件" FontSize="11"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Click="InfoBarOpenBrowserOnly_Click" Height="28" Padding="8,0">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xE774;" FontSize="11"/>
+                                <TextBlock Text="店铺后台" FontSize="11"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Click="InfoBarCopyPath_Click" Height="28" Padding="8,0">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xE8C8;" FontSize="11"/>
+                                <TextBlock Text="复制路径" FontSize="11"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </InfoBar.Content>
+            </InfoBar>
+
             <!-- 操作提示条 -->
-            <Border Grid.Row="0" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
+            <Border Grid.Row="1" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -122,7 +131,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <FontIcon Glyph="&#xE946;" FontSize="14" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                        <TextBlock Text="说明：货到后点击【一键入库】即可自动增加商品库存；支持点击右上角【AI 拍照识单导入】智能识别进货单据。" 
+                        <TextBlock Text="说明：点击采购单行或【详情】可弹窗查看单据与商品明细；货到后点击【一键入库】即可自动增加商品库存；支持右上角【AI 拍照识单导入】智能识别进货单据。" 
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
                                    VerticalAlignment="Center"/>
@@ -140,7 +149,7 @@
             </Border>
 
             <!-- 表头 -->
-            <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
+            <Border Grid.Row="2" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*"/>
@@ -150,7 +159,7 @@
                         <ColumnDefinition Width="75"/>
                         <ColumnDefinition Width="90"/>
                         <ColumnDefinition Width="75"/>
-                        <ColumnDefinition Width="230"/>
+                        <ColumnDefinition Width="320"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="采购单号" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="供货商" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -164,10 +173,12 @@
             </Border>
 
             <!-- 数据行与空状态提示 -->
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="3">
                 <ListView ItemsSource="{Binding PurchaseOrders}" 
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           SelectionMode="None"
+                          IsItemClickEnabled="True"
+                          ItemClick="PurchaseOrderListView_ItemClick"
                           BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                           BorderThickness="1,0,1,1"
                           CornerRadius="0,0,8,8"
@@ -181,7 +192,10 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Padding="14,10">
+                            <Grid Padding="14,10"
+                                  Background="Transparent"
+                                  DoubleTapped="OrderRow_DoubleTapped"
+                                  ToolTipService.ToolTip="点击可查看采购单详情">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="1*"/>
                                     <ColumnDefinition Width="1.2*"/>
@@ -190,7 +204,7 @@
                                     <ColumnDefinition Width="75"/>
                                     <ColumnDefinition Width="90"/>
                                     <ColumnDefinition Width="75"/>
-                                    <ColumnDefinition Width="230"/>
+                                    <ColumnDefinition Width="320"/>
                                 </Grid.ColumnDefinitions>
                                 
                                 <TextBlock Grid.Column="0" Text="{Binding PurchaseOrderNo}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
@@ -213,7 +227,18 @@
                                 </Border>
 
                                 <!-- 操作按钮组 (根据状态智能显隐) -->
-                                <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <!-- 查看详情：常驻可见 -->
+                                    <Button Click="ViewOrderDetailButton_Click"
+                                            Height="30" 
+                                            Padding="8,0"
+                                            ToolTipService.ToolTip="查看采购单商品明细">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon Glyph="&#xE7B3;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                            <TextBlock Text="详情" FontSize="12" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+
                                     <!-- 一键入库：仅 Draft 状态可见 -->
                                     <Button Click="StockInButton_Click"
                                             Style="{StaticResource AccentButtonStyle}"
@@ -226,16 +251,47 @@
                                         </StackPanel>
                                     </Button>
 
-                                    <!-- 导出Excel：Draft 和 Received 状态可见 -->
-                                    <Button Click="ExportExcelButton_Click"
-                                            Height="30" 
-                                            Padding="10,0"
-                                            Visibility="{Binding Status, Converter={StaticResource PurchaseOrderStatusConverter}, ConverterParameter=NotCancelled}">
+                                    <!-- 导出Excel：Draft 和 Received 状态可见，右侧下拉支持手动打开文件夹与网页 -->
+                                    <SplitButton Click="ExportExcelButton_Click"
+                                                 Height="30" 
+                                                 Padding="10,0"
+                                                 Visibility="{Binding Status, Converter={StaticResource PurchaseOrderStatusConverter}, ConverterParameter=NotCancelled}">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                             <FontIcon Glyph="&#xEDE1;" FontSize="12"/>
                                             <TextBlock Text="导出Excel" FontSize="12"/>
                                         </StackPanel>
-                                    </Button>
+                                        <SplitButton.Flyout>
+                                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                <MenuFlyoutItem Text="导出 Excel 文件" Tag="{Binding}" Click="ExportExcelFlyoutItem_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xEDE1;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutSeparator/>
+                                                <MenuFlyoutItem Text="打开文件夹及网页" Tag="{Binding}" Click="RowOpenFolderAndBrowser_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xE8A7;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutItem Text="仅打开文件夹" Tag="{Binding}" Click="RowOpenFolderOnly_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xED25;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutItem Text="仅打开店铺后台" Tag="{Binding}" Click="RowOpenBrowserOnly_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xE774;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutSeparator/>
+                                                <MenuFlyoutItem Text="复制文件路径" Tag="{Binding}" Click="RowCopyPath_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xE8C8;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                            </MenuFlyout>
+                                        </SplitButton.Flyout>
+                                    </SplitButton>
 
                                     <!-- 删除：仅 Draft 和 Cancelled 状态可见 -->
                                     <Button Click="DeleteOrderButton_Click"
@@ -266,268 +322,303 @@
             </Grid>
         </Grid>
 
-        <!-- TAB 2: 新建采购单 (Fluent 三栏式选品与制单工作台) -->
-        <Grid x:Name="WorkbenchGrid" Grid.Row="2" Visibility="{x:Bind GetTab2Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
+        <!-- TAB 1: 快速制作采购单与待制采购单 (同屏同时显示，支持手动拖动调节两边大小) -->
+        <Grid x:Name="WorkbenchGrid" Grid.Row="2" Visibility="{x:Bind GetTab1Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="CategoryColumn" Width="Auto"/>
-                <ColumnDefinition x:Name="ProductColumn" Width="*" MinWidth="280"/>
-                <ColumnDefinition Width="12"/>
-                <ColumnDefinition x:Name="CartColumn" Width="520" MinWidth="380"/>
+                <!-- 左栏：商品分类 -->
+                <ColumnDefinition Width="150"/>
+                <!-- 中栏：快速选品区 (弹性填充) -->
+                <ColumnDefinition x:Name="ProductColumn" Width="*" MinWidth="320"/>
+                <!-- 中间选品区与右侧待制采购单大小调节分隔条 (可左右拖动) -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- 右栏：待制采购单 (支持左右拖动调整宽度) -->
+                <ColumnDefinition x:Name="CartColumn" Width="380" MinWidth="300" MaxWidth="750"/>
             </Grid.ColumnDefinitions>
 
-            <!-- 左栏：商品品类导航卡片容器 (支持平滑流畅折叠与展开动画) -->
-            <Grid x:Name="CategoryPanel" 
-                  Grid.Column="0" 
-                  Width="170">
-                <Border x:Name="CategoryBorder"
-                        Background="{ThemeResource LayerFillColorDefaultBrush}" 
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
-                        BorderThickness="1" 
-                        CornerRadius="8" 
-                        Margin="0,0,10,0" 
-                        Padding="8,10">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+            <!-- 左栏：商品品类 (固定舒适宽度 150px，不折叠) -->
+            <Border Grid.Column="0"
+                    Background="{ThemeResource LayerFillColorDefaultBrush}" 
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                    BorderThickness="1" 
+                    CornerRadius="8" 
+                    Margin="0,0,10,0" 
+                    Padding="8,10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                        <Grid Grid.Row="0" Margin="4,2,4,10">
-                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE8EC;" FontSize="14" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="商品品类" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <Button x:Name="CollapseCategoryBtn" 
-                                    HorizontalAlignment="Right" 
-                                    Height="28" Width="28" Padding="0"
-                                    ToolTipService.ToolTip="折叠品类列表，获得更大选品与制单空间"
-                                    Click="CollapseCategoryButton_Click">
-                                <FontIcon Glyph="&#xE76B;" FontSize="11"/>
-                            </Button>
-                        </Grid>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="6" Margin="4,2,4,10">
+                        <FontIcon Glyph="&#xE8EC;" FontSize="13" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="商品品类" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                    </StackPanel>
 
-                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                            <ItemsControl x:Name="CategoryItemsControl" ItemsSource="{Binding Categories}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Content="{Binding}" 
-                                                Style="{Binding Converter={StaticResource CategoryToStyleConverter}}"
-                                                Click="CategoryButton_Click" 
-                                                Margin="0,0,0,3"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </ScrollViewer>
-                    </Grid>
-                </Border>
-            </Grid>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl x:Name="CategoryItemsControl" ItemsSource="{Binding Categories}">
+                            <ItemsControl.ItemContainerTransitions>
+                                <TransitionCollection>
+                                    <EntranceThemeTransition FromVerticalOffset="20" IsStaggeringEnabled="True"/>
+                                    <RepositionThemeTransition/>
+                                </TransitionCollection>
+                            </ItemsControl.ItemContainerTransitions>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding}" 
+                                            Style="{Binding Converter={StaticResource CategoryToStyleConverter}}"
+                                            Click="CategoryButton_Click" 
+                                            Margin="0,0,0,3"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
 
-            <!-- 中栏：商品选品数据卡片 (Fluent 标准 Card 容器包裹) -->
+            <!-- 中栏：快速制作采购单 (商品选品卡片，自适应充满，商品名与采购按钮绝不折叠) -->
             <Border Grid.Column="1" 
                     Background="{ThemeResource LayerFillColorDefaultBrush}" 
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                     BorderThickness="1" 
                     CornerRadius="8" 
-                    Padding="12,10"
-                    Margin="0,0,4,0">
+                    Margin="0,0,0,0" 
+                    Padding="12,10">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="36"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <!-- 顶部工具栏 (AutoSuggestBox + 展开品类 + 当前分类徽标 + 右侧商品数量微标) -->
+                    <!-- 顶部工具栏：搜索、筛选、件数统计 -->
                     <Grid Grid.Row="0" Margin="0,0,0,10">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Button x:Name="ExpandCategoryBtn" 
-                                    Visibility="Collapsed" 
-                                    Height="32" 
-                                    Padding="8,0"
-                                    Click="ExpandCategoryButton_Click"
-                                    ToolTipService.ToolTip="重新展开左侧商品品类列表">
-                                <StackPanel Orientation="Horizontal" Spacing="6">
-                                    <FontIcon Glyph="&#xE8EC;" FontSize="12"/>
-                                    <TextBlock Text="品类" FontSize="12"/>
-                                </StackPanel>
-                            </Button>
+                        <!-- 左侧搜索与当前分类 -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <AutoSuggestBox x:Name="ProductSearchBox"
                                             QueryIcon="Find"
-                                            PlaceholderText="搜索商品名称或条码 (回车)"
-                                            Width="230"
+                                            PlaceholderText="搜索商品名称或条码"
+                                            Width="180"
                                             Height="32"
                                             Text="{Binding SearchProductKeyword, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                             QuerySubmitted="ProductSearchBox_QuerySubmitted"/>
-                            <Button Content="重置" Command="{Binding ResetProductSearchCommand}" Height="32" Padding="10,0"/>
+                            <Button Content="重置" Command="{Binding ResetProductSearchCommand}" Height="32" Padding="10,0" CornerRadius="4"/>
 
-                            <!-- 当前分类指示胶囊 -->
-                            <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                            <!-- 当前分类指示胶囊 (带切换弹性微动效) -->
+                            <Border x:Name="CurrentCategoryBadge"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                                     BorderThickness="1" 
-                                    CornerRadius="12" 
-                                    Padding="8,3" 
-                                    VerticalAlignment="Center">
+                                    CornerRadius="10" 
+                                    Padding="8,2" 
+                                    VerticalAlignment="Center"
+                                    RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform>
+                                    <CompositeTransform x:Name="CategoryBadgeTransform" ScaleX="1" ScaleY="1"/>
+                                </Border.RenderTransform>
+                                <Border.Resources>
+                                    <Storyboard x:Name="CategoryBadgePulseStoryboard">
+                                        <DoubleAnimation Storyboard.TargetName="CategoryBadgeTransform"
+                                                         Storyboard.TargetProperty="ScaleX"
+                                                         From="0.86" To="1.0" Duration="0:0:0.25">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                        <DoubleAnimation Storyboard.TargetName="CategoryBadgeTransform"
+                                                         Storyboard.TargetProperty="ScaleY"
+                                                         From="0.86" To="1.0" Duration="0:0:0.25">
+                                            <DoubleAnimation.EasingFunction>
+                                                <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                            </DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard>
+                                </Border.Resources>
                                 <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <FontIcon Glyph="&#xE8EC;" FontSize="10" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
                                     <TextBlock Text="分类:" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                     <TextBlock Text="{Binding SelectedCategory}" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
                                 </StackPanel>
                             </Border>
                         </StackPanel>
 
-                        <!-- 右侧商品统计与友好提示 (独立排布，绝不挤压) -->
-                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <!-- 右侧商品统计与提示 -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                             <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                                     BorderThickness="1" 
-                                    CornerRadius="12" 
-                                    Padding="8,3" 
+                                    CornerRadius="10" 
+                                    Padding="8,2" 
                                     VerticalAlignment="Center">
-                                <StackPanel Orientation="Horizontal" Spacing="3">
+                                <StackPanel Orientation="Horizontal" Spacing="2">
                                     <TextBlock Text="共" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
                                     <TextBlock Text="{Binding AvailableProductCount}" FontSize="11" FontWeight="Bold" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
                                     <TextBlock Text="件" FontSize="11" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
                                 </StackPanel>
                             </Border>
-                            <TextBlock Text="双击行可快速加入" 
+                            <TextBlock Text="双击行可加购" 
                                        Style="{ThemeResource CaptionTextBlockStyle}" 
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
                                        VerticalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
 
-                    <!-- 表头 (CaptionTextBlockStyle + TextFillColorSecondaryBrush) -->
-                    <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="6,6,0,0" Padding="12,0">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="105"/>
-                                <ColumnDefinition Width="2*"/>
-                                <ColumnDefinition Width="75"/>
-                                <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="55"/>
-                                <ColumnDefinition Width="40"/>
-                                <ColumnDefinition Width="1*"/>
-                                <ColumnDefinition Width="65"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="条码" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="1" Text="商品名称" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="2" Text="分类" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="3" Text="进货价" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="4" Text="库存" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="5" Text="单位" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="6" Text="供应商" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                            <TextBlock Grid.Column="7" Text="操作" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Grid>
-                    </Border>
+                    <!-- 商品列表 (卡片行布局 + 切换分类流畅入场过渡) -->
+                    <Grid Grid.Row="1">
+                        <Grid.Resources>
+                            <Storyboard x:Name="AvailableProductsEntranceStoryboard">
+                                <DoubleAnimation Storyboard.TargetName="AvailableProductsTranslate"
+                                                 Storyboard.TargetProperty="Y"
+                                                 From="14" To="0" Duration="0:0:0.22">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetName="AvailableProductsListView"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 From="0.3" To="1" Duration="0:0:0.2">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut"/>
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </Grid.Resources>
+                        <ListView x:Name="AvailableProductsListView"
+                                  ItemsSource="{Binding AvailableProducts}" 
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  SelectionMode="None"
+                                  Padding="0">
+                            <ListView.RenderTransform>
+                                <TranslateTransform x:Name="AvailableProductsTranslate" Y="0"/>
+                            </ListView.RenderTransform>
+                            <ListView.ItemContainerTransitions>
+                                <TransitionCollection>
+                                    <EntranceThemeTransition FromVerticalOffset="16" IsStaggeringEnabled="True"/>
+                                    <RepositionThemeTransition/>
+                                </TransitionCollection>
+                            </ListView.ItemContainerTransitions>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="6" 
+                                            Padding="10,8" 
+                                            Margin="0,0,0,5"
+                                            DoubleTapped="ProductRow_DoubleTapped">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />     <!-- 商品名称与分类条码 -->
+                                                <ColumnDefinition Width="Auto" />  <!-- 进货价与库存 -->
+                                                <ColumnDefinition Width="Auto" />  <!-- 采购按钮 -->
+                                            </Grid.ColumnDefinitions>
 
-                    <!-- 数据行 (虚拟化列表) -->
-                    <ListView Grid.Row="2" 
-                              ItemsSource="{Binding AvailableProducts}" 
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              SelectionMode="None"
-                              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                              BorderThickness="1,0,1,1"
-                              CornerRadius="0,0,6,6"
-                              Padding="0">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="Padding" Value="0"/>
-                                <Setter Property="MinHeight" Value="40"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Padding="12,8" DoubleTapped="ProductRow_DoubleTapped" Background="Transparent">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="105"/>
-                                        <ColumnDefinition Width="2*"/>
-                                        <ColumnDefinition Width="75"/>
-                                        <ColumnDefinition Width="70"/>
-                                        <ColumnDefinition Width="55"/>
-                                        <ColumnDefinition Width="40"/>
-                                        <ColumnDefinition Width="1*"/>
-                                        <ColumnDefinition Width="65"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{Binding Barcode}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding StoreCategory}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                    <TextBlock Grid.Column="3" Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="{ThemeResource PriceHighlightBrush}" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="4" Text="{Binding Stock}" FontWeight="Normal" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="5" Text="{Binding SaleUnit}" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="6" Text="{Binding Supplier}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" TextTrimming="CharacterEllipsis"/>
-                                    <!-- 次级温和按钮：消除大面积刺眼实心强调色块 -->
-                                    <Button Grid.Column="7" 
-                                            Click="AddProductToDraftButton_Click"
-                                            Height="28" 
-                                            Padding="8,0" 
-                                            HorizontalAlignment="Center" 
-                                            VerticalAlignment="Center">
-                                        <StackPanel Orientation="Horizontal" Spacing="4">
-                                            <FontIcon Glyph="&#xE710;" FontSize="10" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                                            <TextBlock Text="采购" FontSize="12"/>
-                                        </StackPanel>
-                                    </Button>
-                                </Grid>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                                            <!-- 左侧：商品名称 (全宽展开，TextWrapping="Wrap"，绝不折叠截断) -->
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="4" Margin="0,0,10,0">
+                                                <TextBlock Text="{Binding Name}" 
+                                                           FontWeight="SemiBold" 
+                                                           FontSize="13" 
+                                                           TextWrapping="Wrap"
+                                                           ToolTipService.ToolTip="{Binding Name}"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                                    <!-- 条码 -->
+                                                    <Border Background="{ThemeResource PillNeutralBackgroundBrush}" CornerRadius="3" Padding="5,1">
+                                                        <TextBlock Text="{Binding Barcode}" FontSize="10" Foreground="{ThemeResource PillNeutralForegroundBrush}"/>
+                                                    </Border>
+                                                    <!-- 分类 -->
+                                                    <Border Background="{ThemeResource PillInfoBackgroundBrush}" CornerRadius="3" Padding="5,1">
+                                                        <TextBlock Text="{Binding StoreCategory}" FontSize="10" Foreground="{ThemeResource PillInfoForegroundBrush}"/>
+                                                    </Border>
+                                                    <!-- 供应商 (如有) -->
+                                                    <TextBlock Text="{Binding Supplier}" 
+                                                               FontSize="10" 
+                                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
+                                                               VerticalAlignment="Center" 
+                                                               TextTrimming="CharacterEllipsis" 
+                                                               MaxWidth="110"/>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- 中间：进货价与当前库存 -->
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,0" HorizontalAlignment="Right" Spacing="2">
+                                                <TextBlock Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" 
+                                                           FontWeight="Bold" 
+                                                           FontSize="14" 
+                                                           Foreground="{ThemeResource PriceHighlightBrush}" 
+                                                           HorizontalAlignment="Right"/>
+                                                <StackPanel Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right">
+                                                    <TextBlock Text="库存:" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                                                    <TextBlock Text="{Binding Stock}" FontSize="10" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                    <TextBlock Text="{Binding SaleUnit}" FontSize="10" Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <!-- 右侧：采购按钮 (独立宽幅，清晰可见，绝不折叠) -->
+                                            <Button Grid.Column="2" 
+                                                    Click="AddProductToDraftButton_Click"
+                                                    Style="{StaticResource AccentButtonStyle}"
+                                                    Height="30" 
+                                                    MinWidth="70"
+                                                    Padding="8,0" 
+                                                    CornerRadius="4"
+                                                    VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                                    <FontIcon Glyph="&#xE710;" FontSize="10"/>
+                                                    <TextBlock Text="采购" FontSize="12" FontWeight="SemiBold"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
                 </Grid>
             </Border>
 
-            <!-- 动态调节分割条 (可左右拖拽自由调整待制采购单宽度) -->
-            <Border x:Name="CartSplitter" 
-                    Grid.Column="2" 
-                    Width="12" 
-                    Background="Transparent" 
-                    HorizontalAlignment="Center" 
+            <!-- 中间选品区与右侧待制采购单大小调节分隔条 (可左右拖动，双击恢复默认宽度) -->
+            <Border Grid.Column="2"
+                    x:Name="CartSplitter"
+                    Width="14"
+                    Background="Transparent"
+                    HorizontalAlignment="Center"
                     VerticalAlignment="Stretch"
-                    PointerEntered="CartSplitter_PointerEntered" 
-                    PointerExited="CartSplitter_PointerExited" 
-                    PointerPressed="CartSplitter_PointerPressed" 
-                    PointerMoved="CartSplitter_PointerMoved" 
-                    PointerReleased="CartSplitter_PointerReleased" 
-                    PointerCaptureLost="CartSplitter_PointerCaptureLost" 
+                    PointerEntered="CartSplitter_PointerEntered"
+                    PointerExited="CartSplitter_PointerExited"
+                    PointerPressed="CartSplitter_PointerPressed"
+                    PointerMoved="CartSplitter_PointerMoved"
+                    PointerReleased="CartSplitter_PointerReleased"
+                    PointerCaptureLost="CartSplitter_PointerCaptureLost"
                     DoubleTapped="CartSplitter_DoubleTapped"
-                    ToolTipService.ToolTip="按住左右拖动调节待制采购单宽度，双击恢复默认宽度">
+                    ToolTipService.ToolTip="按住左右拖动调整选品区与待制单宽度 (双击恢复默认)">
                 <Grid HorizontalAlignment="Center" VerticalAlignment="Stretch">
-                    <!-- 分割基准线 -->
-                    <Border x:Name="SplitterBar" 
-                            Width="2" 
-                            CornerRadius="1" 
-                            Background="{ThemeResource DividerStrokeColorDefaultBrush}" 
-                            HorizontalAlignment="Center" 
-                            VerticalAlignment="Stretch" 
-                            Margin="0,4"/>
-                    <!-- 居中药丸抓手手柄 (Grip) -->
-                    <Border x:Name="SplitterGrip" 
-                            Width="6" 
-                            Height="38" 
-                            CornerRadius="3" 
-                            Background="{ThemeResource ControlStrokeColorDefaultBrush}" 
-                            HorizontalAlignment="Center" 
-                            VerticalAlignment="Center">
-                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="3">
-                            <Ellipse Width="2" Height="2" Fill="{ThemeResource TextFillColorTertiaryBrush}"/>
-                            <Ellipse Width="2" Height="2" Fill="{ThemeResource TextFillColorTertiaryBrush}"/>
-                            <Ellipse Width="2" Height="2" Fill="{ThemeResource TextFillColorTertiaryBrush}"/>
-                        </StackPanel>
-                    </Border>
+                    <!-- 竖直视觉拖动手柄 -->
+                    <Border x:Name="SplitterHandle"
+                            Width="4" 
+                            Height="56"
+                            CornerRadius="2" 
+                            Background="{ThemeResource CardStrokeColorDefaultBrush}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Center"/>
                 </Grid>
             </Border>
 
-            <!-- 右栏：待制采购单明细与保存卡片 -->
+            <!-- 右栏：待制采购单 (与选品区同屏同时显示，支持拖动调整宽度) -->
             <Border Grid.Column="3" 
-                    Margin="4,0,0,0"
                     Background="{ThemeResource LayerFillColorDefaultBrush}" 
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
                     BorderThickness="1" 
                     CornerRadius="8" 
-                    Padding="14">
+                    Padding="12">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -535,40 +626,38 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <!-- 顶部采购单表头信息录入 -->
+                    <!-- 顶部标题与表头录入 -->
                     <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,10">
                         <Grid>
-                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE8F1;" FontSize="16" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="{Binding CartTitle}" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE8F1;" FontSize="15" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Text="待制采购单" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <Border Background="{ThemeResource AccentFillColorDefaultBrush}" 
                                         CornerRadius="10" 
-                                        Padding="7,1" 
+                                        Padding="6,1" 
                                         VerticalAlignment="Center"
                                         Visibility="{x:Bind GetCartBadgeVisibility(ViewModel.CartItems.Count), Mode=OneWay}">
                                     <TextBlock Text="{x:Bind ViewModel.CartItems.Count, Mode=OneWay}" 
-                                               FontSize="11" 
+                                               FontSize="10" 
                                                FontWeight="Bold" 
                                                Foreground="White"/>
                                 </Border>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
-                                <Button x:Name="ToggleCartExpandBtn" 
-                                        Click="ToggleCartExpandButton_Click" 
-                                        Height="28" 
-                                        Padding="8,0"
+                                <Button Command="{Binding ClearDraftCommand}" 
+                                        Height="26" 
+                                        Padding="8,0" 
                                         FontSize="11"
-                                        ToolTipService.ToolTip="一键切换【宽屏/紧凑】制单布局，亦可直接拖拽左侧分割条">
-                                    <StackPanel Orientation="Horizontal" Spacing="4">
-                                        <FontIcon Glyph="&#xE740;" FontSize="10"/>
-                                        <TextBlock Text="宽屏"/>
-                                    </StackPanel>
+                                        CornerRadius="4"
+                                        ToolTipService.ToolTip="清空待制单全部商品">
+                                    <TextBlock Text="清空"/>
                                 </Button>
                                 <Button Command="{Binding ImportFromAiCommand}" 
-                                        Height="28" 
-                                        Padding="8,0"
+                                        Height="26" 
+                                        Padding="8,0" 
                                         FontSize="11"
-                                        ToolTipService.ToolTip="拍照或手写单据，粘贴识别一键导入">
+                                        CornerRadius="4"
+                                        ToolTipService.ToolTip="拍照或手写单据，AI 识别自动填入">
                                     <StackPanel Orientation="Horizontal" Spacing="4">
                                         <FontIcon Glyph="&#xE99A;" FontSize="10" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
                                         <TextBlock Text="AI 识单"/>
@@ -576,89 +665,162 @@
                                 </Button>
                             </StackPanel>
                         </Grid>
-                        <TextBox Header="供货商名称:" 
-                                 PlaceholderText="例如：广州博美美发用品有限公司" 
-                                 Text="{Binding SupplierInput, Mode=TwoWay}"/>
-                        <TextBox Header="采购备注:" 
-                                 PlaceholderText="例如：加急发货 / 纸箱包装" 
-                                 Text="{Binding RemarkInput, Mode=TwoWay}"/>
+
+                        <!-- 供货商名称输入 -->
+                        <Grid ColumnSpacing="8" Margin="0,2,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="供货商:" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBox x:Name="SupplierTextBox"
+                                     Grid.Column="1" 
+                                     PlaceholderText="例如：广州博美美发用品有限公司" 
+                                     Text="{Binding SupplierInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="12"
+                                     KeyDown="SupplierTextBox_KeyDown"/>
+                        </Grid>
+
+                        <!-- 采购备注输入 -->
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="备　注:" VerticalAlignment="Center" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBox x:Name="RemarkTextBox"
+                                     Grid.Column="1" 
+                                     PlaceholderText="例如：加急发货 / 纸箱包装 (可选)" 
+                                     Text="{Binding RemarkInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     FontSize="12"
+                                     KeyDown="RemarkTextBox_KeyDown"/>
+                        </Grid>
                     </StackPanel>
 
                     <!-- 中部已选采购明细 -->
-                    <ListView Grid.Row="1" 
-                              ItemsSource="{Binding CartItems}" 
-                              SelectionMode="None"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                              Margin="0,0,0,10">
-                        <ListView.ItemContainerStyle>
-                            <Style TargetType="ListViewItem">
-                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                <Setter Property="Padding" Value="0"/>
-                            </Style>
-                        </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
-                                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
-                                        BorderThickness="1" 
-                                        CornerRadius="6" 
-                                        Padding="10,8" 
-                                        Margin="0,0,0,6">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="110"/>
-                                            <ColumnDefinition Width="80"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
+                    <Grid Grid.Row="1" Margin="0,0,0,10">
+                        <!-- 有商品时展示明细列表 -->
+                        <ListView ItemsSource="{Binding CartItems}" 
+                                  SelectionMode="None"
+                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                  Padding="0"
+                                  Visibility="{x:Bind GetHasCartItemsVisibility(ViewModel.CartItems.Count), Mode=OneWay}">
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0"/>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="6" 
+                                            Padding="10,8" 
+                                            Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
 
-                                        <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,6,0">
-                                            <TextBlock Text="{Binding ProductName}" 
-                                                       FontWeight="SemiBold" 
-                                                       FontSize="13" 
-                                                       TextTrimming="CharacterEllipsis"
-                                                       ToolTipService.ToolTip="{Binding ProductName}"/>
-                                            <TextBlock Text="{Binding Barcode}" 
-                                                       FontSize="11" 
-                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                                       ToolTipService.ToolTip="{Binding Barcode}"/>
-                                        </StackPanel>
+                                            <!-- 第一行：商品名称 (全宽展开) + 小计 + 移除按钮 -->
+                                            <Grid Grid.Row="0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
 
-                                        <!-- 采购单价 -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                            <TextBlock Text="进价 (元):" FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                            <TextBox Text="{Binding CostPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                                     Height="28" Width="72" HorizontalAlignment="Left"
-                                                     TextChanged="DraftCostPriceTextBox_TextChanged"
-                                                     LostFocus="DraftCostPriceTextBox_LostFocus"
-                                                     KeyDown="DraftNumericTextBox_KeyDown"/>
-                                        </StackPanel>
+                                                <TextBlock Grid.Column="0" 
+                                                           Text="{Binding ProductName}" 
+                                                           FontWeight="SemiBold" 
+                                                           FontSize="13" 
+                                                           TextWrapping="Wrap"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"
+                                                           ToolTipService.ToolTip="{Binding ProductName}"/>
 
-                                        <!-- 数量操作 -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="2" HorizontalAlignment="Center">
-                                            <Button Content="-" Click="DecreaseDraftQuantityButton_Click" Height="28" Width="26" Padding="0" CornerRadius="4"/>
-                                            <TextBox Text="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
-                                                     Width="50" Height="28" TextAlignment="Center" Padding="2,0" CornerRadius="4"
-                                                     TextChanged="DraftQuantityTextBox_TextChanged"
-                                                     LostFocus="DraftQuantityTextBox_LostFocus"
-                                                     KeyDown="DraftNumericTextBox_KeyDown"/>
-                                            <Button Content="+" Click="IncreaseDraftQuantityButton_Click" Height="28" Width="26" Padding="0" CornerRadius="4"/>
-                                        </StackPanel>
+                                                <TextBlock Grid.Column="1" 
+                                                           Text="{Binding Subtotal, Converter={StaticResource CurrencyConverter}}" 
+                                                           FontWeight="Bold" 
+                                                           FontSize="13" 
+                                                           Foreground="{ThemeResource PriceHighlightBrush}" 
+                                                           VerticalAlignment="Center" 
+                                                           Margin="0,0,6,0"/>
 
-                                        <!-- 小计 -->
-                                        <TextBlock Grid.Column="3" Text="{Binding Subtotal, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" FontSize="13" Foreground="{ThemeResource PriceHighlightBrush}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="0,0,6,0"/>
+                                                <Button Grid.Column="2" 
+                                                        Click="RemoveDraftItemButton_Click" 
+                                                        Height="26" Width="26" Padding="0" 
+                                                        CornerRadius="4"
+                                                        ToolTipService.ToolTip="移除该项">
+                                                    <FontIcon Glyph="&#xE74D;" FontSize="11"/>
+                                                </Button>
+                                            </Grid>
 
-                                        <Button Grid.Column="4" Click="RemoveDraftItemButton_Click" Height="28" Padding="6,0" ToolTipService.ToolTip="移除该项">
-                                            <FontIcon Glyph="&#xE74D;" FontSize="11"/>
-                                        </Button>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                                            <!-- 第二行：条码 + 进价输入框 + 数量加减 -->
+                                            <Grid Grid.Row="1" Margin="0,6,0,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
 
-                    <!-- 底部汇总与创建按钮 -->
+                                                <!-- 条码 -->
+                                                <TextBlock Grid.Column="0" 
+                                                           Text="{Binding Barcode}" 
+                                                           FontSize="11" 
+                                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
+                                                           VerticalAlignment="Center"/>
+
+                                                <!-- 进价输入 -->
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                    <TextBlock Text="进价: ¥" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding CostPrice, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                             Width="72" Height="30" MinHeight="30" 
+                                                             Padding="6,0" FontSize="12" CornerRadius="4"
+                                                             VerticalContentAlignment="Center"
+                                                             TextChanged="DraftCostPriceTextBox_TextChanged"
+                                                             LostFocus="DraftCostPriceTextBox_LostFocus"
+                                                             KeyDown="DraftNumericTextBox_KeyDown"/>
+                                                </StackPanel>
+
+                                                <!-- 数量步进器 -->
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="2" VerticalAlignment="Center">
+                                                    <TextBlock Text="数量:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,3,0"/>
+                                                    <Button Content="-" Click="DecreaseDraftQuantityButton_Click" Height="30" Width="26" Padding="0" CornerRadius="4" FontSize="12"/>
+                                                    <TextBox Text="{Binding Quantity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" 
+                                                             Width="48" Height="30" MinHeight="30" 
+                                                             TextAlignment="Center" Padding="0" FontSize="12" CornerRadius="4"
+                                                             VerticalContentAlignment="Center"
+                                                             TextChanged="DraftQuantityTextBox_TextChanged"
+                                                             LostFocus="DraftQuantityTextBox_LostFocus"
+                                                             KeyDown="DraftNumericTextBox_KeyDown"/>
+                                                    <Button Content="+" Click="IncreaseDraftQuantityButton_Click" Height="30" Width="26" Padding="0" CornerRadius="4" FontSize="12"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <!-- 空状态提示 -->
+                        <StackPanel VerticalAlignment="Center" 
+                                    HorizontalAlignment="Center" 
+                                    Spacing="8" 
+                                    Visibility="{x:Bind GetEmptyCartVisibility(ViewModel.CartItems.Count), Mode=OneWay}">
+                            <FontIcon Glyph="&#xE8F1;" FontSize="36" Foreground="{ThemeResource TextFillColorTertiaryBrush}" HorizontalAlignment="Center"/>
+                            <TextBlock Text="待制单暂无商品" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="请在左侧挑选商品并点击【采购】" 
+                                       Style="{ThemeResource CaptionTextBlockStyle}" 
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" 
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- 底部汇总与生成采购单 -->
                     <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" Padding="0,10,0,0">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -666,39 +828,32 @@
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
-                            <Grid Grid.Row="0" Margin="0,0,0,10">
+                            <Grid Grid.Row="0" Margin="0,0,0,8">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Left">
-                                    <TextBlock Text="品类数:" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                    <TextBlock Text="{Binding CartItems.Count}" FontSize="14" FontWeight="SemiBold"/>
-                                    <TextBlock Text=" | 总件数:" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="4,0,0,0"/>
-                                    <TextBlock Text="{Binding DraftTotalQuantity}" FontSize="15" FontWeight="Bold"/>
+                                    <TextBlock Text="品类:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <TextBlock Text="{Binding CartItems.Count}" FontSize="13" FontWeight="SemiBold"/>
+                                    <TextBlock Text=" | 总数:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="2,0,0,0"/>
+                                    <TextBlock Text="{Binding DraftTotalQuantity}" FontSize="14" FontWeight="Bold"/>
+                                    <TextBlock Text="件" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" HorizontalAlignment="Right">
-                                    <TextBlock Text="总额:" FontSize="13" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Bottom"/>
-                                    <TextBlock Text="{Binding DraftTotalAmount, Converter={StaticResource CurrencyConverter}}" FontSize="20" FontWeight="Bold" Foreground="{ThemeResource PriceHighlightBrush}"/>
+                                    <TextBlock Text="总额:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Bottom"/>
+                                    <TextBlock Text="{Binding DraftTotalAmount, Converter={StaticResource CurrencyConverter}}" FontSize="18" FontWeight="Bold" Foreground="{ThemeResource PriceHighlightBrush}"/>
                                 </StackPanel>
                             </Grid>
 
-                            <Grid Grid.Row="1" ColumnSpacing="10">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="1.4*"/>
-                                </Grid.ColumnDefinitions>
-                                <Button Grid.Column="0" Content="清空重填" Command="{Binding ClearDraftCommand}" Height="36" HorizontalAlignment="Stretch" CornerRadius="6"/>
-                                <!-- 界面唯一实心主操作按钮 (Primary Action) -->
-                                <Button Grid.Column="1" 
-                                        Click="CreatePurchaseOrderButton_Click" 
-                                        Style="{StaticResource AccentButtonStyle}" 
-                                        Height="36" 
-                                        HorizontalAlignment="Stretch"
-                                        CornerRadius="6"
-                                        FontWeight="SemiBold">
-                                    <StackPanel Orientation="Horizontal" Spacing="6">
-                                        <FontIcon Glyph="&#xE74E;" FontSize="13"/>
-                                        <TextBlock Text="生成采购单" FontSize="13"/>
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
+                            <Button Grid.Row="1" 
+                                    Click="CreatePurchaseOrderButton_Click" 
+                                    Style="{StaticResource AccentButtonStyle}" 
+                                    Height="36" 
+                                    HorizontalAlignment="Stretch"
+                                    CornerRadius="6"
+                                    FontWeight="SemiBold">
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <FontIcon Glyph="&#xE74E;" FontSize="13"/>
+                                    <TextBlock Text="生成采购单" FontSize="13"/>
+                                </StackPanel>
+                            </Button>
                         </Grid>
                     </Border>
                 </Grid>

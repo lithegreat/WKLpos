@@ -12,7 +12,8 @@
 [WanKePos.WinUI] (WinUI 3 表现层) --> [WanKePos.Infrastructure] --> [WanKePos.Domain]
 ```
 
-### 分层约束：
+### 分层约束与目标框架：
+本项目全局统一采用 **.NET 10**（严禁降级为 .NET 8 或其它版本）：
 1. **`WanKePos.Domain` (领域层)**：
    - 目标框架：`net10.0`（纯 C# 类库，**绝对不依赖任何 UI 框架、EF Core 或外部第三方 IO 库**）。
    - 包含：实体模型 (`Entities`)、业务枚举 (`Enums`)、仓储接口契约 (`Interfaces`)。
@@ -24,9 +25,13 @@
    - 必须通过接口向外部暴露能力，所有数据库读写均使用 `async/await` 异步方法。
 
 3. **表现层 (`WanKePos.WinUI`)**：
+   - 目标框架：`net10.0-windows10.0.19041.0`。
    - 采用 Windows App SDK 1.6 原生 WinUI 3 现代设计（Mica 材质、原生控件与流畅交互）。
    - 页面与 ViewModel 必须遵循 MVVM 解耦原则，使用 `CommunityToolkit.Mvvm` 库（`[ObservableProperty]`, `[RelayCommand]`）。
    - **禁止在表现层直接操作数据库连接或执行原生 SQL 拼接**，必须经由仓储接口（如 `IProductRepository`, `IPurchaseOrderRepository`）进行操作。
+
+4. **测试层 (`WanKePos.Tests`)**：
+   - 目标框架：`net10.0`。
 
 ---
 
@@ -66,35 +71,57 @@
 ## 5. 持续交付、自动打包与即时运行规范 (CI/CD, Packaging & Auto-Run)
 
 **核心约束与强制要求 (Mandatory Rule for AI Agents)**：
+- **发布规格规范（v0.2.0 起强制约定）**：**系统全局统一推行轻量安装包 (Framework-Dependent) 发布策略**，安装包体积由原本的 52MB+ 骤降至 **~23.6 MB**（解压部署体积由 200MB 降至 107MB）。目标运行机需具备 **.NET 10 Desktop Runtime (x64)**。
 - **每次代码或界面修改验证通过后，必须自动执行打包发布**。
-- 禁止仅执行 `dotnet build` 就结束任务，必须确保生成最终可交付的独立发布文件与 Windows 安装包，保证 `output_installer\` 下始终为最新版本。
+- 禁止仅执行 `dotnet build` 就结束任务，必须确保生成最终可交付的轻量 Windows 安装包，保证 `output_installer\` 下始终为最新版本。
 - **每次做完更改并生成 Setup 程序后，必须自动运行安装程序并打开**，以便即时进行端到端体验与功能验收。
 - 执行打包发布与自动运行安装程序命令：
   ```powershell
+  # 默认极速增量模式（~15秒完成构建、打包与自启安装）：
   powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
+
+  # 正式发版极限压缩模式（生成 ~23.6MB 最小生产安装包）：
+  powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1 -Speed Max
   ```
-  该脚本已内置全流程自动化逻辑：
+  该脚本已内置全流程自动化与增量优化逻辑：
   1. 自动终止正在运行的 `WanKePos.WinUI` 进程，防止文件占用锁定；
-  2. 执行 WinUI 3 独立免依赖编译发布 (`dotnet publish -c Release -r win-x64 --self-contained true -o publish_winui`)；
-  3. 清理 `publish_winui\` 中的临时锁与日志文件 (`*.db-shm`, `*.db-wal`, `*.log`)；
-  4. 自动定位 Inno Setup 编译器 (或自动安装)，生成单文件安装包 `output_installer\WanKePos_Setup_v0.1.0.exe`；
+  2. **智能增量感知与发布**：自动比对 `src/` 源码及资产最后修改时间，源码未改动时跳过编译（耗时 0s）；改动时使用 `--no-restore` 执行快速增量编译；
+  3. 清理临时锁与日志，并自动清洗剥除 80+ 个无用外语本地化 MUI 目录（仅保留必要中文资源）；
+  4. 自动定位 Inno Setup 编译器，支持分级压缩（日常默认 `Fast` 仅需 ~6-7 秒，正式发版可指定 `-Speed Max` 深度压缩至 ~23.6 MB）；
   5. **自动启动运行生成的 Setup 安装程序并打开应用** (`Start-Process`)。
 
 ---
 
 ## 6. 常用命令与操作指南
 
+### 开发环境与 .NET 10 SDK 路径说明
+- 本项目强制使用 **.NET 10** SDK 构建，禁止回退至 .NET 8。
+- 本机 .NET 10 SDK 安装于 `$env:USERPROFILE\.dotnet`（若全局 PATH 中的 `dotnet` 找不到对应 SDK，需优先引入此目录）。
+- 在 PowerShell 中执行手工命令前，建议配置环境变量：
+  ```powershell
+  $env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"
+  $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
+  ```
+
 ### 编译验证
 ```powershell
+$env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"; $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
 dotnet build WanKePos.sln
+```
+
+### 运行单元测试
+```powershell
+$env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"; $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
+dotnet test tests\WanKePos.Tests\WanKePos.Tests.csproj
 ```
 
 ### 独立发布、生成安装包并自动运行打开
 ```powershell
-# 一键自动发布、打包 Windows 安装包并自动运行安装程序打开 (更改后必须执行)
+# 一键自动发布、打包 Windows 安装包并自动运行安装程序打开 (更改后必须执行，流水线脚本内部已内置 .NET 10 自动定位)
 powershell -ExecutionPolicy Bypass -File .\installer\build_installer.ps1
 
 # 手动发布 WinUI 3 独立程序 (如需单独发布)
+$env:DOTNET_ROOT = "$env:USERPROFILE\.dotnet"; $env:PATH = "$env:USERPROFILE\.dotnet;" + $env:PATH
 dotnet publish src\WanKePos.WinUI\WanKePos.WinUI.csproj -c Release -r win-x64 --self-contained true -o publish_winui
 ```
 

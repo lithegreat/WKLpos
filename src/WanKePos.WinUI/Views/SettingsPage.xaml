@@ -8,27 +8,37 @@
     Background="Transparent"
     mc:Ignorable="d">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="28,20,28,28">
-        <StackPanel Spacing="8" MaxWidth="920" HorizontalAlignment="Left">
-            
-            <!-- WinUI Gallery 标准标头 -->
-            <controls:PageHeader Title="系统设置" 
-                                 Description="配置门店基础信息、小票打印硬件、界面外观、积分规则与在线更新" 
-                                 Glyph="&#xE713;"
-                                 BadgeText="快捷键 F6">
-                <Button Command="{Binding SaveSettingsCommand}" 
-                        Style="{StaticResource AccentButtonStyle}" 
-                        Height="36" 
-                        Padding="20,0" 
-                        CornerRadius="6">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE74E;" FontSize="13"/>
-                        <TextBlock Text="保存设置" FontSize="13" FontWeight="SemiBold"/>
-                    </StackPanel>
-                </Button>
-            </controls:PageHeader>
+    <Grid Padding="28,20,28,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-            <!-- 1. 门店信息 -->
+        <!-- WinUI Gallery 标准标头 (常驻固顶，不随内容滚动) -->
+        <controls:PageHeader Grid.Row="0"
+                             Title="系统设置" 
+                             Description="配置门店基础信息、小票打印硬件、界面外观、积分规则与在线更新" 
+                             Glyph="&#xE713;"
+                             BadgeText="快捷键 F6"
+                             MaxWidth="920"
+                             HorizontalAlignment="Left"
+                             Margin="0,0,0,16">
+            <Button Command="{Binding SaveSettingsCommand}" 
+                    Style="{StaticResource AccentButtonStyle}" 
+                    Height="36" 
+                    Padding="20,0" 
+                    CornerRadius="6">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE74E;" FontSize="13"/>
+                    <TextBlock Text="保存设置" FontSize="13" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Button>
+        </controls:PageHeader>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,16,28">
+            <StackPanel Spacing="8" MaxWidth="920" HorizontalAlignment="Left">
+
+                <!-- 1. 门店信息 -->
             <controls:SettingsGroup Header="门店信息" Description="门店核心信息将呈现在收银台主界面及小票抬头">
                 <controls:SettingsCard Header="门店名称" 
                                        Description="收银系统展示的门店全称" 
@@ -202,4 +212,5 @@
 
         </StackPanel>
     </ScrollViewer>
+    </Grid>
 </Page>

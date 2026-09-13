@@ -25,6 +25,29 @@ namespace WanKePos.WinUI.Views
             ViewModel.RequestConfirmDialog = ShowConfirmDialogAsync;
             ViewModel.ShowMessage = ShowMessageAsync;
 
+            ViewModel.PropertyChanged += (s, e) =>
+            {
+                if (e?.PropertyName == nameof(CashierViewModel.CurrentMember) && ViewModel.CurrentMember == null)
+                {
+                    DispatcherQueue?.TryEnqueue(() =>
+                    {
+                        if (MemberAutoSuggestBox != null)
+                        {
+                            MemberAutoSuggestBox.Text = string.Empty;
+                            MemberAutoSuggestBox.ItemsSource = null;
+                        }
+                    });
+                }
+                else if (e?.PropertyName == nameof(CashierViewModel.SelectedCategory))
+                {
+                    DispatcherQueue?.TryEnqueue(() =>
+                    {
+                        UpdateCategoryButtonsHighlight();
+                        PlayProductListAnimation();
+                    });
+                }
+            };
+
             this.Loaded += async (s, e) =>
             {
                 await ViewModel.InitializeAsync();
@@ -87,11 +110,52 @@ namespace WanKePos.WinUI.Views
             }
         }
 
-        private void MemberPhoneTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+        private async void MemberAutoSuggestBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
         {
-            if (e.Key == Windows.System.VirtualKey.Enter)
+            if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+            {
+                var query = sender.Text?.Trim();
+                if (string.IsNullOrWhiteSpace(query))
+                {
+                    sender.ItemsSource = null;
+                }
+                else
+                {
+                    var matches = await ViewModel.SuggestMembersAsync(query);
+                    sender.ItemsSource = matches;
+                }
+            }
+        }
+
+        private void MemberAutoSuggestBox_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
+        {
+            if (args.SelectedItem is Member member)
+            {
+                sender.Text = member.Phone ?? string.Empty;
+                ViewModel.SelectMember(member);
+            }
+        }
+
+        private void MemberAutoSuggestBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
+        {
+            if (args.ChosenSuggestion is Member member)
+            {
+                sender.Text = member.Phone ?? string.Empty;
+                ViewModel.SelectMember(member);
+            }
+            else
             {
                 ViewModel.SearchMemberCommand.Execute(null);
+            }
+        }
+
+        private void ClearMemberButton_Click(object sender, RoutedEventArgs e)
+        {
+            ViewModel.ClearMemberCommand.Execute(null);
+            if (MemberAutoSuggestBox != null)
+            {
+                MemberAutoSuggestBox.Text = string.Empty;
+                MemberAutoSuggestBox.ItemsSource = null;
             }
         }
 
@@ -101,28 +165,39 @@ namespace WanKePos.WinUI.Views
             {
                 await ViewModel.SelectCategoryAsync(category);
                 UpdateCategoryButtonsHighlight();
+                PlayProductListAnimation();
             }
+        }
+
+        public void PlayProductListAnimation()
+        {
+            try
+            {
+                ProductListEntranceStoryboard?.Begin();
+                CategoryBadgePulseStoryboard?.Begin();
+            }
+            catch { }
         }
 
         private void UpdateCategoryButtonsHighlight()
         {
             if (CategoryItemsControl == null) return;
-            var selected = ViewModel.SelectedCategory ?? "";
+            var selected = ViewModel.SelectedCategory;
             var selectedStyle = Application.Current.Resources.TryGetValue("CategoryItemSelectedStyle", out var aStyle) ? aStyle as Style : null;
             var defaultStyle = Application.Current.Resources.TryGetValue("CategoryItemButtonStyle", out var dStyle) ? dStyle as Style : null;
 
             FindAndStyleCategoryButtons(CategoryItemsControl, selected, selectedStyle, defaultStyle);
         }
 
-        private void FindAndStyleCategoryButtons(DependencyObject parent, string selected, Style? accentStyle, Style? defaultStyle)
+        private void FindAndStyleCategoryButtons(DependencyObject parent, string? selected, Style? accentStyle, Style? defaultStyle)
         {
-            int count = VisualTreeHelper.GetChildrenCount(parent);
+            int count = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(parent);
             for (int i = 0; i < count; i++)
             {
-                var child = VisualTreeHelper.GetChild(parent, i);
+                var child = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(parent, i);
                 if (child is Button btn && btn.Content is string cat)
                 {
-                    bool isMatch = string.Equals(cat, selected, StringComparison.OrdinalIgnoreCase);
+                    bool isMatch = !string.IsNullOrEmpty(selected) && string.Equals(cat, selected, StringComparison.OrdinalIgnoreCase);
                     if (isMatch && accentStyle != null)
                     {
                         btn.Style = accentStyle;

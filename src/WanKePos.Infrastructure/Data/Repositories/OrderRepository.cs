@@ -27,7 +27,10 @@ namespace WanKePos.Infrastructure.Data.Repositories
             {
                 order.OrderNo = DateTime.Now.ToString("yyyyMMddHHmmss") + Random.Shared.Next(1000, 9999).ToString("D4");
             }
-            order.CreatedAt = DateTime.Now;
+            if (order.CreatedAt == default)
+            {
+                order.CreatedAt = DateTime.Now;
+            }
 
             await _context.Orders.AddAsync(order);
             await _context.SaveChangesAsync();
@@ -93,6 +96,18 @@ namespace WanKePos.Infrastructure.Data.Repositories
             if (order != null)
             {
                 order.Status = status;
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public async Task UpdateOrderAsync(Order order)
+        {
+            var existing = await _context.Orders.Include(o => o.Items).FirstOrDefaultAsync(o => o.Id == order.Id);
+            if (existing != null)
+            {
+                existing.PaymentMethod = order.PaymentMethod;
+                existing.Status = order.Status;
+                existing.Remark = order.Remark;
                 await _context.SaveChangesAsync();
             }
         }

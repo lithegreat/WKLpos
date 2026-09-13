@@ -23,6 +23,7 @@ public partial class MemberListViewModel : ObservableObject
 
     public Func<Task<string?>>? RequestOpenFileDialog { get; set; }
     public Func<Task<Member?>>? RequestAddMemberDialog { get; set; }
+    public Func<Member, Task<Member?>>? RequestEditMemberDialog { get; set; }
     public Func<string, string, Task<bool>>? RequestConfirm { get; set; }
     public Action<string, string>? ShowMessage { get; set; }
 
@@ -30,14 +31,35 @@ public partial class MemberListViewModel : ObservableObject
     {
         _memberRepository = memberRepository;
         _excelImporter = excelImporter;
+
+        WeakReferenceMessenger.Default.Register<MembersChangedMessage>(this, async (r, m) =>
+        {
+            if (_isInitialized)
+            {
+                await ReloadAsync();
+            }
+            else
+            {
+                _needsRefresh = true;
+            }
+        });
     }
 
     private bool _isInitialized;
+    private bool _needsRefresh;
 
     [RelayCommand]
     public async Task InitializeAsync()
     {
-        if (_isInitialized) return;
+        if (_isInitialized)
+        {
+            if (_needsRefresh)
+            {
+                _needsRefresh = false;
+                await ReloadAsync();
+            }
+            return;
+        }
         _isInitialized = true;
         await ReloadAsync();
     }
@@ -77,6 +99,31 @@ public partial class MemberListViewModel : ObservableObject
 
                     await _memberRepository.AddOrUpdateAsync(member);
                     ShowMessage?.Invoke("开卡成功", $"新会员【{member.Name}】(手机: {member.Phone}) 已成功开通！");
+                    await ReloadAsync();
+                    WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
+                }
+                catch (Exception ex)
+                {
+                    ShowMessage?.Invoke("保存失败", $"错误: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    [RelayCommand]
+    public async Task EditMemberAsync(Member member)
+    {
+        if (member == null) return;
+
+        if (RequestEditMemberDialog != null)
+        {
+            var updated = await RequestEditMemberDialog.Invoke(member);
+            if (updated != null)
+            {
+                try
+                {
+                    await _memberRepository.UpdateAsync(updated);
+                    ShowMessage?.Invoke("修改成功", $"会员【{updated.Name}】档案已成功更新！");
                     await ReloadAsync();
                     WeakReferenceMessenger.Default.Send(new MembersChangedMessage());
                 }

@@ -85,4 +85,180 @@ public class ProductRepositoryTests
             connection.Dispose();
         }
     }
+
+    [Fact]
+    public async Task UpdateAsync_ShouldUpdateProductFields()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            var product = new Product
+            {
+                Barcode = "690001",
+                Name = "原始商品名",
+                StoreCategory = "洗护",
+                RetailPrice = 50.00m,
+                CostPrice = 25.00m,
+                Stock = 10,
+                SaleUnit = "瓶",
+                ShelfStatus = "已上架"
+            };
+            await repo.AddOrUpdateAsync(product);
+
+            // 修改商品属性
+            product.Name = "更新后的商品名";
+            product.RetailPrice = 58.00m;
+            product.CostPrice = 28.00m;
+            product.Stock = 15;
+            product.ShelfStatus = "已下架";
+
+            await repo.UpdateAsync(product);
+
+            var updated = await repo.GetByIdAsync(product.Id);
+            Assert.NotNull(updated);
+            Assert.Equal("更新后的商品名", updated.Name);
+            Assert.Equal(58.00m, updated.RetailPrice);
+            Assert.Equal(28.00m, updated.CostPrice);
+            Assert.Equal(15, updated.Stock);
+            Assert.Equal("已下架", updated.ShelfStatus);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task UpdateAsync_DuplicateBarcode_ShouldThrowException()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            var product1 = new Product { Barcode = "690001", Name = "商品1", RetailPrice = 10m };
+            var product2 = new Product { Barcode = "690002", Name = "商品2", RetailPrice = 20m };
+            await repo.AddOrUpdateAsync(product1);
+            await repo.AddOrUpdateAsync(product2);
+
+            // 尝试把 product2 的条码改成 product1 的条码
+            product2.Barcode = "690001";
+            var ex = await Assert.ThrowsAsync<System.InvalidOperationException>(() => repo.UpdateAsync(product2));
+            Assert.Contains("已被其他商品使用", ex.Message);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NonExistentProduct_ShouldThrowException()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            var product = new Product { Id = 99999, Barcode = "99999", Name = "不存在的商品" };
+            await Assert.ThrowsAsync<System.InvalidOperationException>(() => repo.UpdateAsync(product));
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public void Product_CopyFrom_ShouldRaisePropertyChanged()
+    {
+        var product = new Product
+        {
+            Barcode = "690001",
+            Name = "原始商品",
+            RetailPrice = 100m
+        };
+
+        var changedProps = new System.Collections.Generic.List<string>();
+        product.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName != null) changedProps.Add(e.PropertyName);
+        };
+
+        var updated = new Product
+        {
+            Barcode = "690001",
+            Name = "新商品名",
+            RetailPrice = 120m
+        };
+
+        product.CopyFrom(updated);
+
+        Assert.Equal("新商品名", product.Name);
+        Assert.Equal(120m, product.RetailPrice);
+        Assert.Contains(nameof(Product.Name), changedProps);
+        Assert.Contains(nameof(Product.RetailPrice), changedProps);
+    }
+
+    [Fact]
+    public async Task BatchUpdateStockAsync_ShouldDeductAndIncreaseStockCorrectly()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            var p1 = new Product { Barcode = "BATCH01", Name = "商品1", Stock = 50 };
+            var p2 = new Product { Barcode = "BATCH02", Name = "商品2", Stock = 20 };
+            await repo.AddOrUpdateAsync(p1);
+            await repo.AddOrUpdateAsync(p2);
+
+            // 批量变动：p1 扣减 5，p2 增加 10
+            var changes = new System.Collections.Generic.Dictionary<int, decimal>
+            {
+                { p1.Id, -5 },
+                { p2.Id, 10 }
+            };
+
+            await repo.BatchUpdateStockAsync(changes);
+
+            var updatedP1 = await repo.GetByIdAsync(p1.Id);
+            var updatedP2 = await repo.GetByIdAsync(p2.Id);
+
+            Assert.NotNull(updatedP1);
+            Assert.NotNull(updatedP2);
+            Assert.Equal(45, updatedP1.Stock);
+            Assert.Equal(30, updatedP2.Stock);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task GetByCategoryAsync_AllAndSpecific_ShouldFilterCorrectly()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            await repo.AddOrUpdateAsync(new Product { Barcode = "CAT01", Name = "洗头膏", StoreCategory = "洗护" });
+            await repo.AddOrUpdateAsync(new Product { Barcode = "CAT02", Name = "护发素", StoreCategory = "洗护" });
+            await repo.AddOrUpdateAsync(new Product { Barcode = "CAT03", Name = "染发膏", StoreCategory = "染发" });
+
+            var allProducts = await repo.GetByCategoryAsync(WanKePos.Domain.CategoryConstants.All);
+            Assert.Equal(3, allProducts.Count);
+
+            var shampooProducts = await repo.GetByCategoryAsync("洗护");
+            Assert.Equal(2, shampooProducts.Count);
+            Assert.All(shampooProducts, p => Assert.Equal("洗护", p.StoreCategory));
+
+            var dyeProducts = await repo.GetByCategoryAsync("染发");
+            Assert.Single(dyeProducts);
+            Assert.Equal("染发膏", dyeProducts[0].Name);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
 }

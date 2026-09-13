@@ -23,6 +23,7 @@ public sealed partial class ProductListPage : Page
 
         ViewModel.RequestOpenFileDialog = OpenFileDialogAsync;
         ViewModel.RequestAddProductDialog = ShowAddProductDialogAsync;
+        ViewModel.RequestEditProductDialog = ShowEditProductDialogAsync;
         ViewModel.RequestConfirm = ShowConfirmDialogAsync;
         ViewModel.ShowMessage = ShowMessageAsync;
 
@@ -36,6 +37,21 @@ public sealed partial class ProductListPage : Page
     private async Task<Product?> ShowAddProductDialogAsync()
     {
         var dialog = new AddProductContentDialog(ViewModel.Categories)
+        {
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
+        };
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            return dialog.CreatedProduct;
+        }
+        return null;
+    }
+
+    private async Task<Product?> ShowEditProductDialogAsync(Product product)
+    {
+        var dialog = new AddProductContentDialog(ViewModel.Categories, product)
         {
             XamlRoot = this.XamlRoot,
             RequestedTheme = this.ActualTheme
@@ -105,7 +121,18 @@ public sealed partial class ProductListPage : Page
         {
             await ViewModel.FilterByCategoryAsync(category);
             UpdateCategoryButtonsHighlight();
+            PlayCategorySwitchAnimation();
         }
+    }
+
+    public void PlayCategorySwitchAnimation()
+    {
+        try
+        {
+            ProductTableEntranceStoryboard?.Begin();
+            CategoryBadgePulseStoryboard?.Begin();
+        }
+        catch { }
     }
 
     private void UpdateCategoryButtonsHighlight()
@@ -143,7 +170,39 @@ public sealed partial class ProductListPage : Page
         }
     }
 
+    private void EditProductButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.DataContext is Product product)
+        {
+            ViewModel.EditProductCommand.Execute(product);
+        }
+    }
+
     private void DeleteProductButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.DataContext is Product product)
+        {
+            ViewModel.DeleteProductCommand.Execute(product);
+        }
+    }
+
+    private void ProductListView_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (e.OriginalSource is FrameworkElement { DataContext: Product product })
+        {
+            ViewModel.EditProductCommand.Execute(product);
+        }
+    }
+
+    private void EditProductMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.DataContext is Product product)
+        {
+            ViewModel.EditProductCommand.Execute(product);
+        }
+    }
+
+    private void DeleteProductMenuItem_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement elem && elem.DataContext is Product product)
         {

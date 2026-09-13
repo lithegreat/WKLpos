@@ -70,6 +70,12 @@
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <ItemsControl x:Name="CategoryItemsControl" ItemsSource="{Binding Categories}">
+                            <ItemsControl.ItemContainerTransitions>
+                                <TransitionCollection>
+                                    <EntranceThemeTransition FromVerticalOffset="20" IsStaggeringEnabled="True"/>
+                                    <RepositionThemeTransition/>
+                                </TransitionCollection>
+                            </ItemsControl.ItemContainerTransitions>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button Content="{Binding}" 
@@ -105,14 +111,39 @@
                                 <TextBlock Text="搜索" FontSize="13"/>
                             </StackPanel>
                         </Button>
-                        <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        <!-- 当前分类指示胶囊 (带切换弹性微动效) -->
+                        <Border x:Name="CurrentCategoryBadge"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 BorderThickness="1"
                                 CornerRadius="12"
                                 Padding="10,3"
                                 VerticalAlignment="Center"
-                                Margin="4,0,0,0">
+                                Margin="4,0,0,0"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <CompositeTransform x:Name="CategoryBadgeTransform" ScaleX="1" ScaleY="1"/>
+                            </Border.RenderTransform>
+                            <Border.Resources>
+                                <Storyboard x:Name="CategoryBadgePulseStoryboard">
+                                    <DoubleAnimation Storyboard.TargetName="CategoryBadgeTransform"
+                                                     Storyboard.TargetProperty="ScaleX"
+                                                     From="0.86" To="1.0" Duration="0:0:0.25">
+                                        <DoubleAnimation.EasingFunction>
+                                            <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                    <DoubleAnimation Storyboard.TargetName="CategoryBadgeTransform"
+                                                     Storyboard.TargetProperty="ScaleY"
+                                                     From="0.86" To="1.0" Duration="0:0:0.25">
+                                        <DoubleAnimation.EasingFunction>
+                                            <BackEase Amplitude="0.35" EasingMode="EaseOut"/>
+                                        </DoubleAnimation.EasingFunction>
+                                    </DoubleAnimation>
+                                </Storyboard>
+                            </Border.Resources>
                             <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE8EC;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center"/>
                                 <TextBlock Text="当前分类:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                 <TextBlock Text="{Binding SelectedCategory}" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource PriceHighlightBrush}"/>
                             </StackPanel>
@@ -134,7 +165,7 @@
                             <ColumnDefinition Width="45"/>
                             <ColumnDefinition Width="55"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="95"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="条码" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="商品名称" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
@@ -150,63 +181,114 @@
                     </Grid>
                 </Border>
 
-                <!-- 数据行 (虚拟化列表) -->
-                <ListView Grid.Row="2" 
-                          ItemsSource="{Binding Products}" 
-                          ScrollViewer.VerticalScrollBarVisibility="Auto"
-                          SelectionMode="None"
-                          BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                          BorderThickness="1,0,1,1"
-                          CornerRadius="0,0,8,8"
-                          Padding="0">
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="MinHeight" Value="40"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <Grid Padding="14,8">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="120"/>
-                                    <ColumnDefinition Width="2*"/>
-                                    <ColumnDefinition Width="80"/>
-                                    <ColumnDefinition Width="75"/>
-                                    <ColumnDefinition Width="75"/>
-                                    <ColumnDefinition Width="75"/>
-                                    <ColumnDefinition Width="65"/>
-                                    <ColumnDefinition Width="45"/>
-                                    <ColumnDefinition Width="55"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="70"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="{Binding Barcode}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Grid.Column="2" Text="{Binding StoreCategory}" VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Grid.Column="3" Text="{Binding RetailPrice, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="{ThemeResource PriceHighlightBrush}" VerticalAlignment="Center" FontSize="13"/>
-                                <TextBlock Grid.Column="4" Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
-                                <TextBlock Grid.Column="5" Text="{Binding MemberPrice, Converter={StaticResource CurrencyConverter}}" Foreground="{ThemeResource SuccessTextBrush}" VerticalAlignment="Center" FontSize="12"/>
-                                <TextBlock Grid.Column="6" Text="{Binding Stock}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13"/>
-                                <TextBlock Grid.Column="7" Text="{Binding SaleUnit}" VerticalAlignment="Center" FontSize="12"/>
-                                <TextBlock Grid.Column="8" Text="{Binding ShelfStatus}" VerticalAlignment="Center" FontSize="12"/>
-                                <TextBlock Grid.Column="9" Text="{Binding Supplier}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
-                                <!-- 操作按钮 -->
-                                <Button Grid.Column="10" 
-                                        Click="DeleteProductButton_Click"
-                                        Height="28" 
-                                        Padding="8,0" 
-                                        CornerRadius="4"
-                                        HorizontalAlignment="Center"
-                                        VerticalAlignment="Center"
-                                        ToolTipService.ToolTip="删除商品档案">
-                                    <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="{ThemeResource CriticalTextBrush}"/>
-                                </Button>
-                            </Grid>
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
-                </ListView>
+                <!-- 数据行 (虚拟化列表 + 切换分类流畅过渡) -->
+                <Grid Grid.Row="2">
+                    <Grid.Resources>
+                        <Storyboard x:Name="ProductTableEntranceStoryboard">
+                            <DoubleAnimation Storyboard.TargetName="ProductTableTranslate"
+                                             Storyboard.TargetProperty="Y"
+                                             From="14" To="0" Duration="0:0:0.22">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="ProductListView"
+                                             Storyboard.TargetProperty="Opacity"
+                                             From="0.3" To="1" Duration="0:0:0.2">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut"/>
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </Grid.Resources>
+                    <ListView x:Name="ProductListView"
+                              ItemsSource="{Binding Products}" 
+                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                              SelectionMode="None"
+                              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                              BorderThickness="1,0,1,1"
+                              CornerRadius="0,0,8,8"
+                              Padding="0"
+                              DoubleTapped="ProductListView_DoubleTapped">
+                        <ListView.RenderTransform>
+                            <TranslateTransform x:Name="ProductTableTranslate" Y="0"/>
+                        </ListView.RenderTransform>
+                        <ListView.ItemContainerTransitions>
+                            <TransitionCollection>
+                                <EntranceThemeTransition FromVerticalOffset="16" IsStaggeringEnabled="True"/>
+                                <RepositionThemeTransition/>
+                            </TransitionCollection>
+                        </ListView.ItemContainerTransitions>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Padding" Value="0"/>
+                                <Setter Property="MinHeight" Value="40"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="14,8">
+                                    <Grid.ContextFlyout>
+                                        <MenuFlyout>
+                                            <MenuFlyoutItem Text="编辑商品" Click="EditProductMenuItem_Click">
+                                                <MenuFlyoutItem.Icon>
+                                                    <FontIcon Glyph="&#xE70F;"/>
+                                                </MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                            <MenuFlyoutSeparator/>
+                                            <MenuFlyoutItem Text="删除商品" Click="DeleteProductMenuItem_Click">
+                                                <MenuFlyoutItem.Icon>
+                                                    <FontIcon Glyph="&#xE74D;" Foreground="{ThemeResource CriticalTextBrush}"/>
+                                                </MenuFlyoutItem.Icon>
+                                            </MenuFlyoutItem>
+                                        </MenuFlyout>
+                                    </Grid.ContextFlyout>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="120"/>
+                                        <ColumnDefinition Width="2*"/>
+                                        <ColumnDefinition Width="80"/>
+                                        <ColumnDefinition Width="75"/>
+                                        <ColumnDefinition Width="75"/>
+                                        <ColumnDefinition Width="75"/>
+                                        <ColumnDefinition Width="65"/>
+                                        <ColumnDefinition Width="45"/>
+                                        <ColumnDefinition Width="55"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="95"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Barcode}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding StoreCategory}" VerticalAlignment="Center" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding RetailPrice, Converter={StaticResource CurrencyConverter}}" FontWeight="Bold" Foreground="{ThemeResource PriceHighlightBrush}" VerticalAlignment="Center" FontSize="13"/>
+                                    <TextBlock Grid.Column="4" Text="{Binding CostPrice, Converter={StaticResource CurrencyConverter}}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12"/>
+                                    <TextBlock Grid.Column="5" Text="{Binding MemberPrice, Converter={StaticResource CurrencyConverter}}" Foreground="{ThemeResource SuccessTextBrush}" VerticalAlignment="Center" FontSize="12"/>
+                                    <TextBlock Grid.Column="6" Text="{Binding Stock}" FontWeight="SemiBold" VerticalAlignment="Center" FontSize="13"/>
+                                    <TextBlock Grid.Column="7" Text="{Binding SaleUnit}" VerticalAlignment="Center" FontSize="12"/>
+                                    <TextBlock Grid.Column="8" Text="{Binding ShelfStatus}" VerticalAlignment="Center" FontSize="12"/>
+                                    <TextBlock Grid.Column="9" Text="{Binding Supplier}" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorTertiaryBrush}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                    <!-- 操作按钮 -->
+                                    <StackPanel Grid.Column="10" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                        <Button Click="EditProductButton_Click"
+                                                Height="28" 
+                                                Padding="8,0" 
+                                                CornerRadius="4"
+                                                ToolTipService.ToolTip="编辑修改商品">
+                                            <FontIcon Glyph="&#xE70F;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                        </Button>
+                                        <Button Click="DeleteProductButton_Click"
+                                                Height="28" 
+                                                Padding="8,0" 
+                                                CornerRadius="4"
+                                                ToolTipService.ToolTip="删除商品档案">
+                                            <FontIcon Glyph="&#xE74D;" FontSize="11" Foreground="{ThemeResource CriticalTextBrush}"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
             </Grid>
         </Grid>
     </Grid>

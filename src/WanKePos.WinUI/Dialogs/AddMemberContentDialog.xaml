@@ -103,11 +103,24 @@
                 </StackPanel>
             </Grid>
 
-            <!-- 家庭住址 -->
-            <StackPanel Spacing="4">
-                <TextBlock Text="家庭住址 / 备注"/>
-                <TextBox x:Name="AddressTextBox" PlaceholderText="选填"/>
-            </StackPanel>
+            <!-- 会员状态与家庭住址 -->
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="4">
+                    <TextBlock Text="会员状态"/>
+                    <ComboBox x:Name="StatusComboBox" SelectedIndex="0" HorizontalAlignment="Stretch">
+                        <ComboBoxItem Content="正常"/>
+                        <ComboBoxItem Content="禁用"/>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <TextBlock Text="家庭住址 / 备注"/>
+                    <TextBox x:Name="AddressTextBox" PlaceholderText="选填"/>
+                </StackPanel>
+            </Grid>
 
             <!-- 错误提示 -->
             <TextBlock x:Name="ErrorTextBlock" Foreground="{ThemeResource CriticalTextBrush}" FontSize="12" Visibility="Collapsed"/>
