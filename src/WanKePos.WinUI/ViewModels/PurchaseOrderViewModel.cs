@@ -63,7 +63,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
     private PurchaseOrder? _selectedOrder;
 
     [ObservableProperty]
-    private int _selectedTabIndex; // 0 = 采购单记录与入库, 1 = 快速制作采购单, 2 = 待制采购单
+    private int _selectedTabIndex; // 0 = 采购单记录与入库, 1 = 快速制作与待制采购单
 
     [RelayCommand]
     public void GoToOrders() => SelectedTabIndex = 0;
@@ -72,7 +72,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
     public void GoToQuickCreate() => SelectedTabIndex = 1;
 
     [RelayCommand]
-    public void GoToDraft() => SelectedTabIndex = 2;
+    public void GoToDraft() => SelectedTabIndex = 1;
 
     /// <summary>
     /// 入库操作进行中标志 (防止重复点击)
@@ -671,8 +671,8 @@ public partial class PurchaseOrderViewModel : ObservableObject
 
         RecalculateDraftTotals();
 
-        // 切换到【待制采购单】工作台方便立即复核明细与生成采购单
-        SelectedTabIndex = 2;
+        // 切换到【制作采购单】工作台（快速制作与待制采购单同屏显示）
+        SelectedTabIndex = 1;
 
         if (newProductCount > 0)
         {

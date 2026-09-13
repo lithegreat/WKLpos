@@ -324,31 +324,12 @@ public sealed partial class PurchaseOrderPage : Page
         UpdateTabButtonStyles();
     }
 
-    private void TabDraftOrderButton_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.SelectedTabIndex = 2;
-        UpdateTabButtonStyles();
-    }
-
-    private void GoToDraftButton_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.SelectedTabIndex = 2;
-        UpdateTabButtonStyles();
-    }
-
-    private void ContinuePickingButton_Click(object sender, RoutedEventArgs e)
-    {
-        ViewModel.SelectedTabIndex = 1;
-        UpdateTabButtonStyles();
-    }
-
     private void UpdateTabButtonStyles()
     {
-        if (TabOrdersButton == null || TabCreateOrderButton == null || TabDraftOrderButton == null) return;
+        if (TabOrdersButton == null || TabCreateOrderButton == null) return;
         var accentStyle = Application.Current.Resources.TryGetValue("AccentButtonStyle", out var aStyle) ? aStyle as Style : null;
 
         TabOrdersButton.Style = ViewModel.SelectedTabIndex == 0 ? accentStyle : null;
         TabCreateOrderButton.Style = ViewModel.SelectedTabIndex == 1 ? accentStyle : null;
-        TabDraftOrderButton.Style = ViewModel.SelectedTabIndex == 2 ? accentStyle : null;
     }
 }
