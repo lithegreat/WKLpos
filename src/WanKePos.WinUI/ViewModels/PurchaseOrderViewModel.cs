@@ -84,6 +84,21 @@ public partial class PurchaseOrderViewModel : ObservableObject
     public Func<string, string, Task<bool>>? RequestConfirm { get; set; }
     public Func<string, string, Task<string?>>? RequestSaveFileDialog { get; set; }
     public Func<Task<AiPurchaseOrderDto?>>? RequestAiImportDialog { get; set; }
+    public Func<string, PurchaseOrder, Task>? RequestExportSuccessDialog { get; set; }
+
+    [ObservableProperty]
+    private string? _lastExportedFilePath;
+
+    [ObservableProperty]
+    private string? _lastExportedOrderNo;
+
+    [ObservableProperty]
+    private bool _hasExportedOrder;
+
+    [ObservableProperty]
+    private string _exportSuccessBarMessage = string.Empty;
+
+    private readonly Dictionary<string, string> _orderExportedPaths = new();
 
     public PurchaseOrderViewModel(
         IPurchaseOrderRepository purchaseRepo,
@@ -431,19 +446,33 @@ public partial class PurchaseOrderViewModel : ObservableObject
             var settings = await _settingsRepo.GetSettingsAsync();
             var exportedPath = await _exporter.ExportToExcelAsync(order, settings, savePath);
 
-            PostExportActions(exportedPath);
+            // 记录导出信息与状态
+            _orderExportedPaths[order.PurchaseOrderNo] = exportedPath;
+            LastExportedFilePath = exportedPath;
+            LastExportedOrderNo = order.PurchaseOrderNo;
+            HasExportedOrder = true;
+            ExportSuccessBarMessage = $"采购单【{order.PurchaseOrderNo}】Excel 导出成功！保存路径：{exportedPath}";
 
-            // 提示用户并在弹窗中清晰给出操作指引
-            ShowMessage?.Invoke("导出成功",
-                $"采购收货单已生成并保存在【我的文档\\采购单】！\n\n" +
-                $"文件路径：\n{exportedPath}\n\n" +
-                $"📋 文件路径已自动复制到剪贴板！\n" +
-                $"🌐 已为您打开【店铺商品管理 (https://estore.jd.com/goods/list)】。\n" +
-                $"📁 已在文件夹中高亮选中该文件。\n\n" +
-                $"【后续操作指引】：\n" +
-                $"1. 点击网页右上角的【批量操作】按钮；\n" +
-                $"2. 点击下拉列表中的【批量收货】；\n" +
-                $"3. 在弹窗中点击【点击选择Excel文件】，直接按 Ctrl+V 粘贴文件路径（或拖入文件）即可完成批量收货！");
+            // 复制文件路径到系统剪贴板，方便随时粘贴
+            CopyPathToClipboard(exportedPath);
+
+            // 弹出提示或专用对话框（提供手动打开文件夹与浏览器按钮，绝不自动弹出干扰用户）
+            if (RequestExportSuccessDialog != null)
+            {
+                await RequestExportSuccessDialog.Invoke(exportedPath, order);
+            }
+            else
+            {
+                ShowMessage?.Invoke("导出成功",
+                    $"采购收货单已生成并保存在【我的文档\\采购单】！\n\n" +
+                    $"文件路径：\n{exportedPath}\n\n" +
+                    $"📋 文件路径已自动复制到剪贴板！\n" +
+                    $"💡 系统未自动弹出窗口，您可随时点击操作按钮打开文件夹与店铺后台。\n\n" +
+                    $"【后续操作指引】：\n" +
+                    $"1. 点击【打开文件夹及网页】；\n" +
+                    $"2. 在打开的京东网页右上角点击【批量操作】->【批量收货】；\n" +
+                    $"3. 点击【点击选择Excel文件】，直接按 Ctrl+V 粘贴文件路径（或拖入文件）即可完成批量收货！");
+            }
         }
         catch (Exception ex)
         {
@@ -452,20 +481,64 @@ public partial class PurchaseOrderViewModel : ObservableObject
     }
 
     /// <summary>
-    /// 导出后置协同操作：自动复制路径、唤起管理网页、定位文件并置顶系统窗口
+    /// 手动打开文件资源管理器定位选中导出的 Excel 文件，并同时唤起默认浏览器打开店铺后台
     /// </summary>
-    private void PostExportActions(string exportedPath)
+    [RelayCommand]
+    public void OpenExportLocationAndBrowser(string? filePath)
     {
-        // 1. 复制文件路径到系统剪贴板
+        var targetPath = !string.IsNullOrWhiteSpace(filePath) ? filePath : LastExportedFilePath;
+        CopyPathToClipboard(targetPath);
+        OpenBrowserToStore();
+        OpenFileLocation(targetPath);
+    }
+
+    /// <summary>
+    /// 仅手动在文件资源管理器中定位导出的 Excel 文件
+    /// </summary>
+    [RelayCommand]
+    public void OpenExportLocationOnly(string? filePath)
+    {
+        var targetPath = !string.IsNullOrWhiteSpace(filePath) ? filePath : LastExportedFilePath;
+        OpenFileLocation(targetPath);
+    }
+
+    /// <summary>
+    /// 仅在浏览器中打开店铺商品管理网页
+    /// </summary>
+    [RelayCommand]
+    public void OpenStoreWebsiteOnly()
+    {
+        OpenBrowserToStore();
+    }
+
+    /// <summary>
+    /// 复制指定文件路径到系统剪贴板
+    /// </summary>
+    [RelayCommand]
+    public void CopyExportPath(string? filePath)
+    {
+        var targetPath = !string.IsNullOrWhiteSpace(filePath) ? filePath : LastExportedFilePath;
+        if (!string.IsNullOrEmpty(targetPath))
+        {
+            CopyPathToClipboard(targetPath);
+            ShowMessage?.Invoke("提示", $"文件路径已复制到剪贴板：\n{targetPath}");
+        }
+    }
+
+    public static void CopyPathToClipboard(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return;
         try
         {
             var dataPackage = new DataPackage();
-            dataPackage.SetText(exportedPath);
+            dataPackage.SetText(path);
             Clipboard.SetContent(dataPackage);
         }
         catch { }
+    }
 
-        // 2. 在浏览器中打开店铺商品管理
+    public static void OpenBrowserToStore()
+    {
         try
         {
             Process.Start(new ProcessStartInfo
@@ -475,28 +548,66 @@ public partial class PurchaseOrderViewModel : ObservableObject
             });
         }
         catch { }
+    }
 
-        // 3. 在资源管理器中定位并高亮选中导出的 Excel 文件
+    public static void OpenFileLocation(string? filePath)
+    {
         try
         {
-            Process.Start(new ProcessStartInfo
+            if (!string.IsNullOrEmpty(filePath) && System.IO.File.Exists(filePath))
             {
-                FileName = "explorer.exe",
-                Arguments = $"/select,\"{exportedPath}\"",
-                UseShellExecute = true
-            });
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"/select,\"{filePath}\"",
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                var folder = PurchaseOrderExporter.DefaultExportDirectory;
+                if (!System.IO.Directory.Exists(folder))
+                {
+                    System.IO.Directory.CreateDirectory(folder);
+                }
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"\"{folder}\"",
+                    UseShellExecute = true
+                });
+            }
+        }
+        catch { }
+    }
+
+    public string? GetExportedFilePathForOrder(PurchaseOrder order)
+    {
+        if (order == null) return null;
+        if (_orderExportedPaths.TryGetValue(order.PurchaseOrderNo, out var path) && System.IO.File.Exists(path))
+        {
+            return path;
+        }
+        return LocateExportedExcelFile(order);
+    }
+
+    public static string? LocateExportedExcelFile(PurchaseOrder order)
+    {
+        var exportDir = PurchaseOrderExporter.DefaultExportDirectory;
+        if (!System.IO.Directory.Exists(exportDir)) return null;
+
+        var pattern = $"zggj_门店商品-批量收货_{order.PurchaseOrderNo}_*.xlsx";
+        try
+        {
+            var files = System.IO.Directory.GetFiles(exportDir, pattern);
+            if (files.Length > 0)
+            {
+                return files.OrderByDescending(f => new System.IO.FileInfo(f).LastWriteTime).First();
+            }
         }
         catch { }
 
-        // 4. 保持软件窗口在浏览器和文件夹上方
-        App.EnsureMainWindowOnTop();
-        _ = Task.Run(async () =>
-        {
-            await Task.Delay(400);
-            App.EnsureMainWindowOnTop();
-            await Task.Delay(800);
-            App.EnsureMainWindowOnTop();
-        });
+        return null;
     }
 
     [RelayCommand]

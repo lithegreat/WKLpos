@@ -75,12 +75,55 @@
         <Grid Grid.Row="2" Visibility="{x:Bind GetTab0Visibility(ViewModel.SelectedTabIndex), Mode=OneWay}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="36"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
+            <!-- 导出成功提示栏 (带手动打开按钮) -->
+            <InfoBar Grid.Row="0"
+                     x:Name="ExportSuccessInfoBar" 
+                     Margin="0,0,0,10"
+                     Severity="Success" 
+                     IsOpen="{x:Bind ViewModel.HasExportedOrder, Mode=TwoWay}"
+                     Title="采购收货单已生成 Excel" 
+                     Message="{x:Bind ViewModel.ExportSuccessBarMessage, Mode=OneWay}">
+                <InfoBar.ActionButton>
+                    <Button Click="InfoBarOpenFolderAndBrowser_Click"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Height="30" Padding="12,0">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE8A7;" FontSize="12"/>
+                            <TextBlock Text="打开文件夹及网页" FontSize="12" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                </InfoBar.ActionButton>
+                <InfoBar.Content>
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,2">
+                        <Button Click="InfoBarOpenFolderOnly_Click" Height="28" Padding="8,0">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xED25;" FontSize="11"/>
+                                <TextBlock Text="定位文件" FontSize="11"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Click="InfoBarOpenBrowserOnly_Click" Height="28" Padding="8,0">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xE774;" FontSize="11"/>
+                                <TextBlock Text="店铺后台" FontSize="11"/>
+                            </StackPanel>
+                        </Button>
+                        <Button Click="InfoBarCopyPath_Click" Height="28" Padding="8,0">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xE8C8;" FontSize="11"/>
+                                <TextBlock Text="复制路径" FontSize="11"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </InfoBar.Content>
+            </InfoBar>
+
             <!-- 操作提示条 -->
-            <Border Grid.Row="0" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
+            <Border Grid.Row="1" Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="8" Padding="14,10" Margin="0,0,0,12">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -106,7 +149,7 @@
             </Border>
 
             <!-- 表头 -->
-            <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
+            <Border Grid.Row="2" Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1,1,1,0" CornerRadius="8,8,0,0" Padding="14,0">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="1*"/>
@@ -116,7 +159,7 @@
                         <ColumnDefinition Width="75"/>
                         <ColumnDefinition Width="90"/>
                         <ColumnDefinition Width="75"/>
-                        <ColumnDefinition Width="230"/>
+                        <ColumnDefinition Width="250"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="采购单号" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="供货商" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -130,7 +173,7 @@
             </Border>
 
             <!-- 数据行与空状态提示 -->
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="3">
                 <ListView ItemsSource="{Binding PurchaseOrders}" 
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           SelectionMode="None"
@@ -156,7 +199,7 @@
                                     <ColumnDefinition Width="75"/>
                                     <ColumnDefinition Width="90"/>
                                     <ColumnDefinition Width="75"/>
-                                    <ColumnDefinition Width="230"/>
+                                    <ColumnDefinition Width="250"/>
                                 </Grid.ColumnDefinitions>
                                 
                                 <TextBlock Grid.Column="0" Text="{Binding PurchaseOrderNo}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
@@ -179,7 +222,7 @@
                                 </Border>
 
                                 <!-- 操作按钮组 (根据状态智能显隐) -->
-                                <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Center">
                                     <!-- 一键入库：仅 Draft 状态可见 -->
                                     <Button Click="StockInButton_Click"
                                             Style="{StaticResource AccentButtonStyle}"
@@ -192,16 +235,47 @@
                                         </StackPanel>
                                     </Button>
 
-                                    <!-- 导出Excel：Draft 和 Received 状态可见 -->
-                                    <Button Click="ExportExcelButton_Click"
-                                            Height="30" 
-                                            Padding="10,0"
-                                            Visibility="{Binding Status, Converter={StaticResource PurchaseOrderStatusConverter}, ConverterParameter=NotCancelled}">
+                                    <!-- 导出Excel：Draft 和 Received 状态可见，右侧下拉支持手动打开文件夹与网页 -->
+                                    <SplitButton Click="ExportExcelButton_Click"
+                                                 Height="30" 
+                                                 Padding="10,0"
+                                                 Visibility="{Binding Status, Converter={StaticResource PurchaseOrderStatusConverter}, ConverterParameter=NotCancelled}">
                                         <StackPanel Orientation="Horizontal" Spacing="6">
                                             <FontIcon Glyph="&#xEDE1;" FontSize="12"/>
                                             <TextBlock Text="导出Excel" FontSize="12"/>
                                         </StackPanel>
-                                    </Button>
+                                        <SplitButton.Flyout>
+                                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                                <MenuFlyoutItem Text="导出 Excel 文件" Tag="{Binding}" Click="ExportExcelFlyoutItem_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xEDE1;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutSeparator/>
+                                                <MenuFlyoutItem Text="打开文件夹及网页" Tag="{Binding}" Click="RowOpenFolderAndBrowser_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xE8A7;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutItem Text="仅打开文件夹" Tag="{Binding}" Click="RowOpenFolderOnly_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xED25;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutItem Text="仅打开店铺后台" Tag="{Binding}" Click="RowOpenBrowserOnly_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xE774;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutSeparator/>
+                                                <MenuFlyoutItem Text="复制文件路径" Tag="{Binding}" Click="RowCopyPath_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xE8C8;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                            </MenuFlyout>
+                                        </SplitButton.Flyout>
+                                    </SplitButton>
 
                                     <!-- 删除：仅 Draft 和 Cancelled 状态可见 -->
                                     <Button Click="DeleteOrderButton_Click"

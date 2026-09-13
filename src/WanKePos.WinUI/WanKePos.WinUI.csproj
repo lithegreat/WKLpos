@@ -76,6 +76,9 @@
     <Page Include="Dialogs\AiImportPurchaseOrderContentDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="Dialogs\PurchaseOrderExportSuccessDialog.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Themes\Generic.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>

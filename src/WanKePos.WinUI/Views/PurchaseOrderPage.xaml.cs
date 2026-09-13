@@ -31,6 +31,7 @@ public sealed partial class PurchaseOrderPage : Page
         ViewModel.RequestConfirm = ShowConfirmDialogAsync;
         ViewModel.RequestSaveFileDialog = OpenSaveFileDialogAsync;
         ViewModel.RequestAiImportDialog = ShowAiImportDialogAsync;
+        ViewModel.RequestExportSuccessDialog = ShowExportSuccessDialogAsync;
 
         ViewModel.PropertyChanged += (s, e) =>
         {
@@ -67,6 +68,16 @@ public sealed partial class PurchaseOrderPage : Page
             return dialog.ParsedResult;
         }
         return null;
+    }
+
+    private async Task ShowExportSuccessDialogAsync(string exportedPath, PurchaseOrder order)
+    {
+        var dialog = new PurchaseOrderExportSuccessDialog(exportedPath, order, ViewModel)
+        {
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
+        };
+        await dialog.ShowAsync();
     }
 
     private Visibility GetTab0Visibility(int tabIndex) => tabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -138,12 +149,101 @@ public sealed partial class PurchaseOrderPage : Page
         }
     }
 
-    private void ExportExcelButton_Click(object sender, RoutedEventArgs e)
+    private PurchaseOrder? GetOrderFromSender(object sender)
     {
-        if (sender is FrameworkElement elem && elem.DataContext is PurchaseOrder order)
+        if (sender is FrameworkElement elem)
+        {
+            if (elem.Tag is PurchaseOrder tagOrder) return tagOrder;
+            if (elem.DataContext is PurchaseOrder ctxOrder) return ctxOrder;
+        }
+        return null;
+    }
+
+    private void ExportExcelButton_Click(SplitButton sender, SplitButtonClickEventArgs args)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
         {
             ViewModel.ExportExcelCommand.Execute(order);
         }
+    }
+
+    private void ExportExcelFlyoutItem_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            ViewModel.ExportExcelCommand.Execute(order);
+        }
+    }
+
+    private void RowOpenFolderAndBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            var filePath = ViewModel.GetExportedFilePathForOrder(order);
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                ViewModel.OpenExportLocationAndBrowser(filePath);
+            }
+            else
+            {
+                ShowMessageAsync("提示", $"采购单【{order.PurchaseOrderNo}】尚未导出过 Excel 文件。\n\n请先点击【导出Excel】生成文件。");
+            }
+        }
+    }
+
+    private void RowOpenFolderOnly_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            var filePath = ViewModel.GetExportedFilePathForOrder(order);
+            ViewModel.OpenExportLocationOnly(filePath);
+        }
+    }
+
+    private void RowOpenBrowserOnly_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenStoreWebsiteOnly();
+    }
+
+    private void RowCopyPath_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            var filePath = ViewModel.GetExportedFilePathForOrder(order);
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                ViewModel.CopyExportPath(filePath);
+            }
+            else
+            {
+                ShowMessageAsync("提示", $"采购单【{order.PurchaseOrderNo}】尚未导出过 Excel 文件，暂无保存路径。");
+            }
+        }
+    }
+
+    private void InfoBarOpenFolderAndBrowser_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenExportLocationAndBrowser(ViewModel.LastExportedFilePath);
+    }
+
+    private void InfoBarOpenFolderOnly_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenExportLocationOnly(ViewModel.LastExportedFilePath);
+    }
+
+    private void InfoBarOpenBrowserOnly_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.OpenStoreWebsiteOnly();
+    }
+
+    private void InfoBarCopyPath_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.CopyExportPath(ViewModel.LastExportedFilePath);
     }
 
     private void DeleteOrderButton_Click(object sender, RoutedEventArgs e)

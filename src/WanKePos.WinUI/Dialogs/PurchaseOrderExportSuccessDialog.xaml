@@ -1,0 +1,134 @@
+<ContentDialog
+    x:Class="WanKePos.WinUI.Dialogs.PurchaseOrderExportSuccessDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="采购收货单导出成功"
+    PrimaryButtonText="打开文件夹及网页"
+    SecondaryButtonText="仅打开文件夹"
+    CloseButtonText="稍后处理"
+    DefaultButton="Primary"
+    MaxWidth="640"
+    PrimaryButtonClick="ContentDialog_PrimaryButtonClick"
+    SecondaryButtonClick="ContentDialog_SecondaryButtonClick">
+
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">640</x:Double>
+    </ContentDialog.Resources>
+
+    <StackPanel Spacing="16" Margin="0,8,0,4">
+        <!-- 成功状态提示行 -->
+        <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                BorderThickness="1" 
+                CornerRadius="8" 
+                Padding="14,12">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <FontIcon Glyph="&#xE73E;" FontSize="22" Foreground="{ThemeResource SystemFillColorSuccessBrush}" VerticalAlignment="Center"/>
+                <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="收货单 Excel 文件已生成并保存！" FontWeight="SemiBold" FontSize="14"/>
+                    <TextBlock Text="文件未自动弹出，您可根据需要手动点击下方按钮打开。" 
+                               Style="{ThemeResource CaptionTextBlockStyle}" 
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- 单据与文件信息卡片 -->
+        <Border Background="{ThemeResource LayerFillColorDefaultBrush}" 
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                BorderThickness="1" 
+                CornerRadius="8" 
+                Padding="14,12">
+            <StackPanel Spacing="10">
+                <Grid ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="采购单号:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock x:Name="OrderNoTextBlock" FontSize="12" FontWeight="SemiBold"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="供货商:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock x:Name="SupplierTextBlock" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Text="文件保存路径:" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+                <!-- 路径复制栏 -->
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="FilePathTextBox" 
+                             Grid.Column="0" 
+                             IsReadOnly="True" 
+                             FontSize="11" 
+                             Height="32" 
+                             VerticalAlignment="Center"/>
+                    <Button x:Name="CopyPathButton" 
+                            Grid.Column="1" 
+                            Click="CopyPathButton_Click" 
+                            Height="32" 
+                            Padding="12,0" 
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE8C8;" FontSize="12"/>
+                            <TextBlock x:Name="CopyButtonTextBlock" Text="复制路径" FontSize="12"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- 快捷操作按钮组 -->
+        <Border Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}" 
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                BorderThickness="1" 
+                CornerRadius="8" 
+                Padding="14,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="快捷打开外部工具" FontSize="12" FontWeight="SemiBold"/>
+                    <TextBlock Text="直接唤起浏览器或定位高亮 Excel 文件" 
+                               Style="{ThemeResource CaptionTextBlockStyle}" 
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                    <Button Click="OpenFolderOnlyButton_Click" Height="30" Padding="10,0">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <FontIcon Glyph="&#xED25;" FontSize="11"/>
+                            <TextBlock Text="定位文件夹" FontSize="11"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Click="OpenBrowserOnlyButton_Click" Height="30" Padding="10,0">
+                        <StackPanel Orientation="Horizontal" Spacing="5">
+                            <FontIcon Glyph="&#xE774;" FontSize="11"/>
+                            <TextBlock Text="打开店铺后台" FontSize="11"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- 后续操作步骤指引 -->
+        <StackPanel Spacing="4" Margin="2,0,0,0">
+            <TextBlock Text="后续批量收货操作指引：" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+            <TextBlock Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" LineHeight="18">
+                1. 点击下方【打开文件夹及网页】；<LineBreak/>
+                2. 在打开的京东店铺商品管理页面右上角点击【批量操作】并选择【批量收货】；<LineBreak/>
+                3. 点击【点击选择Excel文件】，直接按 Ctrl+V 粘贴文件路径（或直接拖入文件）即可完成收货！
+            </TextBlock>
+        </StackPanel>
+    </StackPanel>
+</ContentDialog>
