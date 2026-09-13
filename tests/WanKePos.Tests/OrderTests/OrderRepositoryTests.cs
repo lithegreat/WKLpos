@@ -111,4 +111,91 @@ public class OrderRepositoryTests
             connection.Dispose();
         }
     }
+
+    [Fact]
+    public async Task GetByDateRangeAsync_ShouldFilterBySpecifiedDateRange()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var orderRepo = new OrderRepository(context);
+            var today = DateTime.Today;
+            var yesterday = today.AddDays(-1);
+
+            await orderRepo.CreateAsync(new Order
+            {
+                OrderNo = "ORD_TODAY_01",
+                TotalAmount = 50m,
+                PayableAmount = 50m,
+                CreatedAt = today.AddHours(10)
+            });
+            await orderRepo.CreateAsync(new Order
+            {
+                OrderNo = "ORD_TODAY_02",
+                TotalAmount = 80m,
+                PayableAmount = 80m,
+                CreatedAt = today.AddHours(14)
+            });
+            await orderRepo.CreateAsync(new Order
+            {
+                OrderNo = "ORD_YESTERDAY_01",
+                TotalAmount = 120m,
+                PayableAmount = 120m,
+                CreatedAt = yesterday.AddHours(11)
+            });
+
+            var todayOrders = await orderRepo.GetByDateRangeAsync(today, today.AddDays(1).AddTicks(-1));
+            Assert.Equal(2, todayOrders.Count);
+
+            var yesterdayOrders = await orderRepo.GetByDateRangeAsync(yesterday, yesterday.AddDays(1).AddTicks(-1));
+            Assert.Single(yesterdayOrders);
+            Assert.Equal("ORD_YESTERDAY_01", yesterdayOrders[0].OrderNo);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task GetByOrderNoAsync_ShouldFindExactOrder()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var orderRepo = new OrderRepository(context);
+            var orderNo = "ORD_EXACT_FIND_123";
+            await orderRepo.CreateAsync(new Order { OrderNo = orderNo, TotalAmount = 99m, PayableAmount = 99m });
+
+            var fetched = await orderRepo.GetByOrderNoAsync(orderNo);
+            Assert.NotNull(fetched);
+            Assert.Equal(99m, fetched.PayableAmount);
+
+            var nonExistent = await orderRepo.GetByOrderNoAsync("NOT_EXIST_ORDER");
+            Assert.Null(nonExistent);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task GetTodayOrdersAsync_ShouldReturnOrdersCreatedToday()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var orderRepo = new OrderRepository(context);
+            await orderRepo.CreateAsync(new Order { OrderNo = "ORD_TODAY_RECENT", CreatedAt = DateTime.Now, TotalAmount = 50m, PayableAmount = 50m });
+
+            var todayOrders = await orderRepo.GetTodayOrdersAsync();
+            Assert.NotEmpty(todayOrders);
+            Assert.Contains(todayOrders, o => o.OrderNo == "ORD_TODAY_RECENT");
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
 }

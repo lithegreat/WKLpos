@@ -27,7 +27,10 @@ namespace WanKePos.Infrastructure.Data.Repositories
             {
                 order.OrderNo = DateTime.Now.ToString("yyyyMMddHHmmss") + Random.Shared.Next(1000, 9999).ToString("D4");
             }
-            order.CreatedAt = DateTime.Now;
+            if (order.CreatedAt == default)
+            {
+                order.CreatedAt = DateTime.Now;
+            }
 
             await _context.Orders.AddAsync(order);
             await _context.SaveChangesAsync();

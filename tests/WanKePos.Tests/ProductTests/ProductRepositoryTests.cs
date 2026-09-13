@@ -198,4 +198,67 @@ public class ProductRepositoryTests
         Assert.Contains(nameof(Product.Name), changedProps);
         Assert.Contains(nameof(Product.RetailPrice), changedProps);
     }
+
+    [Fact]
+    public async Task BatchUpdateStockAsync_ShouldDeductAndIncreaseStockCorrectly()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            var p1 = new Product { Barcode = "BATCH01", Name = "商品1", Stock = 50 };
+            var p2 = new Product { Barcode = "BATCH02", Name = "商品2", Stock = 20 };
+            await repo.AddOrUpdateAsync(p1);
+            await repo.AddOrUpdateAsync(p2);
+
+            // 批量变动：p1 扣减 5，p2 增加 10
+            var changes = new System.Collections.Generic.Dictionary<int, decimal>
+            {
+                { p1.Id, -5 },
+                { p2.Id, 10 }
+            };
+
+            await repo.BatchUpdateStockAsync(changes);
+
+            var updatedP1 = await repo.GetByIdAsync(p1.Id);
+            var updatedP2 = await repo.GetByIdAsync(p2.Id);
+
+            Assert.NotNull(updatedP1);
+            Assert.NotNull(updatedP2);
+            Assert.Equal(45, updatedP1.Stock);
+            Assert.Equal(30, updatedP2.Stock);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
+    public async Task GetByCategoryAsync_AllAndSpecific_ShouldFilterCorrectly()
+    {
+        var (context, connection) = TestDbContextFactory.CreateInMemoryDbContext();
+        try
+        {
+            var repo = new ProductRepository(context);
+            await repo.AddOrUpdateAsync(new Product { Barcode = "CAT01", Name = "洗头膏", StoreCategory = "洗护" });
+            await repo.AddOrUpdateAsync(new Product { Barcode = "CAT02", Name = "护发素", StoreCategory = "洗护" });
+            await repo.AddOrUpdateAsync(new Product { Barcode = "CAT03", Name = "染发膏", StoreCategory = "染发" });
+
+            var allProducts = await repo.GetByCategoryAsync(WanKePos.Domain.CategoryConstants.All);
+            Assert.Equal(3, allProducts.Count);
+
+            var shampooProducts = await repo.GetByCategoryAsync("洗护");
+            Assert.Equal(2, shampooProducts.Count);
+            Assert.All(shampooProducts, p => Assert.Equal("洗护", p.StoreCategory));
+
+            var dyeProducts = await repo.GetByCategoryAsync("染发");
+            Assert.Single(dyeProducts);
+            Assert.Equal("染发膏", dyeProducts[0].Name);
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
 }
