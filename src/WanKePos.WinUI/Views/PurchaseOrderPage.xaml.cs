@@ -141,6 +141,58 @@ public sealed partial class PurchaseOrderPage : Page
         }
     }
 
+    private async void PurchaseOrderListView_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is PurchaseOrder order)
+        {
+            await OpenOrderDetailDialogAsync(order);
+        }
+    }
+
+    private async void OrderRow_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        if (sender is FrameworkElement elem && elem.DataContext is PurchaseOrder order)
+        {
+            await OpenOrderDetailDialogAsync(order);
+        }
+    }
+
+    private async void ViewOrderDetailButton_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            await OpenOrderDetailDialogAsync(order);
+        }
+    }
+
+    private async Task OpenOrderDetailDialogAsync(PurchaseOrder order)
+    {
+        // 确保单据已加载商品明细（从列表点击时仅有摘要，需拉取完整明细项）
+        var fullOrder = await ViewModel.GetOrderDetailsAsync(order.Id);
+        if (fullOrder == null)
+        {
+            fullOrder = order;
+        }
+
+        var dialog = new PurchaseOrderDetailDialog(fullOrder)
+        {
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
+        };
+
+        await dialog.ShowAsync();
+
+        if (dialog.ResultAction == PurchaseOrderDetailAction.StockIn)
+        {
+            await ViewModel.StockInAsync(fullOrder);
+        }
+        else if (dialog.ResultAction == PurchaseOrderDetailAction.ExportExcel)
+        {
+            await ViewModel.ExportExcelAsync(fullOrder);
+        }
+    }
+
     private void StockInButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement elem && elem.DataContext is PurchaseOrder order)

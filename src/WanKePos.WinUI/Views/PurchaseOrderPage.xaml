@@ -131,7 +131,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                         <FontIcon Glyph="&#xE946;" FontSize="14" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                        <TextBlock Text="说明：货到后点击【一键入库】即可自动增加商品库存；支持点击右上角【AI 拍照识单导入】智能识别进货单据。" 
+                        <TextBlock Text="说明：点击采购单行或【详情】可弹窗查看单据与商品明细；货到后点击【一键入库】即可自动增加商品库存；支持右上角【AI 拍照识单导入】智能识别进货单据。" 
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
                                    VerticalAlignment="Center"/>
@@ -159,7 +159,7 @@
                         <ColumnDefinition Width="75"/>
                         <ColumnDefinition Width="90"/>
                         <ColumnDefinition Width="75"/>
-                        <ColumnDefinition Width="250"/>
+                        <ColumnDefinition Width="320"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="采购单号" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="供货商" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -177,6 +177,8 @@
                 <ListView ItemsSource="{Binding PurchaseOrders}" 
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           SelectionMode="None"
+                          IsItemClickEnabled="True"
+                          ItemClick="PurchaseOrderListView_ItemClick"
                           BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                           BorderThickness="1,0,1,1"
                           CornerRadius="0,0,8,8"
@@ -190,7 +192,10 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <Grid Padding="14,10">
+                            <Grid Padding="14,10"
+                                  Background="Transparent"
+                                  DoubleTapped="OrderRow_DoubleTapped"
+                                  ToolTipService.ToolTip="点击可查看采购单详情">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="1*"/>
                                     <ColumnDefinition Width="1.2*"/>
@@ -199,7 +204,7 @@
                                     <ColumnDefinition Width="75"/>
                                     <ColumnDefinition Width="90"/>
                                     <ColumnDefinition Width="75"/>
-                                    <ColumnDefinition Width="250"/>
+                                    <ColumnDefinition Width="320"/>
                                 </Grid.ColumnDefinitions>
                                 
                                 <TextBlock Grid.Column="0" Text="{Binding PurchaseOrderNo}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
@@ -223,6 +228,17 @@
 
                                 <!-- 操作按钮组 (根据状态智能显隐) -->
                                 <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <!-- 查看详情：常驻可见 -->
+                                    <Button Click="ViewOrderDetailButton_Click"
+                                            Height="30" 
+                                            Padding="8,0"
+                                            ToolTipService.ToolTip="查看采购单商品明细">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon Glyph="&#xE7B3;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                            <TextBlock Text="详情" FontSize="12" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+
                                     <!-- 一键入库：仅 Draft 状态可见 -->
                                     <Button Click="StockInButton_Click"
                                             Style="{StaticResource AccentButtonStyle}"

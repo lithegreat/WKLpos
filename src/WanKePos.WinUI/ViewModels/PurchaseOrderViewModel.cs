@@ -200,6 +200,14 @@ public partial class PurchaseOrderViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// 获取采购单完整信息（含所有明细商品）
+    /// </summary>
+    public async Task<PurchaseOrder?> GetOrderDetailsAsync(int orderId)
+    {
+        return await _purchaseRepo.GetByIdAsync(orderId);
+    }
+
     [RelayCommand]
     public async Task SearchProductsAsync()
     {
