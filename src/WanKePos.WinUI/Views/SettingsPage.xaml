@@ -261,15 +261,17 @@
                                                    Description="开启后可检查并更新至包含 pre 标识的测试版本，优先体验前沿特性（默认关闭）" 
                                                    Glyph="&#xE7BA;">
                                 <ToggleSwitch IsOn="{Binding Settings.EnablePreviewUpdates, Mode=TwoWay}"
-                                              OnContent="已开启 (接收预览版)"
-                                              OffContent="已关闭 (仅正式版)"/>
+                                              OnContent="已开启"
+                                              OffContent="已关闭"
+                                              MinWidth="100"/>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="启动时自动检查更新" 
                                                    Description="每次打开收银系统时在后台静默检查是否有最新可用版本（默认开启）" 
                                                    Glyph="&#xE896;">
                                 <ToggleSwitch IsOn="{Binding Settings.AutoCheckUpdatesOnStartup, Mode=TwoWay}"
                                               OnContent="已开启"
-                                              OffContent="已关闭"/>
+                                              OffContent="已关闭"
+                                              MinWidth="100"/>
                             </controls:SettingsCard>
                         </controls:SettingsGroup>
 
