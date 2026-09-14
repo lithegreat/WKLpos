@@ -27,11 +27,12 @@ Write-Host "==========================================" -ForegroundColor Cyan
 
 # 1. 规范化与校验版本号
 $cleanVersion = $Version.Trim().TrimStart('v', 'V')
+$cleanVersion = $cleanVersion -replace '\s+', '-'
 if ($cleanVersion -notmatch '^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$') {
-    Write-Host "错误: 版本号格式不合法! 请使用标准语义化版本 (如 0.2.1 或 0.2.1-preview)。当前输入: $Version" -ForegroundColor Red
+    Write-Host "错误: 版本号格式不合法! 请使用标准语义化版本 (如 0.2.1 或 0.2.2-beta)。当前输入: $Version" -ForegroundColor Red
     exit 1
 }
-$isPrerelease = $cleanVersion -match "pre"
+$isPrerelease = $cleanVersion -match "(pre|beta|alpha|rc)"
 $tag = "v$cleanVersion"
 
 $rawNumeric = ($cleanVersion -split '-')[0]
@@ -191,7 +192,7 @@ if ($releaseBranch -ne "main") {
     Write-Host "已创建 PR: $prUrl" -ForegroundColor Green
 
     Write-Host "正在合并 PR 到 main..." -ForegroundColor Yellow
-    gh pr merge --merge --auto=false
+    gh pr merge $releaseBranch --merge --delete-branch
     Write-Host "PR 已成功合并至 main!" -ForegroundColor Green
 
     # 切换回 main 并同步

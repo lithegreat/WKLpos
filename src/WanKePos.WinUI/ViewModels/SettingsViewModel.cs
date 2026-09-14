@@ -400,11 +400,26 @@ public partial class SettingsViewModel : ObservableObject
 
     private static string GetCurrentAppVersion()
     {
-        var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-        if (ver == null || (ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
+        try
         {
-            return "0.2.1";
+            var infoVer = System.Reflection.Assembly.GetExecutingAssembly()
+                .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+            if (!string.IsNullOrWhiteSpace(infoVer))
+            {
+                var clean = infoVer.Split('+')[0].Trim().TrimStart('v', 'V');
+                if (!string.IsNullOrWhiteSpace(clean))
+                {
+                    return clean;
+                }
+            }
+
+            var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            if (ver != null && !(ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
+            {
+                return ver.Build >= 0 ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : $"{ver.Major}.{ver.Minor}.0";
+            }
         }
-        return ver.Build >= 0 ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : $"{ver.Major}.{ver.Minor}.0";
+        catch { }
+        return "0.2.2-beta";
     }
 }

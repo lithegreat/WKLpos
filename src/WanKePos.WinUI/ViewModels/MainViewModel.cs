@@ -117,6 +117,16 @@ namespace WanKePos.WinUI.ViewModels
         {
             try
             {
+                var infoVer = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+                if (!string.IsNullOrWhiteSpace(infoVer))
+                {
+                    var clean = infoVer.Split('+')[0].Trim().TrimStart('v', 'V');
+                    if (!string.IsNullOrWhiteSpace(clean))
+                    {
+                        return $"v{clean}";
+                    }
+                }
+
                 var ver = Assembly.GetExecutingAssembly().GetName().Version;
                 if (ver != null && !(ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
                 {
@@ -124,7 +134,7 @@ namespace WanKePos.WinUI.ViewModels
                 }
             }
             catch { }
-            return "v0.2.1";
+            return "v0.2.2-beta";
         }
     }
 }
