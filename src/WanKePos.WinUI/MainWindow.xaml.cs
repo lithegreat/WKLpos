@@ -5,6 +5,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
+using CommunityToolkit.Mvvm.Messaging;
+using WanKePos.WinUI.Messages;
 using WanKePos.WinUI.ViewModels;
 using WanKePos.WinUI.Views;
 using WinRT.Interop;
@@ -166,9 +168,11 @@ namespace WanKePos.WinUI
             NavView.SelectedItem = NavView.MenuItems[0];
             SwitchToPage("Cashier");
 
-            // 初始化状态栏文本
+            // 初始化状态栏与版本文本
             StoreNameTextBlock.Text = MainViewModel.CurrentStoreName;
             SyncStatusTextBlock.Text = MainViewModel.SyncStatusText;
+            AppVersionTextBlock.Text = MainViewModel.AppVersionText;
+            SettingsInfoBadge.Visibility = MainViewModel.HasUpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
 
             // 监听 ViewModel 属性变更并安全同步到 UI
             MainViewModel.PropertyChanged += (s, e) =>
@@ -183,9 +187,31 @@ namespace WanKePos.WinUI
                         case nameof(MainViewModel.SyncStatusText):
                             SyncStatusTextBlock.Text = MainViewModel.SyncStatusText;
                             break;
+                        case nameof(MainViewModel.AppVersionText):
+                            AppVersionTextBlock.Text = MainViewModel.AppVersionText;
+                            break;
+                        case nameof(MainViewModel.HasUpdateAvailable):
+                            SettingsInfoBadge.Visibility = MainViewModel.HasUpdateAvailable ? Visibility.Visible : Visibility.Collapsed;
+                            break;
                     }
                 });
             };
+
+            // 订阅更新到达消息通知
+            WeakReferenceMessenger.Default.Register<UpdateAvailableMessage>(this, (r, m) =>
+            {
+                DispatcherQueue?.TryEnqueue(() =>
+                {
+                    SettingsInfoBadge.Visibility = Visibility.Visible;
+                });
+            });
+
+            // 启动后延时2秒执行静默检测更新，避免占用初始化阶段资源
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(2000);
+                await MainViewModel.CheckForUpdatesOnStartupAsync();
+            });
 
             // 监听实际主题变更与全局主题服务变更，自动重塑右上角系统三键配色
             if (this.Content is FrameworkElement rootElement)

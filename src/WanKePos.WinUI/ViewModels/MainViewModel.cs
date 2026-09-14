@@ -1,14 +1,19 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.UI.Dispatching;
 using System;
+using System.Reflection;
 using System.Threading.Tasks;
+using WanKePos.Domain.Entities;
 using WanKePos.Domain.Interfaces;
+using WanKePos.WinUI.Messages;
 
 namespace WanKePos.WinUI.ViewModels
 {
     public partial class MainViewModel : ObservableObject
     {
         private readonly ISettingsRepository _settingsRepo;
+        private readonly IUpdateService _updateService;
         private DispatcherQueueTimer? _clockTimer;
 
         [ObservableProperty]
@@ -20,9 +25,19 @@ namespace WanKePos.WinUI.ViewModels
         [ObservableProperty]
         private string _syncStatusText = "🟢 本地运行中 (预留联网)";
 
-        public MainViewModel(ISettingsRepository settingsRepo)
+        [ObservableProperty]
+        private string _appVersionText = GetAppVersionString();
+
+        [ObservableProperty]
+        private bool _hasUpdateAvailable = false;
+
+        [ObservableProperty]
+        private UpdateInfo? _availableUpdateInfo;
+
+        public MainViewModel(ISettingsRepository settingsRepo, IUpdateService updateService)
         {
             _settingsRepo = settingsRepo;
+            _updateService = updateService;
             _ = LoadStoreNameAsync();
         }
 
@@ -58,6 +73,49 @@ namespace WanKePos.WinUI.ViewModels
             {
                 // 初始化阶段异常不阻塞启动
             }
+        }
+
+        /// <summary>
+        /// 启动时在后台静默检查是否有新版本
+        /// </summary>
+        public async Task CheckForUpdatesOnStartupAsync()
+        {
+            try
+            {
+                var settings = await _settingsRepo.GetSettingsAsync();
+                if (settings == null || !settings.AutoCheckUpdatesOnStartup)
+                {
+                    return;
+                }
+
+                var cleanVer = AppVersionText.TrimStart('v', 'V');
+                var info = await _updateService.CheckForUpdateAsync("lithegreat/WKLpos", cleanVer, settings.EnablePreviewUpdates);
+
+                if (info.HasUpdate)
+                {
+                    HasUpdateAvailable = true;
+                    AvailableUpdateInfo = info;
+                    WeakReferenceMessenger.Default.Send(new UpdateAvailableMessage(info));
+                }
+            }
+            catch
+            {
+                // 静默检查失败不打扰收银操作
+            }
+        }
+
+        private static string GetAppVersionString()
+        {
+            try
+            {
+                var ver = Assembly.GetExecutingAssembly().GetName().Version;
+                if (ver != null && !(ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
+                {
+                    return ver.Build >= 0 ? $"v{ver.Major}.{ver.Minor}.{ver.Build}" : $"v{ver.Major}.{ver.Minor}.0";
+                }
+            }
+            catch { }
+            return "v0.2.1";
         }
     }
 }

@@ -106,7 +106,7 @@ public static class DependencyInjection
         var dbContext = scope.ServiceProvider.GetRequiredService<PosDbContext>();
         dbContext.Database.EnsureCreated();
 
-        // 确保已有数据库平滑升级增加 AppTheme 字段，保持向后兼容
+        // 确保已有数据库平滑升级增加 AppTheme、EnablePreviewUpdates、AutoCheckUpdatesOnStartup 字段，保持向后兼容
         try
         {
             using var conn = dbContext.Database.GetDbConnection();
@@ -114,6 +114,8 @@ public static class DependencyInjection
             using var cmd = conn.CreateCommand();
             cmd.CommandText = "PRAGMA table_info(StoreSettings);";
             bool hasAppTheme = false;
+            bool hasEnablePreview = false;
+            bool hasAutoCheck = false;
             using (var reader = cmd.ExecuteReader())
             {
                 while (reader.Read())
@@ -122,7 +124,14 @@ public static class DependencyInjection
                     if (string.Equals(colName, "AppTheme", StringComparison.OrdinalIgnoreCase))
                     {
                         hasAppTheme = true;
-                        break;
+                    }
+                    else if (string.Equals(colName, "EnablePreviewUpdates", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasEnablePreview = true;
+                    }
+                    else if (string.Equals(colName, "AutoCheckUpdatesOnStartup", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasAutoCheck = true;
                     }
                 }
             }
@@ -131,6 +140,20 @@ public static class DependencyInjection
             {
                 using var alterCmd = conn.CreateCommand();
                 alterCmd.CommandText = "ALTER TABLE StoreSettings ADD COLUMN AppTheme TEXT DEFAULT 'Default';";
+                alterCmd.ExecuteNonQuery();
+            }
+
+            if (!hasEnablePreview)
+            {
+                using var alterCmd = conn.CreateCommand();
+                alterCmd.CommandText = "ALTER TABLE StoreSettings ADD COLUMN EnablePreviewUpdates INTEGER DEFAULT 0;";
+                alterCmd.ExecuteNonQuery();
+            }
+
+            if (!hasAutoCheck)
+            {
+                using var alterCmd = conn.CreateCommand();
+                alterCmd.CommandText = "ALTER TABLE StoreSettings ADD COLUMN AutoCheckUpdatesOnStartup INTEGER DEFAULT 1;";
                 alterCmd.ExecuteNonQuery();
             }
         }
@@ -149,7 +172,7 @@ public static class DependencyInjection
         var dbContext = scope.ServiceProvider.GetRequiredService<PosDbContext>();
         await dbContext.Database.EnsureCreatedAsync();
 
-        // 确保已有数据库平滑升级增加 AppTheme 字段，保持向后兼容
+        // 确保已有数据库平滑升级增加 AppTheme、EnablePreviewUpdates、AutoCheckUpdatesOnStartup 字段，保持向后兼容
         try
         {
             using var conn = dbContext.Database.GetDbConnection();
@@ -157,6 +180,8 @@ public static class DependencyInjection
             using var cmd = conn.CreateCommand();
             cmd.CommandText = "PRAGMA table_info(StoreSettings);";
             bool hasAppTheme = false;
+            bool hasEnablePreview = false;
+            bool hasAutoCheck = false;
             using (var reader = await cmd.ExecuteReaderAsync())
             {
                 while (await reader.ReadAsync())
@@ -165,7 +190,14 @@ public static class DependencyInjection
                     if (string.Equals(colName, "AppTheme", StringComparison.OrdinalIgnoreCase))
                     {
                         hasAppTheme = true;
-                        break;
+                    }
+                    else if (string.Equals(colName, "EnablePreviewUpdates", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasEnablePreview = true;
+                    }
+                    else if (string.Equals(colName, "AutoCheckUpdatesOnStartup", StringComparison.OrdinalIgnoreCase))
+                    {
+                        hasAutoCheck = true;
                     }
                 }
             }
@@ -174,6 +206,20 @@ public static class DependencyInjection
             {
                 using var alterCmd = conn.CreateCommand();
                 alterCmd.CommandText = "ALTER TABLE StoreSettings ADD COLUMN AppTheme TEXT DEFAULT 'Default';";
+                await alterCmd.ExecuteNonQueryAsync();
+            }
+
+            if (!hasEnablePreview)
+            {
+                using var alterCmd = conn.CreateCommand();
+                alterCmd.CommandText = "ALTER TABLE StoreSettings ADD COLUMN EnablePreviewUpdates INTEGER DEFAULT 0;";
+                await alterCmd.ExecuteNonQueryAsync();
+            }
+
+            if (!hasAutoCheck)
+            {
+                using var alterCmd = conn.CreateCommand();
+                alterCmd.CommandText = "ALTER TABLE StoreSettings ADD COLUMN AutoCheckUpdatesOnStartup INTEGER DEFAULT 1;";
                 await alterCmd.ExecuteNonQueryAsync();
             }
         }

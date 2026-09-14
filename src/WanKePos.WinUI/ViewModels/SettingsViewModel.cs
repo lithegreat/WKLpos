@@ -42,6 +42,21 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _updateStatusText = "未检查";
 
+    [ObservableProperty]
+    private bool _hasUpdateAvailable = false;
+
+    [ObservableProperty]
+    private UpdateInfo? _latestUpdateInfo;
+
+    [ObservableProperty]
+    private string _updateInfoBarTitle = string.Empty;
+
+    [ObservableProperty]
+    private string _updateInfoBarMessage = string.Empty;
+
+    [ObservableProperty]
+    private string _selectedCategoryTag = "Store";
+
     public ObservableCollection<string> AvailablePorts { get; } = new();
 
     public Func<Task<string?>>? RequestOpenFileDialog { get; set; }
@@ -78,6 +93,16 @@ public partial class SettingsViewModel : ObservableObject
                 SelectedThemeIndex = idx;
             }
         };
+
+        // 订阅后台启动检查检测到的更新消息
+        WeakReferenceMessenger.Default.Register<UpdateAvailableMessage>(this, (r, m) =>
+        {
+            HasUpdateAvailable = true;
+            LatestUpdateInfo = m.UpdateInfo;
+            UpdateInfoBarTitle = $"发现新版本: v{m.UpdateInfo.LatestVersion} ({m.UpdateInfo.ChannelText})";
+            UpdateInfoBarMessage = $"发布于 {m.UpdateInfo.PublishedAt:yyyy-MM-dd}。包含功能优化与最新修复，点击【立即更新】快速升级。";
+            UpdateStatusText = $"发现新版本: v{m.UpdateInfo.LatestVersion} ({m.UpdateInfo.ChannelText})";
+        });
     }
 
     private bool _isInitialized;
@@ -132,18 +157,37 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    public async Task ShowUpdateDialogAsync()
+    {
+        if (LatestUpdateInfo != null && RequestUpdateDialog != null)
+        {
+            await RequestUpdateDialog.Invoke(LatestUpdateInfo);
+        }
+        else
+        {
+            await CheckUpdateAsync();
+        }
+    }
+
+    [RelayCommand]
     public async Task CheckUpdateAsync()
     {
         if (IsCheckingUpdate) return;
         IsCheckingUpdate = true;
-        UpdateStatusText = "正在连接 GitHub 检查版本...";
+        var channelText = Settings.EnablePreviewUpdates ? "包含预览版渠道" : "正式版渠道";
+        UpdateStatusText = $"正在连接 GitHub 检查版本 ({channelText})...";
 
         try
         {
-            var updateInfo = await _updateService.CheckForUpdateAsync(GitHubRepo, AppVersion);
+            var updateInfo = await _updateService.CheckForUpdateAsync(GitHubRepo, AppVersion, Settings.EnablePreviewUpdates);
             if (updateInfo.HasUpdate)
             {
-                UpdateStatusText = $"发现新版本: v{updateInfo.LatestVersion}";
+                HasUpdateAvailable = true;
+                LatestUpdateInfo = updateInfo;
+                UpdateInfoBarTitle = $"发现新版本: v{updateInfo.LatestVersion} ({updateInfo.ChannelText})";
+                UpdateInfoBarMessage = $"发布于 {updateInfo.PublishedAt:yyyy-MM-dd}。包含功能优化与最新修复，点击【立即更新】快速升级。";
+                UpdateStatusText = $"发现新版本: v{updateInfo.LatestVersion} ({updateInfo.ChannelText})";
+                WeakReferenceMessenger.Default.Send(new UpdateAvailableMessage(updateInfo));
                 if (RequestUpdateDialog != null)
                 {
                     await RequestUpdateDialog.Invoke(updateInfo);
@@ -151,6 +195,7 @@ public partial class SettingsViewModel : ObservableObject
             }
             else
             {
+                HasUpdateAvailable = false;
                 UpdateStatusText = $"已是最新版本 (v{AppVersion})";
                 ShowMessage?.Invoke("检查更新", $"恭喜！当前运行的已是最新版本 (v{AppVersion})，暂无可用更新。");
             }
@@ -239,7 +284,7 @@ public partial class SettingsViewModel : ObservableObject
         var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         if (ver == null || (ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
         {
-            return "0.1.0";
+            return "0.2.1";
         }
         return ver.Build >= 0 ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : $"{ver.Major}.{ver.Minor}.0";
     }

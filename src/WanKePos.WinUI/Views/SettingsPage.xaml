@@ -11,18 +11,19 @@
     <Grid Padding="28,20,28,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- WinUI Gallery 标准标头 (常驻固顶，不随内容滚动) -->
+        <!-- 1. WinUI 规范 PageHeader (常驻固顶，不随内容滚动) -->
         <controls:PageHeader Grid.Row="0"
                              Title="系统设置" 
-                             Description="配置门店基础信息、小票打印硬件、界面外观、积分规则与在线更新" 
+                             Description="管理门店信息、小票打印硬件、界面外观、积分规则、数据管理与软件更新" 
                              Glyph="&#xE713;"
                              BadgeText="快捷键 F6"
-                             MaxWidth="920"
-                             HorizontalAlignment="Left"
-                             Margin="0,0,0,16">
+                             MaxWidth="1100"
+                             HorizontalAlignment="Stretch"
+                             Margin="0,0,0,12">
             <Button Command="{Binding SaveSettingsCommand}" 
                     Style="{StaticResource AccentButtonStyle}" 
                     Height="36" 
@@ -30,187 +31,282 @@
                     CornerRadius="6">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="&#xE74E;" FontSize="13"/>
-                    <TextBlock Text="保存设置" FontSize="13" FontWeight="SemiBold"/>
+                    <TextBlock Text="保存所有设置" FontSize="13" FontWeight="SemiBold"/>
                 </StackPanel>
             </Button>
         </controls:PageHeader>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="0,0,16,28">
-            <StackPanel Spacing="8" MaxWidth="920" HorizontalAlignment="Left">
+        <!-- 2. 检测到更新时常驻显示的 InfoBar -->
+        <InfoBar x:Name="UpdateInfoBar"
+                 Grid.Row="1"
+                 IsOpen="{x:Bind ViewModel.HasUpdateAvailable, Mode=OneWay}"
+                 Severity="Informational"
+                 Title="{x:Bind ViewModel.UpdateInfoBarTitle, Mode=OneWay}"
+                 Message="{x:Bind ViewModel.UpdateInfoBarMessage, Mode=OneWay}"
+                 IsClosable="True"
+                 MaxWidth="1100"
+                 HorizontalAlignment="Stretch"
+                 Margin="0,0,0,14">
+            <InfoBar.ActionButton>
+                <Button Content="立即更新" 
+                        Command="{x:Bind ViewModel.ShowUpdateDialogCommand}" 
+                        Style="{StaticResource AccentButtonStyle}"
+                        Height="32" 
+                        Padding="16,0" 
+                        CornerRadius="6"/>
+            </InfoBar.ActionButton>
+        </InfoBar>
 
-                <!-- 1. 门店信息 -->
-            <controls:SettingsGroup Header="门店信息" Description="门店核心信息将呈现在收银台主界面及小票抬头">
-                <controls:SettingsCard Header="门店名称" 
-                                       Description="收银系统展示的门店全称" 
-                                       Glyph="&#xE707;">
-                    <TextBox Text="{Binding Settings.StoreName, Mode=TwoWay}" Width="320"/>
-                </controls:SettingsCard>
-                <controls:SettingsCard Header="门店地址" 
-                                       Description="用于打印在收银小票上的实体门店地址" 
-                                       Glyph="&#xE81D;">
-                    <TextBox Text="{Binding Settings.StoreAddress, Mode=TwoWay}" Width="320"/>
-                </controls:SettingsCard>
-                <controls:SettingsCard Header="联系电话" 
-                                       Description="小票客服联系电话或店长热线" 
-                                       Glyph="&#xE717;">
-                    <TextBox Text="{Binding Settings.StorePhone, Mode=TwoWay}" Width="320"/>
-                </controls:SettingsCard>
-            </controls:SettingsGroup>
+        <!-- 3. WinUI 3 原生分类导航容器 (NavigationView) -->
+        <NavigationView x:Name="SettingsNavView"
+                        Grid.Row="2"
+                        PaneDisplayMode="Left"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        IsPaneToggleButtonVisible="False"
+                        OpenPaneLength="190"
+                        CompactPaneLength="48"
+                        Background="Transparent"
+                        SelectionChanged="SettingsNavView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem Content="门店信息" Tag="Store" ToolTipService.ToolTip="配置门店名称与联系方式">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE707;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="外观个性化" Tag="Appearance" ToolTipService.ToolTip="调整应用深浅色主题">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE790;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="小票打印机" Tag="Hardware" ToolTipService.ToolTip="配置热敏小票机端口与测试打印">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE749;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="会员与积分" Tag="Points" ToolTipService.ToolTip="设置顾客消费积分比例规则">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE735;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="小票版面" Tag="Receipt" ToolTipService.ToolTip="自定义小票抬头与结尾致谢词">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8A5;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="数据维护" Tag="Data" ToolTipService.ToolTip="Excel 批量导入商品与会员资料">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8B7;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="软件与更新" Tag="Updates" ToolTipService.ToolTip="软件版本、在线更新与预览版渠道">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE895;"/>
+                    </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge x:Name="SettingsUpdatesBadge" 
+                                   Visibility="{x:Bind ViewModel.HasUpdateAvailable, Mode=OneWay}" 
+                                   Style="{StaticResource AttentionDotInfoBadgeStyle}"/>
+                    </NavigationViewItem.InfoBadge>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
 
-            <!-- 2. 外观与个性化 -->
-            <controls:SettingsGroup Header="外观与个性化" Description="自定义软件视觉风格，支持沉浸式暗色与高反差浅色模式">
-                <controls:SettingsCard Header="应用界面主题" 
-                                       Description="支持明亮清爽的浅色模式、护眼沉浸的深色模式或自适应跟随 Windows" 
-                                       Glyph="&#xE790;">
-                    <RadioButtons SelectedIndex="{Binding SelectedThemeIndex, Mode=TwoWay}" MaxColumns="3">
-                        <RadioButton ToolTipService.ToolTip="自动与 Windows 系统的深浅色设置保持同步">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <FontIcon Glyph="&#xE770;" FontSize="13"/>
-                                <TextBlock Text="跟随系统"/>
-                            </StackPanel>
-                        </RadioButton>
-                        <RadioButton ToolTipService.ToolTip="强制使用明亮清爽的浅色界面">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <FontIcon Glyph="&#xE706;" FontSize="13"/>
-                                <TextBlock Text="浅色模式"/>
-                            </StackPanel>
-                        </RadioButton>
-                        <RadioButton ToolTipService.ToolTip="强制使用护眼沉浸的深色界面">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <FontIcon Glyph="&#xE708;" FontSize="13"/>
-                                <TextBlock Text="深色模式"/>
-                            </StackPanel>
-                        </RadioButton>
-                    </RadioButtons>
-                </controls:SettingsCard>
-            </controls:SettingsGroup>
+            <!-- 右侧分类内容滚动区 -->
+            <ScrollViewer x:Name="CategoryScrollViewer" VerticalScrollBarVisibility="Auto" Padding="20,0,16,28">
+                <StackPanel Spacing="16" MaxWidth="920" HorizontalAlignment="Left">
 
-            <!-- 3. 打印机设置 -->
-            <controls:SettingsGroup Header="小票打印设备" Description="配置热敏小票机端口通信参数与测试打印">
-                <controls:SettingsCard Header="打印机串口 (COM Port)" 
-                                       Description="选择小票机连接的通信端口" 
-                                       Glyph="&#xE749;">
-                    <ComboBox ItemsSource="{Binding AvailablePorts}" 
-                              SelectedItem="{Binding Settings.PrinterPort, Mode=TwoWay}"
-                              Width="220"/>
-                </controls:SettingsCard>
-                <controls:SettingsCard Header="通信波特率 (Baud Rate)" 
-                                       Description="串口通信速率 (常见默认为 9600 或 115200)" 
-                                       Glyph="&#xE8B9;">
-                    <TextBox Text="{Binding Settings.PrinterBaudRate, Mode=TwoWay}" Width="220"/>
-                </controls:SettingsCard>
-                <controls:SettingsCard Header="打印机连通性测试" 
-                                       Description="向选定端口发送包含门店名称的小票测试样张" 
-                                       Glyph="&#xE725;">
-                    <Button Command="{Binding TestPrintCommand}" CornerRadius="6" Height="34" Padding="14,0">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE749;" FontSize="13"/>
-                            <TextBlock Text="发送测试小票"/>
-                        </StackPanel>
-                    </Button>
-                </controls:SettingsCard>
-            </controls:SettingsGroup>
-
-            <!-- 4. 积分规则 -->
-            <controls:SettingsGroup Header="会员与积分规则" Description="制定顾客消费时的积分自动累加比例">
-                <controls:SettingsCard Header="积分累计比例" 
-                                       Description="每有效消费指定金额 (元) 为会员累计增加 1 点积分" 
-                                       Glyph="&#xE735;">
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <TextBlock Text="每消费" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                        <TextBox Text="{Binding Settings.PointsPerYuan, Mode=TwoWay}" Width="100"/>
-                        <TextBlock Text="元 = 1 积分" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <!-- 分类 1: 门店信息 -->
+                    <StackPanel x:Name="StorePanel" Spacing="8">
+                        <controls:SettingsGroup Header="门店基础信息" Description="门店核心信息将呈现在收银台主界面及小票抬头">
+                            <controls:SettingsCard Header="门店名称" 
+                                                   Description="收银系统主界面与小票抬头展示的门店全称" 
+                                                   Glyph="&#xE707;">
+                                <TextBox Text="{Binding Settings.StoreName, Mode=TwoWay}" Width="320"/>
+                            </controls:SettingsCard>
+                            <controls:SettingsCard Header="门店地址" 
+                                                   Description="用于打印在收银小票上的实体门店地址" 
+                                                   Glyph="&#xE81D;">
+                                <TextBox Text="{Binding Settings.StoreAddress, Mode=TwoWay}" Width="320"/>
+                            </controls:SettingsCard>
+                            <controls:SettingsCard Header="联系电话" 
+                                                   Description="小票客服联系电话或店长咨询热线" 
+                                                   Glyph="&#xE717;">
+                                <TextBox Text="{Binding Settings.StorePhone, Mode=TwoWay}" Width="320"/>
+                            </controls:SettingsCard>
+                        </controls:SettingsGroup>
                     </StackPanel>
-                </controls:SettingsCard>
-            </controls:SettingsGroup>
 
-            <!-- 5. 小票版面自定义 -->
-            <controls:SettingsGroup Header="小票版面自定义" Description="自定义打印小票的头部附加告示与结尾致谢文本">
-                <controls:SettingsCard Header="小票抬头附加说明 (Header)" 
-                                       Description="显示在小票顶部门店名下方的促销提示或标语" 
-                                       Glyph="&#xE8A5;">
-                    <TextBox Text="{Binding Settings.ReceiptHeader, Mode=TwoWay}" AcceptsReturn="True" Width="380" Height="56"/>
-                </controls:SettingsCard>
-                <controls:SettingsCard Header="小票结尾感谢语 (Footer)" 
-                                       Description="打印在小票底部的致谢词、退换货提示或门店二维码说明" 
-                                       Glyph="&#xE8C8;">
-                    <TextBox Text="{Binding Settings.ReceiptFooter, Mode=TwoWay}" AcceptsReturn="True" Width="380" Height="56"/>
-                </controls:SettingsCard>
-            </controls:SettingsGroup>
-
-            <!-- 6. 数据管理与导入 -->
-            <controls:SettingsGroup Header="数据维护与批量导入" Description="通过 Excel 模板文件快速初始化或覆盖商品与会员档案">
-                <controls:SettingsCard Header="批量导入商品库" 
-                                       Description="支持 .xlsx 模板表格，自动导入条码、品类、进价与零售价" 
-                                       Glyph="&#xE8B7;">
-                    <Button Command="{Binding ImportProductsCommand}" CornerRadius="6" Height="34" Padding="14,0">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE8B7;" FontSize="13"/>
-                            <TextBlock Text="重新导入商品 (Excel)"/>
-                        </StackPanel>
-                    </Button>
-                </controls:SettingsCard>
-                <controls:SettingsCard Header="批量导入会员库" 
-                                       Description="导入会员姓名、手机号、初始积分与余额" 
-                                       Glyph="&#xE716;">
-                    <Button Command="{Binding ImportMembersCommand}" CornerRadius="6" Height="34" Padding="14,0">
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon Glyph="&#xE716;" FontSize="13"/>
-                            <TextBlock Text="重新导入会员 (Excel)"/>
-                        </StackPanel>
-                    </Button>
-                </controls:SettingsCard>
-            </controls:SettingsGroup>
-
-            <!-- 7. 软件版本与在线更新 -->
-            <controls:SettingsGroup Header="软件版本与在线更新" Description="自动比对 GitHub Releases 并静默下载安装最新版本">
-                <controls:SettingsCard Header="客户端当前版本" 
-                                       Description="{Binding UpdateStatusText}" 
-                                       Glyph="&#xE895;">
-                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
-                        <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
-                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
-                                BorderThickness="1" 
-                                CornerRadius="8" 
-                                Padding="10,4">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <TextBlock Text="v" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="{Binding AppVersion}" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                            </StackPanel>
-                        </Border>
-                        <Button Command="{Binding CheckUpdateCommand}" 
-                                Style="{StaticResource AccentButtonStyle}" 
-                                Height="34" 
-                                Padding="16,0"
-                                CornerRadius="6">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <FontIcon Glyph="&#xE895;" FontSize="12"/>
-                                <TextBlock Text="检查新版本" FontSize="13"/>
-                            </StackPanel>
-                        </Button>
+                    <!-- 分类 2: 外观个性化 -->
+                    <StackPanel x:Name="AppearancePanel" Spacing="8" Visibility="Collapsed">
+                        <controls:SettingsGroup Header="外观与个性化" Description="自定义软件视觉风格，自适应 Windows Mica 云母材质与深浅色模式">
+                            <controls:SettingsCard Header="应用界面主题" 
+                                                   Description="支持明亮清爽的浅色模式、护眼沉浸的深色模式或自适应跟随 Windows" 
+                                                   Glyph="&#xE790;">
+                                <RadioButtons SelectedIndex="{Binding SelectedThemeIndex, Mode=TwoWay}" MaxColumns="3">
+                                    <RadioButton ToolTipService.ToolTip="自动与 Windows 系统的深浅色设置保持同步">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE770;" FontSize="13"/>
+                                            <TextBlock Text="跟随系统"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton ToolTipService.ToolTip="强制使用明亮清爽的浅色界面">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE706;" FontSize="13"/>
+                                            <TextBlock Text="浅色模式"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                    <RadioButton ToolTipService.ToolTip="强制使用护眼沉浸的深色界面">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE708;" FontSize="13"/>
+                                            <TextBlock Text="深色模式"/>
+                                        </StackPanel>
+                                    </RadioButton>
+                                </RadioButtons>
+                            </controls:SettingsCard>
+                        </controls:SettingsGroup>
                     </StackPanel>
-                </controls:SettingsCard>
-                <controls:SettingsCard Header="GitHub 更新仓库源" 
-                                       Description="指定在线更新检查的发布仓库路径 (格式: 所有者/仓库名)" 
-                                       Glyph="&#xE774;">
-                    <TextBox Text="{Binding GitHubRepo, Mode=TwoWay}" Width="280" PlaceholderText="例如: WKL/WanKePos"/>
-                </controls:SettingsCard>
-            </controls:SettingsGroup>
 
-            <!-- 底部保存按钮 -->
-            <Button Command="{Binding SaveSettingsCommand}" 
-                    Style="{StaticResource AccentButtonStyle}" 
-                    Height="42" 
-                    Padding="28,0" 
-                    CornerRadius="6"
-                    Margin="0,16,0,32">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Glyph="&#xE74E;" FontSize="15"/>
-                    <TextBlock Text="保存所有设置" FontSize="14" FontWeight="SemiBold"/>
+                    <!-- 分类 3: 打印设备 -->
+                    <StackPanel x:Name="HardwarePanel" Spacing="8" Visibility="Collapsed">
+                        <controls:SettingsGroup Header="小票打印设备" Description="配置热敏小票机端口通信参数与测试打印">
+                            <controls:SettingsCard Header="打印机串口 (COM Port)" 
+                                                   Description="选择小票机连接的通信端口" 
+                                                   Glyph="&#xE749;">
+                                <ComboBox ItemsSource="{Binding AvailablePorts}" 
+                                          SelectedItem="{Binding Settings.PrinterPort, Mode=TwoWay}"
+                                          Width="220"/>
+                            </controls:SettingsCard>
+                            <controls:SettingsCard Header="通信波特率 (Baud Rate)" 
+                                                   Description="串口通信速率 (常见默认为 9600 或 115200)" 
+                                                   Glyph="&#xE8B9;">
+                                <TextBox Text="{Binding Settings.PrinterBaudRate, Mode=TwoWay}" Width="220"/>
+                            </controls:SettingsCard>
+                            <controls:SettingsCard Header="打印机连通性测试" 
+                                                   Description="向选定端口发送包含门店名称的小票测试样张" 
+                                                   Glyph="&#xE725;">
+                                <Button Command="{Binding TestPrintCommand}" CornerRadius="6" Height="34" Padding="14,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE749;" FontSize="13"/>
+                                        <TextBlock Text="发送测试小票"/>
+                                    </StackPanel>
+                                </Button>
+                            </controls:SettingsCard>
+                        </controls:SettingsGroup>
+                    </StackPanel>
+
+                    <!-- 分类 4: 会员与积分 -->
+                    <StackPanel x:Name="PointsPanel" Spacing="8" Visibility="Collapsed">
+                        <controls:SettingsGroup Header="会员与积分规则" Description="制定顾客消费时的积分自动累加比例">
+                            <controls:SettingsCard Header="积分累计比例" 
+                                                   Description="每有效消费指定金额 (元) 为会员自动增加 1 点积分" 
+                                                   Glyph="&#xE735;">
+                                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                    <TextBlock Text="每消费" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                    <TextBox Text="{Binding Settings.PointsPerYuan, Mode=TwoWay}" Width="100"/>
+                                    <TextBlock Text="元 = 1 积分" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                </StackPanel>
+                            </controls:SettingsCard>
+                        </controls:SettingsGroup>
+                    </StackPanel>
+
+                    <!-- 分类 5: 小票版面 -->
+                    <StackPanel x:Name="ReceiptPanel" Spacing="8" Visibility="Collapsed">
+                        <controls:SettingsGroup Header="小票版面自定义" Description="自定义打印小票的头部附加告示与结尾致谢文本">
+                            <controls:SettingsCard Header="小票抬头附加说明 (Header)" 
+                                                   Description="显示在小票顶部门店名下方的促销提示或标语" 
+                                                   Glyph="&#xE8A5;">
+                                <TextBox Text="{Binding Settings.ReceiptHeader, Mode=TwoWay}" AcceptsReturn="True" Width="380" Height="56"/>
+                            </controls:SettingsCard>
+                            <controls:SettingsCard Header="小票结尾感谢语 (Footer)" 
+                                                   Description="打印在小票底部的致谢词、退换货提示或门店二维码说明" 
+                                                   Glyph="&#xE8C8;">
+                                <TextBox Text="{Binding Settings.ReceiptFooter, Mode=TwoWay}" AcceptsReturn="True" Width="380" Height="56"/>
+                            </controls:SettingsCard>
+                        </controls:SettingsGroup>
+                    </StackPanel>
+
+                    <!-- 分类 6: 数据维护 -->
+                    <StackPanel x:Name="DataPanel" Spacing="8" Visibility="Collapsed">
+                        <controls:SettingsGroup Header="数据维护与批量导入" Description="通过 Excel 模板表格快速初始化或覆盖商品与会员档案">
+                            <controls:SettingsCard Header="批量导入商品库" 
+                                                   Description="支持 .xlsx 模板表格，自动导入条码、品类、进价与零售价" 
+                                                   Glyph="&#xE8B7;">
+                                <Button Command="{Binding ImportProductsCommand}" CornerRadius="6" Height="34" Padding="14,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE8B7;" FontSize="13"/>
+                                        <TextBlock Text="重新导入商品 (Excel)"/>
+                                    </StackPanel>
+                                </Button>
+                            </controls:SettingsCard>
+                            <controls:SettingsCard Header="批量导入会员库" 
+                                                   Description="导入会员姓名、手机号、初始积分与储值余额" 
+                                                   Glyph="&#xE716;">
+                                <Button Command="{Binding ImportMembersCommand}" CornerRadius="6" Height="34" Padding="14,0">
+                                    <StackPanel Orientation="Horizontal" Spacing="6">
+                                        <FontIcon Glyph="&#xE716;" FontSize="13"/>
+                                        <TextBlock Text="重新导入会员 (Excel)"/>
+                                    </StackPanel>
+                                </Button>
+                            </controls:SettingsCard>
+                        </controls:SettingsGroup>
+                    </StackPanel>
+
+                    <!-- 分类 7: 软件与更新 -->
+                    <StackPanel x:Name="UpdatesPanel" Spacing="8" Visibility="Collapsed">
+                        <controls:SettingsGroup Header="更新渠道与更新行为" Description="配置更新检测规则、体验抢先预览版与启动静默检测">
+                            <controls:SettingsCard Header="体验预览版更新渠道 (Pre-Release)" 
+                                                   Description="开启后可检查并更新至包含 pre 标识的测试版本，优先体验前沿特性（默认关闭）" 
+                                                   Glyph="&#xE7BA;">
+                                <ToggleSwitch IsOn="{Binding Settings.EnablePreviewUpdates, Mode=TwoWay}"
+                                              OnContent="已开启 (接收预览版)"
+                                              OffContent="已关闭 (仅正式版)"/>
+                            </controls:SettingsCard>
+                            <controls:SettingsCard Header="启动时自动检查更新" 
+                                                   Description="每次打开收银系统时在后台静默检查是否有最新可用版本（默认开启）" 
+                                                   Glyph="&#xE896;">
+                                <ToggleSwitch IsOn="{Binding Settings.AutoCheckUpdatesOnStartup, Mode=TwoWay}"
+                                              OnContent="已开启"
+                                              OffContent="已关闭"/>
+                            </controls:SettingsCard>
+                        </controls:SettingsGroup>
+
+                        <controls:SettingsGroup Header="当前版本与在线更新" Description="自动比对 GitHub Releases 并极速下载安装最新版本">
+                            <controls:SettingsCard Header="客户端当前运行版本" 
+                                                   Description="{Binding UpdateStatusText}" 
+                                                   Glyph="&#xE895;">
+                                <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                    <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                                            BorderThickness="1" 
+                                            CornerRadius="8" 
+                                            Padding="10,4">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <TextBlock Text="v" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                            <TextBlock Text="{Binding AppVersion}" FontWeight="Bold" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                        </StackPanel>
+                                    </Border>
+                                    <Button Command="{Binding CheckUpdateCommand}" 
+                                            Style="{StaticResource AccentButtonStyle}" 
+                                            Height="34" 
+                                            Padding="16,0"
+                                            CornerRadius="6">
+                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                            <FontIcon Glyph="&#xE895;" FontSize="12"/>
+                                            <TextBlock Text="检查新版本" FontSize="13"/>
+                                        </StackPanel>
+                                    </Button>
+                                </StackPanel>
+                            </controls:SettingsCard>
+                            <controls:SettingsCard Header="GitHub 更新发布仓库" 
+                                                   Description="指定在线更新检查的发布仓库路径 (格式: 用户名/仓库名)" 
+                                                   Glyph="&#xE774;">
+                                <TextBox Text="{Binding GitHubRepo, Mode=TwoWay}" Width="280" PlaceholderText="例如: lithegreat/WKLpos"/>
+                            </controls:SettingsCard>
+                        </controls:SettingsGroup>
+                    </StackPanel>
+
                 </StackPanel>
-            </Button>
-
-        </StackPanel>
-    </ScrollViewer>
+            </ScrollViewer>
+        </NavigationView>
     </Grid>
 </Page>

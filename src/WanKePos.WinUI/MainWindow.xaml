@@ -36,7 +36,7 @@
                         CornerRadius="10" 
                         Padding="8,1" 
                         VerticalAlignment="Center">
-                    <TextBlock Text="v0.1.0" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <TextBlock x:Name="AppVersionTextBlock" Text="v0.2.1" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                 </Border>
             </StackPanel>
 
@@ -135,7 +135,7 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem Content="系统设置" Tag="Settings" ToolTipService.ToolTip="系统设置与更新 (F6)">
+                <NavigationViewItem x:Name="SettingsNavItem" Content="系统设置" Tag="Settings" ToolTipService.ToolTip="系统设置与更新 (F6)">
                     <NavigationViewItem.Icon>
                         <AnimatedIcon>
                             <AnimatedIcon.Source>
@@ -146,6 +146,9 @@
                             </AnimatedIcon.FallbackIconSource>
                         </AnimatedIcon>
                     </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge x:Name="SettingsInfoBadge" Visibility="Collapsed" Style="{StaticResource AttentionDotInfoBadgeStyle}"/>
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
 

@@ -31,6 +31,7 @@ if ($cleanVersion -notmatch '^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$') {
     Write-Host "错误: 版本号格式不合法! 请使用标准语义化版本 (如 0.2.1 或 0.2.1-preview)。当前输入: $Version" -ForegroundColor Red
     exit 1
 }
+$isPrerelease = $cleanVersion -match "pre"
 $tag = "v$cleanVersion"
 
 $rawNumeric = ($cleanVersion -split '-')[0]
@@ -39,10 +40,12 @@ while ($parts.Length -lt 3) { $parts += "0" }
 $numericVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
 
 if ([string]::IsNullOrWhiteSpace($Title)) {
-    $Title = "万客隆 POS 系统 $tag"
+    $typeLabel = if ($isPrerelease) { " (预览版 Pre-Release)" } else { "" }
+    $Title = "万客隆 POS 系统 $tag$typeLabel"
 }
 
-Write-Host "目标版本: $cleanVersion (Tag: $tag | 程序集: $numericVersion)" -ForegroundColor Green
+$typeDesc = if ($isPrerelease) { "【预览版 Pre-Release】" } else { "【正式版 Stable】" }
+Write-Host "目标版本: $cleanVersion $typeDesc (Tag: $tag | 程序集: $numericVersion)" -ForegroundColor Green
 
 # 2. 检查依赖工具 (git 与 gh)
 Write-Host "`n[1/6] 检查 Git 与 GitHub CLI 环境..." -ForegroundColor Yellow

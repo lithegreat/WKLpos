@@ -25,10 +25,56 @@ namespace WanKePos.WinUI.Views
             ViewModel.RequestUpdateDialog = ShowUpdateDialogAsync;
             ViewModel.ShowMessage = ShowMessageAsync;
 
+            // 默认选中第一项：门店信息
+            if (SettingsNavView.MenuItems.Count > 0)
+            {
+                SettingsNavView.SelectedItem = SettingsNavView.MenuItems[0];
+            }
+
             this.Loaded += async (s, e) =>
             {
                 await ViewModel.InitializeAsync();
+                if (SettingsNavView.SelectedItem == null && SettingsNavView.MenuItems.Count > 0)
+                {
+                    SettingsNavView.SelectedItem = SettingsNavView.MenuItems[0];
+                }
             };
+        }
+
+        private void SettingsNavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+        {
+            if (args.SelectedItem is NavigationViewItem selectedItem && selectedItem.Tag is string tag)
+            {
+                SwitchCategory(tag);
+            }
+        }
+
+        public void NavigateToCategory(string tag)
+        {
+            foreach (var item in SettingsNavView.MenuItems)
+            {
+                if (item is NavigationViewItem navItem && navItem.Tag as string == tag)
+                {
+                    SettingsNavView.SelectedItem = navItem;
+                    SwitchCategory(tag);
+                    break;
+                }
+            }
+        }
+
+        private void SwitchCategory(string tag)
+        {
+            if (StorePanel == null) return;
+
+            StorePanel.Visibility = tag == "Store" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            AppearancePanel.Visibility = tag == "Appearance" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            HardwarePanel.Visibility = tag == "Hardware" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            PointsPanel.Visibility = tag == "Points" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            ReceiptPanel.Visibility = tag == "Receipt" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            DataPanel.Visibility = tag == "Data" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+            UpdatesPanel.Visibility = tag == "Updates" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
+
+            CategoryScrollViewer?.ChangeView(0, 0, 1.0f);
         }
 
         private async Task<string?> OpenFileDialogAsync()

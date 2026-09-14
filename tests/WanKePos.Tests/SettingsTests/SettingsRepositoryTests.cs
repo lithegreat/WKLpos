@@ -85,6 +85,17 @@ public class SettingsRepositoryTests
             Assert.Equal("欢迎光临万客隆", fetched.ReceiptHeader);
             Assert.Equal("凭小票7日内退换", fetched.ReceiptFooter);
             Assert.Equal("Dark", fetched.AppTheme);
+            Assert.False(fetched.EnablePreviewUpdates);
+            Assert.True(fetched.AutoCheckUpdatesOnStartup);
+
+            // 修改为开启预览版与关闭自动检测
+            fetched.EnablePreviewUpdates = true;
+            fetched.AutoCheckUpdatesOnStartup = false;
+            await repo.SaveSettingsAsync(fetched);
+
+            var refetched = await repo.GetSettingsAsync();
+            Assert.True(refetched.EnablePreviewUpdates);
+            Assert.False(refetched.AutoCheckUpdatesOnStartup);
         }
         finally
         {

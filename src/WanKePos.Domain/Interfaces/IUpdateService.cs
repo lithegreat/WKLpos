@@ -15,7 +15,8 @@ public interface IUpdateService
     /// </summary>
     /// <param name="repository">GitHub 仓库全名，如 "WKL/WanKePos"</param>
     /// <param name="currentVersion">当前版本号，如 "1.0.0"</param>
-    Task<UpdateInfo> CheckForUpdateAsync(string repository, string currentVersion);
+    /// <param name="includePrerelease">是否包含预览版更新渠道</param>
+    Task<UpdateInfo> CheckForUpdateAsync(string repository, string currentVersion, bool includePrerelease = false);
 
     /// <summary>
     /// 下载安装包并报告进度
