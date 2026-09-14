@@ -51,4 +51,14 @@ public class UpdateInfo
     /// 是否存在可更新的新版本
     /// </summary>
     public bool HasUpdate { get; set; }
+
+    /// <summary>
+    /// 是否为预览版发布 (Pre-Release)
+    /// </summary>
+    public bool IsPrerelease { get; set; }
+
+    /// <summary>
+    /// 更新渠道名称显示
+    /// </summary>
+    public string ChannelText => IsPrerelease ? "预览版 (Pre-Release)" : "正式版 (Stable)";
 }

@@ -41,6 +41,8 @@ namespace WanKePos.Infrastructure.Data.Repositories
                 existing.ReceiptHeader = settings.ReceiptHeader;
                 existing.ReceiptFooter = settings.ReceiptFooter;
                 existing.AppTheme = settings.AppTheme;
+                existing.EnablePreviewUpdates = settings.EnablePreviewUpdates;
+                existing.AutoCheckUpdatesOnStartup = settings.AutoCheckUpdatesOnStartup;
                 _context.StoreSettings.Update(existing);
             }
             else

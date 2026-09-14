@@ -59,10 +59,13 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($cleanVersion)) {
               $cleanVersion = "1.0.0"
           }
+          $isPrerelease = ($cleanVersion -match "pre") ? "true" : "false"
           Write-Host "Triggered by tag: $tag"
           Write-Host "Parsed Version: $cleanVersion"
+          Write-Host "Is Prerelease: $isPrerelease"
           "TAG=$tag" >> $env:GITHUB_ENV
           "VERSION=$cleanVersion" >> $env:GITHUB_ENV
+          "PRERELEASE=$isPrerelease" >> $env:GITHUB_ENV
 
       - name: Run Unit Tests
         run: dotnet test tests/WanKePos.Tests/WanKePos.Tests.csproj --configuration Release --verbosity normal
@@ -78,7 +81,7 @@ jobs:
           name: "万客隆 POS 系统 ${{ env.TAG }}"
           tag_name: ${{ env.TAG }}
           draft: false
-          prerelease: false
+          prerelease: ${{ env.PRERELEASE == 'true' }}
           generate_release_notes: true
           files: |
             output_installer/WanKePos_Setup_v${{ env.VERSION }}.exe

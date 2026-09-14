@@ -51,4 +51,14 @@ public class StoreSettings
     /// 主题模式: "Default" (跟随系统, 默认), "Light" (浅色), "Dark" (深色)
     /// </summary>
     public string AppTheme { get; set; } = "Default";
+
+    /// <summary>
+    /// 是否开启预览版更新渠道 (接收抢先测试构建，默认 false 关闭)
+    /// </summary>
+    public bool EnablePreviewUpdates { get; set; } = false;
+
+    /// <summary>
+    /// 是否在启动时自动检测更新 (默认 true 开启)
+    /// </summary>
+    public bool AutoCheckUpdatesOnStartup { get; set; } = true;
 }
