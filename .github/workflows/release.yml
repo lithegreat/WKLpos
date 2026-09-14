@@ -59,7 +59,7 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($cleanVersion)) {
               $cleanVersion = "1.0.0"
           }
-          $isPrerelease = ($cleanVersion -match "pre") ? "true" : "false"
+          $isPrerelease = ($cleanVersion -match "(pre|beta|alpha|rc)") ? "true" : "false"
           Write-Host "Triggered by tag: $tag"
           Write-Host "Parsed Version: $cleanVersion"
           Write-Host "Is Prerelease: $isPrerelease"
