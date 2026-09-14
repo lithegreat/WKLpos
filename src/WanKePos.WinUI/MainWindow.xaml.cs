@@ -133,9 +133,10 @@ namespace WanKePos.WinUI
                     }
                 }
 
+                bool initialAlwaysOnTop = savedState?.IsAlwaysOnTop ?? true;
                 if (_appWindow.Presenter is OverlappedPresenter presenter)
                 {
-                    presenter.IsAlwaysOnTop = true;
+                    presenter.IsAlwaysOnTop = initialAlwaysOnTop;
                     if (savedState != null && savedState.IsMaximized)
                     {
                         presenter.Maximize();
@@ -144,6 +145,7 @@ namespace WanKePos.WinUI
 
                 _appWindow.Show(true);
                 SetForegroundWindow(hwnd);
+                SetAlwaysOnTop(initialAlwaysOnTop);
             }
 
             // 监听 Loaded 与 XamlRoot 缩放比变更（支持多显示器拖拽与 DPI 动态适配）
@@ -474,6 +476,9 @@ namespace WanKePos.WinUI
                     // 取消置顶时，使用 HWND_NOTOPMOST，并配合 SWP_NOACTIVATE 与 SWP_FRAMECHANGED 确保彻底脱离置顶层级
                     SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
                 }
+
+                // 5. 保存置顶状态到持久化文件，保持下次启动时记忆用户偏好
+                SaveWindowState();
             }
             finally
             {
@@ -566,6 +571,7 @@ namespace WanKePos.WinUI
             public int? X { get; set; }
             public int? Y { get; set; }
             public bool IsMaximized { get; set; }
+            public bool IsAlwaysOnTop { get; set; } = true;
         }
 
         private int _lastNormalWidth = 1200;
@@ -599,11 +605,12 @@ namespace WanKePos.WinUI
                     Height = _lastNormalHeight >= 600 ? _lastNormalHeight : 800,
                     X = _lastNormalX,
                     Y = _lastNormalY,
-                    IsMaximized = isMaximized
+                    IsMaximized = isMaximized,
+                    IsAlwaysOnTop = AlwaysOnTopCheckBox?.IsChecked ?? true
                 };
                 var json = System.Text.Json.JsonSerializer.Serialize(state, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
                 System.IO.File.WriteAllText(GetWindowStateFilePath(), json);
-                App.LogToFile($"Saved WindowState: Width={state.Width}, Height={state.Height}, X={state.X}, Y={state.Y}, IsMaximized={state.IsMaximized}");
+                App.LogToFile($"Saved WindowState: Width={state.Width}, Height={state.Height}, X={state.X}, Y={state.Y}, IsMaximized={state.IsMaximized}, IsAlwaysOnTop={state.IsAlwaysOnTop}");
             }
             catch (Exception ex)
             {

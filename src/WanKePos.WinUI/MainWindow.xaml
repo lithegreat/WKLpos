@@ -38,6 +38,24 @@
                         VerticalAlignment="Center">
                     <TextBlock x:Name="AppVersionTextBlock" Text="v0.2.1" FontSize="11" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                 </Border>
+
+                <!-- 置顶开关胶囊 (置于左侧) -->
+                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                        BorderThickness="1" 
+                        CornerRadius="12" 
+                        Padding="6,1,8,1" 
+                        VerticalAlignment="Center">
+                    <CheckBox x:Name="AlwaysOnTopCheckBox" 
+                              Content="置顶" 
+                              FontSize="11" 
+                              MinHeight="0"
+                              MinWidth="0"
+                              Padding="4,0,0,0"
+                              Checked="AlwaysOnTopCheckBox_Checked" 
+                              Unchecked="AlwaysOnTopCheckBox_Unchecked"
+                              ToolTipService.ToolTip="保持软件窗口始终在其他窗口上方"/>
+                </Border>
             </StackPanel>
 
             <!-- 中间空白可拖拽区域 -->
@@ -74,25 +92,6 @@
                                    FontSize="11" 
                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </StackPanel>
-                </Border>
-
-                <!-- 置顶开关胶囊 -->
-                <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" 
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
-                        BorderThickness="1" 
-                        CornerRadius="12" 
-                        Padding="6,1,8,1" 
-                        VerticalAlignment="Center">
-                    <CheckBox x:Name="AlwaysOnTopCheckBox" 
-                              Content="置顶" 
-                              IsChecked="True" 
-                              FontSize="11" 
-                              MinHeight="0"
-                              MinWidth="0"
-                              Padding="4,0,0,0"
-                              Checked="AlwaysOnTopCheckBox_Checked" 
-                              Unchecked="AlwaysOnTopCheckBox_Unchecked"
-                              ToolTipService.ToolTip="保持软件窗口始终在浏览器与其他窗口上方"/>
                 </Border>
             </StackPanel>
         </Grid>
