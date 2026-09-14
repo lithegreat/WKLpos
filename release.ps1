@@ -1,4 +1,4 @@
-﻿param(
+param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = "目标发布版本号，例如: 0.2.1 或 v0.2.1")]
     [string]$Version,
 
@@ -59,7 +59,18 @@ if (-not (Get-Command "gh" -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# 验证 gh 登录状态
+# 验证 gh 登录状态 (若未配置 GH_TOKEN，尝试从 Git Credential Manager 自动提取)
+if ([string]::IsNullOrWhiteSpace($env:GH_TOKEN)) {
+    try {
+        $inputStr = "protocol=https`nhost=github.com`n"
+        $credOutput = $inputStr | git credential fill 2>$null
+        $token = (($credOutput -split "`r?`n" | Where-Object { $_ -match "^password=" }) -replace "^password=", "").Trim()
+        if ($token) {
+            $env:GH_TOKEN = $token
+        }
+    } catch { }
+}
+
 $ghUser = gh api user --jq .login 2>$null
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($ghUser)) {
     Write-Host "错误: GitHub CLI 尚未登录，请先在终端运行 'gh auth login' 登录 GitHub。" -ForegroundColor Red
@@ -150,6 +161,24 @@ if (Test-Path $readmePath) {
     Write-Host "  -> 已更新: $readmePath" -ForegroundColor Gray
 }
 
+# 5.5 MainViewModel.cs
+$mainVmPath = Join-Path $rootDir "src\WanKePos.WinUI\ViewModels\MainViewModel.cs"
+if (Test-Path $mainVmPath) {
+    $mainVm = [System.IO.File]::ReadAllText($mainVmPath, [System.Text.Encoding]::UTF8)
+    $mainVm = [System.Text.RegularExpressions.Regex]::Replace($mainVm, 'return "v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?";', "return `"$tag`";")
+    [System.IO.File]::WriteAllText($mainVmPath, $mainVm, [System.Text.Encoding]::UTF8)
+    Write-Host "  -> 已更新: $mainVmPath" -ForegroundColor Gray
+}
+
+# 5.6 SettingsViewModel.cs
+$settingsVmPath = Join-Path $rootDir "src\WanKePos.WinUI\ViewModels\SettingsViewModel.cs"
+if (Test-Path $settingsVmPath) {
+    $settingsVm = [System.IO.File]::ReadAllText($settingsVmPath, [System.Text.Encoding]::UTF8)
+    $settingsVm = [System.Text.RegularExpressions.Regex]::Replace($settingsVm, 'return "\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?";', "return `"$cleanVersion`";")
+    [System.IO.File]::WriteAllText($settingsVmPath, $settingsVm, [System.Text.Encoding]::UTF8)
+    Write-Host "  -> 已更新: $settingsVmPath" -ForegroundColor Gray
+}
+
 # 6. 分支管理、提交与合并至 main
 Write-Host "`n[5/6] 提交更改并合入 main 分支..." -ForegroundColor Yellow
 
@@ -158,10 +187,13 @@ Write-Host "当前工作分支: $currentBranch" -ForegroundColor Gray
 
 # 确定发版工作分支
 $releaseBranch = $currentBranch
-if ($currentBranch -eq "main" -or $currentBranch -eq "master") {
-    # main 拥有分支保护策略，严禁直接推送，需在临时发版分支上创建 PR
+if ($currentBranch -ne "release/$tag") {
     $releaseBranch = "release/$tag"
-    Write-Host "检测到处于受保护的主分支，自动切换至发版临时分支: $releaseBranch" -ForegroundColor Cyan
+    $existingBranch = (git branch --list $releaseBranch).Trim()
+    if ($existingBranch) {
+        git branch -D $releaseBranch
+    }
+    Write-Host "自动切换至发版临时分支: $releaseBranch" -ForegroundColor Cyan
     git checkout -b $releaseBranch
 }
 
