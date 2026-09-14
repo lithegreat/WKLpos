@@ -39,6 +39,15 @@ namespace WanKePos.WinUI.ViewModels
             _settingsRepo = settingsRepo;
             _updateService = updateService;
             _ = LoadStoreNameAsync();
+
+            // 监听设置变更消息，实时同步左上角门店名称
+            WeakReferenceMessenger.Default.Register<SettingsChangedMessage>(this, (r, m) =>
+            {
+                if (!string.IsNullOrEmpty(m.Settings.StoreName))
+                {
+                    CurrentStoreName = m.Settings.StoreName;
+                }
+            });
         }
 
         /// <summary>

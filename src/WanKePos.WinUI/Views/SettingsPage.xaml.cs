@@ -39,6 +39,11 @@ namespace WanKePos.WinUI.Views
                     SettingsNavView.SelectedItem = SettingsNavView.MenuItems[0];
                 }
             };
+
+            this.Unloaded += async (s, e) =>
+            {
+                await ViewModel.FlushAutoSaveAsync();
+            };
         }
 
         private void SettingsNavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -65,6 +70,8 @@ namespace WanKePos.WinUI.Views
         private void SwitchCategory(string tag)
         {
             if (StorePanel == null) return;
+
+            _ = ViewModel.FlushAutoSaveAsync();
 
             StorePanel.Visibility = tag == "Store" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
             AppearancePanel.Visibility = tag == "Appearance" ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;

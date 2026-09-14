@@ -23,17 +23,19 @@
                              BadgeText="快捷键 F6"
                              MaxWidth="1100"
                              HorizontalAlignment="Stretch"
-                             Margin="0,0,0,12">
-            <Button Command="{Binding SaveSettingsCommand}" 
-                    Style="{StaticResource AccentButtonStyle}" 
-                    Height="36" 
-                    Padding="20,0" 
-                    CornerRadius="6">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <FontIcon Glyph="&#xE74E;" FontSize="13"/>
-                    <TextBlock Text="保存所有设置" FontSize="13" FontWeight="SemiBold"/>
+                             Margin="0,0,0,14">
+            <!-- 自动保存状态轻量指示 (取代手动保存按钮) -->
+            <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
+                    BorderThickness="1" 
+                    CornerRadius="6" 
+                    Padding="12,6"
+                    VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE73E;" FontSize="12" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                    <TextBlock Text="{Binding AutoSaveStatusText}" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                 </StackPanel>
-            </Button>
+            </Border>
         </controls:PageHeader>
 
         <!-- 2. 检测到更新时常驻显示的 InfoBar -->
@@ -67,6 +69,7 @@
                         OpenPaneLength="190"
                         CompactPaneLength="48"
                         Background="Transparent"
+                        Margin="0,4,0,0"
                         SelectionChanged="SettingsNavView_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="门店信息" Tag="Store" ToolTipService.ToolTip="配置门店名称与联系方式">
@@ -111,8 +114,8 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
 
-            <!-- 右侧分类内容滚动区 -->
-            <ScrollViewer x:Name="CategoryScrollViewer" VerticalScrollBarVisibility="Auto" Padding="20,0,16,28">
+            <!-- 右侧分类内容滚动区 (保留 24px 呼吸间距，避免第一行文字紧贴上边框) -->
+            <ScrollViewer x:Name="CategoryScrollViewer" VerticalScrollBarVisibility="Auto" Padding="24,24,20,36">
                 <StackPanel Spacing="16" MaxWidth="920" HorizontalAlignment="Left">
 
                     <!-- 分类 1: 门店信息 -->
@@ -121,17 +124,17 @@
                             <controls:SettingsCard Header="门店名称" 
                                                    Description="收银系统主界面与小票抬头展示的门店全称" 
                                                    Glyph="&#xE707;">
-                                <TextBox Text="{Binding Settings.StoreName, Mode=TwoWay}" Width="320"/>
+                                <TextBox Text="{Binding Settings.StoreName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="320"/>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="门店地址" 
                                                    Description="用于打印在收银小票上的实体门店地址" 
                                                    Glyph="&#xE81D;">
-                                <TextBox Text="{Binding Settings.StoreAddress, Mode=TwoWay}" Width="320"/>
+                                <TextBox Text="{Binding Settings.StoreAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="320"/>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="联系电话" 
                                                    Description="小票客服联系电话或店长咨询热线" 
                                                    Glyph="&#xE717;">
-                                <TextBox Text="{Binding Settings.StorePhone, Mode=TwoWay}" Width="320"/>
+                                <TextBox Text="{Binding Settings.StorePhone, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="320"/>
                             </controls:SettingsCard>
                         </controls:SettingsGroup>
                     </StackPanel>
@@ -179,7 +182,7 @@
                             <controls:SettingsCard Header="通信波特率 (Baud Rate)" 
                                                    Description="串口通信速率 (常见默认为 9600 或 115200)" 
                                                    Glyph="&#xE8B9;">
-                                <TextBox Text="{Binding Settings.PrinterBaudRate, Mode=TwoWay}" Width="220"/>
+                                <TextBox Text="{Binding Settings.PrinterBaudRate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="220"/>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="打印机连通性测试" 
                                                    Description="向选定端口发送包含门店名称的小票测试样张" 
@@ -202,7 +205,7 @@
                                                    Glyph="&#xE735;">
                                 <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                     <TextBlock Text="每消费" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
-                                    <TextBox Text="{Binding Settings.PointsPerYuan, Mode=TwoWay}" Width="100"/>
+                                    <TextBox Text="{Binding Settings.PointsPerYuan, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Width="100"/>
                                     <TextBlock Text="元 = 1 积分" VerticalAlignment="Center" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                                 </StackPanel>
                             </controls:SettingsCard>
@@ -215,12 +218,12 @@
                             <controls:SettingsCard Header="小票抬头附加说明 (Header)" 
                                                    Description="显示在小票顶部门店名下方的促销提示或标语" 
                                                    Glyph="&#xE8A5;">
-                                <TextBox Text="{Binding Settings.ReceiptHeader, Mode=TwoWay}" AcceptsReturn="True" Width="380" Height="56"/>
+                                <TextBox Text="{Binding Settings.ReceiptHeader, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Width="380" Height="56"/>
                             </controls:SettingsCard>
                             <controls:SettingsCard Header="小票结尾感谢语 (Footer)" 
                                                    Description="打印在小票底部的致谢词、退换货提示或门店二维码说明" 
                                                    Glyph="&#xE8C8;">
-                                <TextBox Text="{Binding Settings.ReceiptFooter, Mode=TwoWay}" AcceptsReturn="True" Width="380" Height="56"/>
+                                <TextBox Text="{Binding Settings.ReceiptFooter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Width="380" Height="56"/>
                             </controls:SettingsCard>
                         </controls:SettingsGroup>
                     </StackPanel>
