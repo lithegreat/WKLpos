@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
+using System.Reflection;
 using System.Threading.Tasks;
 using WanKePos.Domain.Entities;
 using WanKePos.Domain.Interfaces;
