@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true, Position = 0, HelpMessage = "目标发布版本号，例如: 0.2.1 或 v0.2.1")]
     [string]$Version,
 
