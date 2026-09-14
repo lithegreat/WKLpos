@@ -102,4 +102,39 @@ public class SettingsRepositoryTests
             connection.Dispose();
         }
     }
+
+    [Fact]
+    public void StoreSettings_PropertyChanged_ShouldNotifyPropertyChanges()
+    {
+        var settings = new StoreSettings();
+        var changedProps = new List<string>();
+        settings.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName != null) changedProps.Add(e.PropertyName);
+        };
+
+        settings.StoreName = "万客隆旗舰店";
+        settings.StoreAddress = "北京市朝阳区";
+        settings.StorePhone = "13800000000";
+        settings.PointsPerYuan = 5m;
+        settings.PrinterPort = "COM1";
+        settings.PrinterBaudRate = 115200;
+        settings.ReceiptHeader = "欢迎光临";
+        settings.ReceiptFooter = "请慢走";
+        settings.AppTheme = "Dark";
+        settings.EnablePreviewUpdates = true;
+        settings.AutoCheckUpdatesOnStartup = false;
+
+        Assert.Contains(nameof(StoreSettings.StoreName), changedProps);
+        Assert.Contains(nameof(StoreSettings.StoreAddress), changedProps);
+        Assert.Contains(nameof(StoreSettings.StorePhone), changedProps);
+        Assert.Contains(nameof(StoreSettings.PointsPerYuan), changedProps);
+        Assert.Contains(nameof(StoreSettings.PrinterPort), changedProps);
+        Assert.Contains(nameof(StoreSettings.PrinterBaudRate), changedProps);
+        Assert.Contains(nameof(StoreSettings.ReceiptHeader), changedProps);
+        Assert.Contains(nameof(StoreSettings.ReceiptFooter), changedProps);
+        Assert.Contains(nameof(StoreSettings.AppTheme), changedProps);
+        Assert.Contains(nameof(StoreSettings.EnablePreviewUpdates), changedProps);
+        Assert.Contains(nameof(StoreSettings.AutoCheckUpdatesOnStartup), changedProps);
+    }
 }

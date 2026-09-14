@@ -57,6 +57,16 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedCategoryTag = "Store";
 
+    [ObservableProperty]
+    private string _autoSaveStatusText = "所有设置已自动保存";
+
+    [ObservableProperty]
+    private bool _isAutoSaving = false;
+
+    private bool _isLoadingSettings = false;
+    private CancellationTokenSource? _autoSaveCts;
+    private readonly System.Threading.SemaphoreSlim _saveLock = new(1, 1);
+
     public ObservableCollection<string> AvailablePorts { get; } = new();
 
     public Func<Task<string?>>? RequestOpenFileDialog { get; set; }
@@ -79,6 +89,8 @@ public partial class SettingsViewModel : ObservableObject
         _excelImporter = excelImporter;
         _updateService = updateService;
         _themeService = themeService;
+
+        Settings.PropertyChanged += OnSettingsEntityPropertyChanged;
 
         _themeService.ThemeChanged += (s, themeName) =>
         {
@@ -105,6 +117,107 @@ public partial class SettingsViewModel : ObservableObject
         });
     }
 
+    partial void OnSettingsChanged(StoreSettings? oldValue, StoreSettings newValue)
+    {
+        if (oldValue != null)
+        {
+            oldValue.PropertyChanged -= OnSettingsEntityPropertyChanged;
+        }
+        if (newValue != null)
+        {
+            newValue.PropertyChanged += OnSettingsEntityPropertyChanged;
+        }
+    }
+
+    private void OnSettingsEntityPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (_isLoadingSettings) return;
+
+        bool immediate = e?.PropertyName switch
+        {
+            nameof(StoreSettings.EnablePreviewUpdates) => true,
+            nameof(StoreSettings.AutoCheckUpdatesOnStartup) => true,
+            nameof(StoreSettings.PrinterPort) => true,
+            nameof(StoreSettings.AppTheme) => true,
+            _ => false
+        };
+
+        ScheduleAutoSave(immediate);
+    }
+
+    public void ScheduleAutoSave(bool immediate = false)
+    {
+        if (_isLoadingSettings) return;
+
+        _autoSaveCts?.Cancel();
+        _autoSaveCts?.Dispose();
+        _autoSaveCts = new CancellationTokenSource();
+        var token = _autoSaveCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                if (!immediate)
+                {
+                    await Task.Delay(400, token);
+                }
+                if (token.IsCancellationRequested) return;
+
+                await SaveSettingsInternalAsync();
+            }
+            catch (OperationCanceledException)
+            {
+                // 防抖忽略
+            }
+            catch (Exception)
+            {
+                AutoSaveStatusText = "自动保存失败";
+            }
+        });
+    }
+
+    public async Task FlushAutoSaveAsync()
+    {
+        if (_isLoadingSettings) return;
+        _autoSaveCts?.Cancel();
+        await SaveSettingsInternalAsync();
+    }
+
+    private async Task SaveSettingsInternalAsync()
+    {
+        await _saveLock.WaitAsync();
+        try
+        {
+            IsAutoSaving = true;
+            AutoSaveStatusText = "正在保存设置...";
+
+            Settings.AppTheme = SelectedThemeIndex switch
+            {
+                1 => "Light",
+                2 => "Dark",
+                _ => "Default"
+            };
+
+            await _settingsRepository.SaveSettingsAsync(Settings);
+            await _themeService.SetThemeAsync(Settings.AppTheme);
+
+            // 发送设置更新消息通知主窗口 (如实时同步门店名称)
+            WeakReferenceMessenger.Default.Send(new SettingsChangedMessage(Settings));
+
+            AutoSaveStatusText = "所有设置已自动保存";
+        }
+        catch (Exception)
+        {
+            AutoSaveStatusText = "自动保存失败";
+        }
+        finally
+        {
+            IsAutoSaving = false;
+            _saveLock.Release();
+        }
+    }
+
     private bool _isInitialized;
 
     [RelayCommand]
@@ -113,17 +226,27 @@ public partial class SettingsViewModel : ObservableObject
         if (_isInitialized) return;
         _isInitialized = true;
 
-        Settings = await _settingsRepository.GetSettingsAsync() ?? new StoreSettings();
-        SelectedThemeIndex = Settings.AppTheme switch
+        _isLoadingSettings = true;
+        try
         {
-            "Light" => 1,
-            "Dark" => 2,
-            _ => 0
-        };
-        
-        AvailablePorts.Clear();
-        var ports = SerialPort.GetPortNames();
-        foreach (var p in ports) AvailablePorts.Add(p);
+            Settings = await _settingsRepository.GetSettingsAsync() ?? new StoreSettings();
+            SelectedThemeIndex = Settings.AppTheme switch
+            {
+                "Light" => 1,
+                "Dark" => 2,
+                _ => 0
+            };
+            
+            AvailablePorts.Clear();
+            var ports = SerialPort.GetPortNames();
+            foreach (var p in ports) AvailablePorts.Add(p);
+
+            AutoSaveStatusText = "所有设置已自动保存";
+        }
+        finally
+        {
+            _isLoadingSettings = false;
+        }
     }
 
     partial void OnSelectedThemeIndexChanged(int value)
@@ -139,21 +262,17 @@ public partial class SettingsViewModel : ObservableObject
         {
             Settings.AppTheme = theme;
             _ = _themeService.SetThemeAsync(theme);
+            if (!_isLoadingSettings)
+            {
+                ScheduleAutoSave(immediate: true);
+            }
         }
     }
 
     [RelayCommand]
     public async Task SaveSettingsAsync()
     {
-        Settings.AppTheme = SelectedThemeIndex switch
-        {
-            1 => "Light",
-            2 => "Dark",
-            _ => "Default"
-        };
-        await _settingsRepository.SaveSettingsAsync(Settings);
-        await _themeService.SetThemeAsync(Settings.AppTheme);
-        ShowMessage?.Invoke("提示", "设置已成功保存！");
+        await FlushAutoSaveAsync();
     }
 
     [RelayCommand]
