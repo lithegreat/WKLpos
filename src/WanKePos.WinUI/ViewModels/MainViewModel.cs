@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.UI.Dispatching;
 using System;
@@ -134,7 +134,7 @@ namespace WanKePos.WinUI.ViewModels
                 }
             }
             catch { }
-            return "v0.2.2-beta";
+            return "v0.2.3";
         }
     }
 }

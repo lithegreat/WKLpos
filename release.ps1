@@ -189,8 +189,8 @@ Write-Host "当前工作分支: $currentBranch" -ForegroundColor Gray
 $releaseBranch = $currentBranch
 if ($currentBranch -ne "release/$tag") {
     $releaseBranch = "release/$tag"
-    $existingBranch = (git branch --list $releaseBranch).Trim()
-    if ($existingBranch) {
+    $existingBranch = git branch --list $releaseBranch
+    if ($existingBranch -and "$existingBranch".Trim()) {
         git branch -D $releaseBranch
     }
     Write-Host "自动切换至发版临时分支: $releaseBranch" -ForegroundColor Cyan
@@ -199,7 +199,8 @@ if ($currentBranch -ne "release/$tag") {
 
 # 暂存并提交所有更改
 git add -A
-$hasChanges = (git status --porcelain).Trim()
+$porcelain = git status --porcelain
+$hasChanges = if ($porcelain) { "$porcelain".Trim() } else { "" }
 if ($hasChanges) {
     git commit -m "chore: release $tag"
     Write-Host "已提交更改: chore: release $tag" -ForegroundColor Green

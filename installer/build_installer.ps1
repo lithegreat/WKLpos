@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$Version = "0.2.2-beta",
+    [string]$Version = "0.2.3",
     $RunInstaller = $true,
     [ValidateSet("FrameworkDependent", "SelfContained", "Both")]
     [string]$PackageMode = "FrameworkDependent",
@@ -13,7 +13,7 @@ $RunInstaller = [System.Convert]::ToBoolean($RunInstaller)
 # 规范化版本号 (移除前导 v 或 V)
 $cleanVersion = $Version.TrimStart('v', 'V')
 if ([string]::IsNullOrWhiteSpace($cleanVersion)) {
-    $cleanVersion = "0.2.2-beta"
+    $cleanVersion = "0.2.3"
 }
 
 # 提取纯数字版本用于 Windows 文件与程序集属性 (如 0.2.0 -> 0.2.0.0)
