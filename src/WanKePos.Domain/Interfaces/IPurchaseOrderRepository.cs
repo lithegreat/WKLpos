@@ -31,5 +31,10 @@ public interface IPurchaseOrderRepository
     /// </summary>
     Task<bool> CancelAsync(int purchaseOrderId);
     
+    /// <summary>
+    /// 更新未入库采购单信息及明细项
+    /// </summary>
+    Task<bool> UpdateAsync(PurchaseOrder order);
+
     Task DeleteAsync(int purchaseOrderId);
 }

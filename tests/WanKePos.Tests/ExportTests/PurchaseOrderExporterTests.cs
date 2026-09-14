@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using WanKePos.Domain.Entities;
+using WanKePos.Domain.Enums;
 using WanKePos.Infrastructure.Export;
 using WanKePos.Tests.TestHelpers;
 using Xunit;
@@ -646,5 +647,78 @@ public class PurchaseOrderExporterTests
         Assert.Equal("2026-09-13_204500_采购单_广州博美_PO20260913204500003.xlsx", sortedDescending[0]);
         Assert.Equal("2026-09-13_153000_采购单_爱茉莉美妆_PO20260913153000002.xlsx", sortedDescending[1]);
         Assert.Equal("2026-09-13_090000_采购单_资生堂直供_PO20260913090000001.xlsx", sortedDescending[2]);
+    }
+
+    [Fact]
+    public void GenerateDefaultFileName_WithVendorSimpleExportType_ShouldContainVendorSimpleTag()
+    {
+        var order = new PurchaseOrder
+        {
+            PurchaseOrderNo = "PO20260914120000001",
+            Supplier = "欧莱雅直供",
+            CreatedAt = new DateTime(2026, 9, 14, 12, 0, 0)
+        };
+
+        var fileName = PurchaseOrderExporter.GenerateDefaultFileName(order, PurchaseOrderExportType.VendorSimple);
+
+        Assert.Equal("2026-09-14_120000_采购清单(厂家)_欧莱雅直供_PO20260914120000001.xlsx", fileName);
+    }
+
+    [Fact]
+    public async Task ExportToExcelAsync_WithVendorSimpleExportType_ShouldOnlyHaveProductNameAndQuantityColumns()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"test_vendor_simple_{Guid.NewGuid():N}.xlsx");
+        try
+        {
+            var exporter = new PurchaseOrderExporter();
+            var order = new PurchaseOrder
+            {
+                Id = 1,
+                PurchaseOrderNo = "PO20260914888888",
+                Supplier = "测试厂家",
+                CreatedAt = DateTime.Now,
+                Items = new List<PurchaseOrderItem>
+                {
+                    new PurchaseOrderItem
+                    {
+                        ProductName = "沙宣修护洗发露 500ml",
+                        Quantity = 10,
+                        CostPrice = 35.5m
+                    },
+                    new PurchaseOrderItem
+                    {
+                        ProductName = "施华蔻染膏 60ml",
+                        Quantity = 25,
+                        CostPrice = 18.0m
+                    }
+                }
+            };
+
+            var path = await exporter.ExportToExcelAsync(order, null, tempFile, PurchaseOrderExportType.VendorSimple);
+
+            Assert.True(File.Exists(path));
+
+            using var workbook = new ClosedXML.Excel.XLWorkbook(path);
+            var ws = workbook.Worksheet(1);
+
+            // 表头仅有2列：商品名称 与 采购数量
+            Assert.Equal("商品名称", ws.Cell(1, 1).GetString());
+            Assert.Equal("采购数量", ws.Cell(1, 2).GetString());
+            Assert.True(string.IsNullOrEmpty(ws.Cell(1, 3).GetString()));
+
+            // 数据行核对
+            Assert.Equal("沙宣修护洗发露 500ml", ws.Cell(2, 1).GetString());
+            Assert.Equal(10, ws.Cell(2, 2).GetDouble());
+
+            Assert.Equal("施华蔻染膏 60ml", ws.Cell(3, 1).GetString());
+            Assert.Equal(25, ws.Cell(3, 2).GetDouble());
+        }
+        finally
+        {
+            if (File.Exists(tempFile))
+            {
+                File.Delete(tempFile);
+            }
+        }
     }
 }

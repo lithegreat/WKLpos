@@ -9,15 +9,14 @@
     Title="采购单详情"
     CloseButtonText="关闭"
     DefaultButton="Primary"
-    MaxWidth="820"
     PrimaryButtonClick="ContentDialog_PrimaryButtonClick"
     SecondaryButtonClick="ContentDialog_SecondaryButtonClick">
 
     <ContentDialog.Resources>
-        <x:Double x:Key="ContentDialogMaxWidth">820</x:Double>
+        <x:Double x:Key="ContentDialogMaxWidth">840</x:Double>
     </ContentDialog.Resources>
 
-    <Grid RowSpacing="14" Margin="0,8,0,0">
+    <Grid Width="800" RowSpacing="14" Margin="0,8,0,0">
         <Grid.RowDefinitions>
             <!-- 单据信息与汇总卡片 -->
             <RowDefinition Height="Auto"/>
@@ -53,14 +52,28 @@
                         </Button>
                     </StackPanel>
 
-                    <!-- 状态标签胶囊 -->
-                    <Border Grid.Column="1" 
-                            x:Name="StatusBadgeBorder" 
-                            CornerRadius="4" 
-                            Padding="10,4" 
-                            VerticalAlignment="Center">
-                        <TextBlock x:Name="StatusTextBlock" FontSize="12" FontWeight="SemiBold"/>
-                    </Border>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <!-- 修改此单 (仅待入库单据可见) -->
+                        <Button x:Name="EditOrderButton" 
+                                Click="EditOrderButton_Click" 
+                                Height="28" 
+                                Padding="8,0" 
+                                CornerRadius="4" 
+                                ToolTipService.ToolTip="在制单工作台修改此采购单">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xE70F;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                <TextBlock Text="修改此单" FontSize="11" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 状态标签胶囊 -->
+                        <Border x:Name="StatusBadgeBorder" 
+                                CornerRadius="4" 
+                                Padding="10,4" 
+                                VerticalAlignment="Center">
+                            <TextBlock x:Name="StatusTextBlock" FontSize="12" FontWeight="SemiBold"/>
+                        </Border>
+                    </StackPanel>
                 </Grid>
 
                 <!-- 两列详细信息 -->

@@ -12,8 +12,6 @@
     CloseButtonText="取消"
     DefaultButton="Primary"
     IsPrimaryButtonEnabled="False"
-    MaxWidth="880"
-    MaxHeight="780"
     PrimaryButtonClick="ContentDialog_PrimaryButtonClick">
 
     <ContentDialog.Resources>

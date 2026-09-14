@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Windows.Storage.Pickers;
 using WanKePos.Domain.Entities;
+using WanKePos.Domain.Enums;
 using WanKePos.Domain.Models;
 using WanKePos.WinUI.Dialogs;
 using WanKePos.WinUI.Helpers;
@@ -31,6 +32,7 @@ public sealed partial class PurchaseOrderPage : Page
         ViewModel.RequestConfirm = ShowConfirmDialogAsync;
         ViewModel.RequestSaveFileDialog = OpenSaveFileDialogAsync;
         ViewModel.RequestAiImportDialog = ShowAiImportDialogAsync;
+        ViewModel.RequestExportTypeDialog = ShowExportChoiceDialogAsync;
         ViewModel.RequestExportSuccessDialog = ShowExportSuccessDialogAsync;
 
         ViewModel.PropertyChanged += (s, e) =>
@@ -70,15 +72,28 @@ public sealed partial class PurchaseOrderPage : Page
         return null;
     }
 
-    private async Task ShowExportSuccessDialogAsync(string exportedPath, PurchaseOrder order)
+    private async Task<PurchaseOrderExportType?> ShowExportChoiceDialogAsync()
     {
-        var dialog = new PurchaseOrderExportSuccessDialog(exportedPath, order, ViewModel)
+        var dialog = new PurchaseOrderExportChoiceDialog
+        {
+            XamlRoot = this.XamlRoot,
+            RequestedTheme = this.ActualTheme
+        };
+        await dialog.ShowAsync();
+        return dialog.SelectedType;
+    }
+
+    private async Task ShowExportSuccessDialogAsync(string exportedPath, PurchaseOrder order, PurchaseOrderExportType exportType)
+    {
+        var dialog = new PurchaseOrderExportSuccessDialog(exportedPath, order, ViewModel, exportType)
         {
             XamlRoot = this.XamlRoot,
             RequestedTheme = this.ActualTheme
         };
         await dialog.ShowAsync();
     }
+
+    private string GetCreateOrSaveButtonText(bool isEditing) => isEditing ? "保存采购单修改" : "生成采购单";
 
     private Visibility GetTab0Visibility(int tabIndex) => tabIndex == 0 ? Visibility.Visible : Visibility.Collapsed;
     private Visibility GetTab1Visibility(int tabIndex) => tabIndex == 1 ? Visibility.Visible : Visibility.Collapsed;
@@ -191,6 +206,19 @@ public sealed partial class PurchaseOrderPage : Page
         {
             await ViewModel.ExportExcelAsync(fullOrder);
         }
+        else if (dialog.ResultAction == PurchaseOrderDetailAction.Edit)
+        {
+            await ViewModel.BeginEditOrderAsync(fullOrder);
+        }
+    }
+
+    private async void EditOrderRowButton_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            await ViewModel.BeginEditOrderAsync(order);
+        }
     }
 
     private void StockInButton_Click(object sender, RoutedEventArgs e)
@@ -217,6 +245,24 @@ public sealed partial class PurchaseOrderPage : Page
         if (order != null)
         {
             ViewModel.ExportExcelCommand.Execute(order);
+        }
+    }
+
+    private async void ExportSystemExcelFlyoutItem_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            await ViewModel.ExportExcelWithTypeAsync(order, PurchaseOrderExportType.SystemImport);
+        }
+    }
+
+    private async void ExportVendorExcelFlyoutItem_Click(object sender, RoutedEventArgs e)
+    {
+        var order = GetOrderFromSender(sender);
+        if (order != null)
+        {
+            await ViewModel.ExportExcelWithTypeAsync(order, PurchaseOrderExportType.VendorSimple);
         }
     }
 

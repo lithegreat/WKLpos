@@ -1,0 +1,98 @@
+<ContentDialog
+    x:Class="WanKePos.WinUI.Dialogs.PurchaseOrderExportChoiceDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="选择 Excel 导出格式"
+    CloseButtonText="取消"
+    DefaultButton="None">
+
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">580</x:Double>
+    </ContentDialog.Resources>
+
+    <Grid Width="500" RowSpacing="12" Margin="0,8,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" 
+                   Text="请根据使用场景选择适合的 Excel 导出格式：" 
+                   Style="{ThemeResource BodyTextBlockStyle}" 
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+
+        <!-- 选项 1：系统批量收货模板 (导入另一系统) -->
+        <Button Grid.Row="1" 
+                Click="SystemImportButton_Click"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                Padding="16,14"
+                CornerRadius="8"
+                BorderThickness="1">
+            <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" 
+                        Width="42" Height="42" 
+                        CornerRadius="8" 
+                        Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                        VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xEDE1;" FontSize="20" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                    <TextBlock Text="系统收货模板 (导入另一系统)" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="保留 25 列完整字段（含条码、分类、规格、进价等），格式严格匹配京东/商城批量收货规范。" 
+                               Style="{ThemeResource CaptionTextBlockStyle}" 
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <FontIcon Grid.Column="2" Glyph="&#xE76C;" FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center"/>
+            </Grid>
+        </Button>
+
+        <!-- 选项 2：厂家进货清单 (发给供货厂家) -->
+        <Button Grid.Row="2" 
+                Click="VendorSimpleButton_Click"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                Padding="16,14"
+                CornerRadius="8"
+                BorderThickness="1">
+            <Grid ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" 
+                        Width="42" Height="42" 
+                        CornerRadius="8" 
+                        Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
+                        VerticalAlignment="Center">
+                    <FontIcon Glyph="&#xE8F1;" FontSize="20" Foreground="{ThemeResource PriceHighlightBrush}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Border>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                    <TextBlock Text="厂家进货清单 (发给供货厂家)" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text="仅保留【商品名称】和【采购数量】两列，去除多余商业与系统数据，清爽直观，适合直接发给厂家备货。" 
+                               Style="{ThemeResource CaptionTextBlockStyle}" 
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" 
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <FontIcon Grid.Column="2" Glyph="&#xE76C;" FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center"/>
+            </Grid>
+        </Button>
+    </Grid>
+</ContentDialog>

@@ -5,12 +5,11 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="采购收货单导出成功"
+    Title="采购单导出成功"
     PrimaryButtonText="打开文件夹及网页"
     SecondaryButtonText="仅打开文件夹"
     CloseButtonText="稍后处理"
     DefaultButton="Primary"
-    MaxWidth="640"
     PrimaryButtonClick="ContentDialog_PrimaryButtonClick"
     SecondaryButtonClick="ContentDialog_SecondaryButtonClick">
 
@@ -18,7 +17,7 @@
         <x:Double x:Key="ContentDialogMaxWidth">640</x:Double>
     </ContentDialog.Resources>
 
-    <StackPanel Spacing="16" Margin="0,8,0,4">
+    <StackPanel Width="580" Spacing="16" Margin="0,8,0,4">
         <!-- 成功状态提示行 -->
         <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" 
                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" 
@@ -28,7 +27,7 @@
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <FontIcon Glyph="&#xE73E;" FontSize="22" Foreground="{ThemeResource SystemFillColorSuccessBrush}" VerticalAlignment="Center"/>
                 <StackPanel Spacing="2" VerticalAlignment="Center">
-                    <TextBlock Text="收货单 Excel 文件已生成并保存！" FontWeight="SemiBold" FontSize="14"/>
+                    <TextBlock x:Name="SuccessTitleTextBlock" Text="Excel 文件已生成并保存！" FontWeight="SemiBold" FontSize="14"/>
                     <TextBlock Text="文件未自动弹出，您可根据需要手动点击下方按钮打开。" 
                                Style="{ThemeResource CaptionTextBlockStyle}" 
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -111,7 +110,7 @@
                             <TextBlock Text="定位文件夹" FontSize="11"/>
                         </StackPanel>
                     </Button>
-                    <Button Click="OpenBrowserOnlyButton_Click" Height="30" Padding="10,0">
+                    <Button x:Name="OpenBrowserOnlyButton" Click="OpenBrowserOnlyButton_Click" Height="30" Padding="10,0">
                         <StackPanel Orientation="Horizontal" Spacing="5">
                             <FontIcon Glyph="&#xE774;" FontSize="11"/>
                             <TextBlock Text="打开店铺后台" FontSize="11"/>
@@ -121,8 +120,8 @@
             </Grid>
         </Border>
 
-        <!-- 后续操作步骤指引 -->
-        <StackPanel Spacing="4" Margin="2,0,0,0">
+        <!-- 后续操作步骤指引 (系统收货模式显示) -->
+        <StackPanel x:Name="ReceivingInstructionsPanel" Spacing="4" Margin="2,0,0,0">
             <TextBlock Text="后续批量收货操作指引：" FontSize="12" FontWeight="SemiBold" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
             <TextBlock Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" LineHeight="18">
                 1. 点击下方【打开文件夹及网页】；<LineBreak/>

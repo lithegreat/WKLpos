@@ -3,12 +3,13 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using WanKePos.Domain.Entities;
+using WanKePos.Domain.Enums;
 using WanKePos.Domain.Interfaces;
 
 namespace WanKePos.Infrastructure.Export;
 
 /// <summary>
-/// 采购订单 Excel 导出服务 (基于 zggj_门店商品-批量收货.xlsx 模板)
+/// 采购订单 Excel 导出服务 (支持系统批量收货模板与厂家进货清单双模式)
 /// </summary>
 public class PurchaseOrderExporter
 {
@@ -48,7 +49,7 @@ public class PurchaseOrderExporter
     /// <summary>
     /// 生成符合人类可读性且时间前置（便于 Windows 资源管理器按名称降序排序时最新文件排在最上方）的建议导出文件名
     /// </summary>
-    public static string GenerateDefaultFileName(PurchaseOrder order)
+    public static string GenerateDefaultFileName(PurchaseOrder order, PurchaseOrderExportType exportType = PurchaseOrderExportType.SystemImport)
     {
         var supplier = !string.IsNullOrWhiteSpace(order.Supplier)
             ? SanitizeFileName(order.Supplier)
@@ -59,7 +60,8 @@ public class PurchaseOrderExporter
             ? SanitizeFileName(order.PurchaseOrderNo)
             : DateTime.Now.ToString("yyyyMMddHHmmss");
 
-        return $"{timeStr}_采购单_{supplier}_{orderNo}.xlsx";
+        var typeTag = exportType == PurchaseOrderExportType.VendorSimple ? "采购清单(厂家)" : "采购单";
+        return $"{timeStr}_{typeTag}_{supplier}_{orderNo}.xlsx";
     }
 
     /// <summary>
@@ -76,7 +78,11 @@ public class PurchaseOrderExporter
         return name.Trim();
     }
 
-    public async Task<string> ExportToExcelAsync(PurchaseOrder order, StoreSettings? storeSettings, string? targetFilePath = null)
+    public async Task<string> ExportToExcelAsync(
+        PurchaseOrder order, 
+        StoreSettings? storeSettings, 
+        string? targetFilePath = null,
+        PurchaseOrderExportType exportType = PurchaseOrderExportType.SystemImport)
     {
         // 若传入的采购单缺少商品明细（例如从摘要列表传入），自动从仓储重新加载完整明细
         if ((order.Items == null || order.Items.Count == 0) && _purchaseRepo != null && order.Id > 0)
@@ -90,7 +96,7 @@ public class PurchaseOrderExporter
 
         if (string.IsNullOrWhiteSpace(targetFilePath))
         {
-            var fileName = GenerateDefaultFileName(order);
+            var fileName = GenerateDefaultFileName(order, exportType);
             targetFilePath = Path.Combine(DefaultExportDirectory, fileName);
         }
 
@@ -123,6 +129,14 @@ public class PurchaseOrderExporter
                 Directory.CreateDirectory(dir);
             }
 
+            if (exportType == PurchaseOrderExportType.VendorSimple)
+            {
+                // 模式二：给厂家，只保留商品名称和数量
+                ExportVendorSimpleToExcel(order, targetFilePath);
+                return;
+            }
+
+            // 模式一：系统批量收货模板
             var templatePath = ResolveTemplatePath();
             if (!string.IsNullOrEmpty(templatePath) && File.Exists(templatePath))
             {
@@ -159,6 +173,67 @@ public class PurchaseOrderExporter
         });
 
         return targetFilePath;
+    }
+
+    /// <summary>
+    /// 导出给厂家专用的简明进货清单：仅包含商品名称与采购数量两列
+    /// </summary>
+    private static void ExportVendorSimpleToExcel(PurchaseOrder order, string targetFilePath)
+    {
+        using var workbook = new XLWorkbook();
+        var ws = workbook.Worksheets.Add("采购清单");
+
+        // 表头设置
+        ws.Cell(1, 1).SetValue("商品名称");
+        ws.Cell(1, 2).SetValue("采购数量");
+
+        var headerRow = ws.Row(1);
+        headerRow.Height = 28;
+        headerRow.Style.Font.Bold = true;
+        headerRow.Style.Font.FontSize = 11;
+        headerRow.Style.Fill.BackgroundColor = XLColor.FromHtml("#F1F5F9");
+        headerRow.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+        headerRow.Style.Border.BottomBorder = XLBorderStyleValues.Medium;
+        headerRow.Style.Border.BottomBorderColor = XLColor.FromHtml("#94A3B8");
+
+        int r = 2;
+        if (order.Items != null)
+        {
+            foreach (var item in order.Items)
+            {
+                var name = !string.IsNullOrWhiteSpace(item.ProductName)
+                    ? item.ProductName
+                    : (item.Product?.Name ?? string.Empty);
+
+                var nameCell = ws.Cell(r, 1);
+                nameCell.SetValue(name);
+                nameCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                var qtyCell = ws.Cell(r, 2);
+                qtyCell.SetValue(item.Quantity);
+                qtyCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Right;
+                qtyCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                qtyCell.Style.NumberFormat.Format = item.Quantity % 1 == 0 ? "#,##0" : "#,##0.##";
+
+                ws.Row(r).Height = 24;
+
+                ws.Cell(r, 1).Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                ws.Cell(r, 1).Style.Border.BottomBorderColor = XLColor.FromHtml("#E2E8F0");
+                ws.Cell(r, 2).Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+                ws.Cell(r, 2).Style.Border.BottomBorderColor = XLColor.FromHtml("#E2E8F0");
+
+                r++;
+            }
+        }
+
+        // 自适应列宽，并设置人性化最小保底宽度
+        ws.Column(1).AdjustToContents();
+        if (ws.Column(1).Width < 30) ws.Column(1).Width = 30;
+
+        ws.Column(2).AdjustToContents();
+        if (ws.Column(2).Width < 14) ws.Column(2).Width = 14;
+
+        workbook.SaveAs(targetFilePath);
     }
 
     private static void FillOrderData(IXLWorksheet ws, PurchaseOrder order)

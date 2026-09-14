@@ -59,6 +59,21 @@ public partial class PurchaseOrderViewModel : ObservableObject
     [ObservableProperty]
     private string _cartTitle = "待制采购单";
 
+    /// <summary>
+    /// 是否正在修改已存在的采购单
+    /// </summary>
+    [ObservableProperty]
+    private bool _isEditingOrder;
+
+    [ObservableProperty]
+    private int? _editingOrderId;
+
+    [ObservableProperty]
+    private string? _editingOrderNo;
+
+    [ObservableProperty]
+    private string _editingBannerText = string.Empty;
+
     [ObservableProperty]
     private PurchaseOrder? _selectedOrder;
 
@@ -84,7 +99,8 @@ public partial class PurchaseOrderViewModel : ObservableObject
     public Func<string, string, Task<bool>>? RequestConfirm { get; set; }
     public Func<string, string, Task<string?>>? RequestSaveFileDialog { get; set; }
     public Func<Task<AiPurchaseOrderDto?>>? RequestAiImportDialog { get; set; }
-    public Func<string, PurchaseOrder, Task>? RequestExportSuccessDialog { get; set; }
+    public Func<Task<PurchaseOrderExportType?>>? RequestExportTypeDialog { get; set; }
+    public Func<string, PurchaseOrder, PurchaseOrderExportType, Task>? RequestExportSuccessDialog { get; set; }
 
     [ObservableProperty]
     private string? _lastExportedFilePath;
@@ -309,9 +325,17 @@ public partial class PurchaseOrderViewModel : ObservableObject
     {
         DraftTotalQuantity = CartItems.Sum(i => i.Quantity);
         DraftTotalAmount = CartItems.Sum(i => i.Subtotal);
-        CartTitle = CartItems.Count > 0
-            ? $"📋 待制采购单 ({CartItems.Count} 种 / {DraftTotalQuantity:0.##} 件)"
-            : "📋 待制采购单";
+
+        if (IsEditingOrder)
+        {
+            CartTitle = $"✏️ 修改采购单: {EditingOrderNo} ({CartItems.Count} 种 / {DraftTotalQuantity:0.##} 件)";
+        }
+        else
+        {
+            CartTitle = CartItems.Count > 0
+                ? $"📋 待制采购单 ({CartItems.Count} 种 / {DraftTotalQuantity:0.##} 件)"
+                : "📋 待制采购单";
+        }
     }
 
     [RelayCommand]
@@ -320,12 +344,165 @@ public partial class PurchaseOrderViewModel : ObservableObject
         CartItems.Clear();
         SupplierInput = string.Empty;
         RemarkInput = string.Empty;
+        IsEditingOrder = false;
+        EditingOrderId = null;
+        EditingOrderNo = null;
+        EditingBannerText = string.Empty;
         RecalculateDraftTotals();
+    }
+
+    /// <summary>
+    /// 开始编辑已有未入库采购单 (载入数据到工作台)
+    /// </summary>
+    [RelayCommand]
+    public async Task BeginEditOrderAsync(PurchaseOrder order)
+    {
+        if (order == null) return;
+        if (order.Status == PurchaseOrderStatus.Received)
+        {
+            ShowMessage?.Invoke("提示", "已入库的采购单已被锁定，不允许修改。");
+            return;
+        }
+        if (order.Status == PurchaseOrderStatus.Cancelled)
+        {
+            ShowMessage?.Invoke("提示", "已作废的采购单无法修改。");
+            return;
+        }
+
+        // 确保拉取完整明细项
+        var fullOrder = await GetOrderDetailsAsync(order.Id);
+        if (fullOrder == null)
+        {
+            fullOrder = order;
+        }
+
+        if (CartItems.Count > 0 && !IsEditingOrder && RequestConfirm != null)
+        {
+            var proceed = await RequestConfirm.Invoke("提示", "待制采购单中已有商品，载入修改将清空当前待制单内容，是否继续？");
+            if (!proceed) return;
+        }
+
+        IsEditingOrder = true;
+        EditingOrderId = fullOrder.Id;
+        EditingOrderNo = fullOrder.PurchaseOrderNo;
+        EditingBannerText = $"正在修改未入库采购单【{fullOrder.PurchaseOrderNo}】";
+
+        SupplierInput = fullOrder.Supplier ?? string.Empty;
+        RemarkInput = fullOrder.Remark ?? string.Empty;
+
+        CartItems.Clear();
+        if (fullOrder.Items != null)
+        {
+            foreach (var item in fullOrder.Items)
+            {
+                CartItems.Add(new PurchaseCartItem
+                {
+                    ProductId = item.ProductId,
+                    Barcode = item.Barcode,
+                    ProductName = item.ProductName,
+                    Specification = item.Specification,
+                    SaleUnit = item.SaleUnit,
+                    CostPrice = item.CostPrice,
+                    Quantity = item.Quantity,
+                    OnItemChanged = RecalculateDraftTotals
+                });
+            }
+        }
+
+        RecalculateDraftTotals();
+        SelectedTabIndex = 1; // 切换到制单工作台
+    }
+
+    /// <summary>
+    /// 保存对未入库采购单的修改
+    /// </summary>
+    [RelayCommand]
+    public async Task SaveOrderEditAsync()
+    {
+        if (!IsEditingOrder || !EditingOrderId.HasValue)
+        {
+            ShowMessage?.Invoke("提示", "当前并非处于采购单修改模式。");
+            return;
+        }
+
+        if (CartItems.Count == 0)
+        {
+            ShowMessage?.Invoke("提示", "采购单商品明细不能为空！");
+            return;
+        }
+
+        foreach (var item in CartItems)
+        {
+            if (item.Quantity <= 0)
+            {
+                ShowMessage?.Invoke("提示", $"商品【{item.ProductName}】采购数量必须大于0！");
+                return;
+            }
+            if (item.CostPrice < 0)
+            {
+                ShowMessage?.Invoke("提示", $"商品【{item.ProductName}】采购进价不能为负数！");
+                return;
+            }
+        }
+
+        RecalculateDraftTotals();
+
+        var order = new PurchaseOrder
+        {
+            Id = EditingOrderId.Value,
+            PurchaseOrderNo = EditingOrderNo ?? string.Empty,
+            Supplier = SupplierInput?.Trim(),
+            Remark = RemarkInput?.Trim(),
+            TotalItemsCount = CartItems.Count,
+            TotalQuantity = CartItems.Sum(i => i.Quantity),
+            TotalAmount = CartItems.Sum(i => i.Subtotal),
+            Items = CartItems.Select(i => new PurchaseOrderItem
+            {
+                PurchaseOrderId = EditingOrderId.Value,
+                ProductId = i.ProductId,
+                Barcode = i.Barcode,
+                ProductName = i.ProductName,
+                Specification = i.Specification,
+                SaleUnit = i.SaleUnit,
+                CostPrice = i.CostPrice,
+                Quantity = i.Quantity,
+                Subtotal = i.Subtotal
+            }).ToList()
+        };
+
+        var success = await _purchaseRepo.UpdateAsync(order);
+        if (success)
+        {
+            ShowMessage?.Invoke("修改成功", $"采购单【{EditingOrderNo}】修改已成功保存！");
+            ClearDraft();
+            await LoadOrdersAsync();
+            SelectedTabIndex = 0; // 自动返回列表
+        }
+        else
+        {
+            ShowMessage?.Invoke("修改失败", "保存修改失败，该单据可能已被入库或删除。");
+        }
+    }
+
+    /// <summary>
+    /// 取消当前采购单修改模式
+    /// </summary>
+    [RelayCommand]
+    public void CancelOrderEdit()
+    {
+        ClearDraft();
+        SelectedTabIndex = 0;
     }
 
     [RelayCommand]
     public async Task CreatePurchaseOrderAsync()
     {
+        if (IsEditingOrder)
+        {
+            await SaveOrderEditAsync();
+            return;
+        }
+
         if (CartItems.Count == 0)
         {
             ShowMessage?.Invoke("提示", "请先从左侧商品库添加需要采购的商品！");
@@ -421,6 +598,11 @@ public partial class PurchaseOrderViewModel : ObservableObject
     [RelayCommand]
     public async Task ExportExcelAsync(PurchaseOrder order)
     {
+        await ExportExcelWithTypeAsync(order, null);
+    }
+
+    public async Task ExportExcelWithTypeAsync(PurchaseOrder order, PurchaseOrderExportType? exportType)
+    {
         if (order == null) return;
 
         try
@@ -441,7 +623,22 @@ public partial class PurchaseOrderViewModel : ObservableObject
                 return;
             }
 
-            var defaultFileName = PurchaseOrderExporter.GenerateDefaultFileName(order);
+            // 若调用方未显式传入导出类型，则弹窗供用户选择
+            if (!exportType.HasValue)
+            {
+                if (RequestExportTypeDialog != null)
+                {
+                    var chosen = await RequestExportTypeDialog.Invoke();
+                    if (!chosen.HasValue) return; // 用户取消选择
+                    exportType = chosen.Value;
+                }
+                else
+                {
+                    exportType = PurchaseOrderExportType.SystemImport;
+                }
+            }
+
+            var defaultFileName = PurchaseOrderExporter.GenerateDefaultFileName(order, exportType.Value);
             var defaultFolder = PurchaseOrderExporter.DefaultExportDirectory;
             string? savePath = null;
 
@@ -452,34 +649,31 @@ public partial class PurchaseOrderViewModel : ObservableObject
             }
 
             var settings = await _settingsRepo.GetSettingsAsync();
-            var exportedPath = await _exporter.ExportToExcelAsync(order, settings, savePath);
+            var exportedPath = await _exporter.ExportToExcelAsync(order, settings, savePath, exportType.Value);
 
             // 记录导出信息与状态
             _orderExportedPaths[order.PurchaseOrderNo] = exportedPath;
             LastExportedFilePath = exportedPath;
             LastExportedOrderNo = order.PurchaseOrderNo;
             HasExportedOrder = true;
-            ExportSuccessBarMessage = $"采购单【{order.PurchaseOrderNo}】Excel 导出成功！保存路径：{exportedPath}";
+
+            var typeTitle = exportType.Value == PurchaseOrderExportType.VendorSimple ? "厂家进货清单" : "系统收货单";
+            ExportSuccessBarMessage = $"采购单【{order.PurchaseOrderNo}】{typeTitle} Excel 导出成功！保存路径：{exportedPath}";
 
             // 复制文件路径到系统剪贴板，方便随时粘贴
             CopyPathToClipboard(exportedPath);
 
-            // 弹出提示或专用对话框（提供手动打开文件夹与浏览器按钮，绝不自动弹出干扰用户）
+            // 弹出专用对话框
             if (RequestExportSuccessDialog != null)
             {
-                await RequestExportSuccessDialog.Invoke(exportedPath, order);
+                await RequestExportSuccessDialog.Invoke(exportedPath, order, exportType.Value);
             }
             else
             {
                 ShowMessage?.Invoke("导出成功",
-                    $"采购收货单已生成并保存在【我的文档\\采购单】！\n\n" +
+                    $"{typeTitle}已生成并保存在【我的文档\\采购单】！\n\n" +
                     $"文件路径：\n{exportedPath}\n\n" +
-                    $"📋 文件路径已自动复制到剪贴板！\n" +
-                    $"💡 系统未自动弹出窗口，您可随时点击操作按钮打开文件夹与店铺后台。\n\n" +
-                    $"【后续操作指引】：\n" +
-                    $"1. 点击【打开文件夹及网页】；\n" +
-                    $"2. 在打开的京东网页右上角点击【批量操作】->【批量收货】；\n" +
-                    $"3. 点击【点击选择Excel文件】，直接按 Ctrl+V 粘贴文件路径（或拖入文件）即可完成批量收货！");
+                    $"📋 文件路径已自动复制到剪贴板！");
             }
         }
         catch (Exception ex)

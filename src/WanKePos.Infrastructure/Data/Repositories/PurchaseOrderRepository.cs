@@ -131,6 +131,51 @@ public class PurchaseOrderRepository : IPurchaseOrderRepository
         return true;
     }
 
+    public async Task<bool> UpdateAsync(PurchaseOrder order)
+    {
+        var existing = await _dbContext.PurchaseOrders
+            .Include(po => po.Items)
+            .FirstOrDefaultAsync(po => po.Id == order.Id);
+
+        if (existing == null || existing.Status == PurchaseOrderStatus.Received)
+        {
+            return false;
+        }
+
+        existing.Supplier = order.Supplier;
+        existing.Remark = order.Remark;
+
+        // 移除原有明细子项并重新录入修改后的明细
+        _dbContext.PurchaseOrderItems.RemoveRange(existing.Items);
+        existing.Items.Clear();
+
+        if (order.Items != null && order.Items.Count > 0)
+        {
+            foreach (var item in order.Items)
+            {
+                existing.Items.Add(new PurchaseOrderItem
+                {
+                    PurchaseOrderId = existing.Id,
+                    ProductId = item.ProductId,
+                    Barcode = item.Barcode,
+                    ProductName = item.ProductName,
+                    Specification = item.Specification,
+                    SaleUnit = item.SaleUnit,
+                    CostPrice = item.CostPrice,
+                    Quantity = item.Quantity,
+                    Subtotal = item.Subtotal
+                });
+            }
+        }
+
+        existing.TotalItemsCount = existing.Items.Count;
+        existing.TotalQuantity = existing.Items.Sum(i => i.Quantity);
+        existing.TotalAmount = existing.Items.Sum(i => i.Subtotal);
+
+        await _dbContext.SaveChangesAsync();
+        return true;
+    }
+
     public async Task DeleteAsync(int purchaseOrderId)
     {
         var order = await _dbContext.PurchaseOrders
