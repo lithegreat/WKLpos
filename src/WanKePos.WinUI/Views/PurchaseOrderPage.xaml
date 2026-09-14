@@ -159,7 +159,7 @@
                         <ColumnDefinition Width="75"/>
                         <ColumnDefinition Width="90"/>
                         <ColumnDefinition Width="75"/>
-                        <ColumnDefinition Width="320"/>
+                        <ColumnDefinition Width="370"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="采购单号" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBlock Grid.Column="1" Text="供货商" Style="{ThemeResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
@@ -204,7 +204,7 @@
                                     <ColumnDefinition Width="75"/>
                                     <ColumnDefinition Width="90"/>
                                     <ColumnDefinition Width="75"/>
-                                    <ColumnDefinition Width="320"/>
+                                    <ColumnDefinition Width="370"/>
                                 </Grid.ColumnDefinitions>
                                 
                                 <TextBlock Grid.Column="0" Text="{Binding PurchaseOrderNo}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
@@ -227,7 +227,7 @@
                                 </Border>
 
                                 <!-- 操作按钮组 (根据状态智能显隐) -->
-                                <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <StackPanel Grid.Column="7" Orientation="Horizontal" Spacing="5" VerticalAlignment="Center" HorizontalAlignment="Center">
                                     <!-- 查看详情：常驻可见 -->
                                     <Button Click="ViewOrderDetailButton_Click"
                                             Height="30" 
@@ -236,6 +236,18 @@
                                         <StackPanel Orientation="Horizontal" Spacing="4">
                                             <FontIcon Glyph="&#xE7B3;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
                                             <TextBlock Text="详情" FontSize="12" FontWeight="SemiBold"/>
+                                        </StackPanel>
+                                    </Button>
+
+                                    <!-- 修改：仅 Draft 状态可见 -->
+                                    <Button Click="EditOrderRowButton_Click"
+                                            Height="30" 
+                                            Padding="8,0"
+                                            ToolTipService.ToolTip="修改此未入库采购单"
+                                            Visibility="{Binding Status, Converter={StaticResource PurchaseOrderStatusConverter}, ConverterParameter=DraftOnly}">
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <FontIcon Glyph="&#xE70F;" FontSize="11" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                            <TextBlock Text="修改" FontSize="12" FontWeight="SemiBold"/>
                                         </StackPanel>
                                     </Button>
 
@@ -262,9 +274,14 @@
                                         </StackPanel>
                                         <SplitButton.Flyout>
                                             <MenuFlyout Placement="BottomEdgeAlignedRight">
-                                                <MenuFlyoutItem Text="导出 Excel 文件" Tag="{Binding}" Click="ExportExcelFlyoutItem_Click">
+                                                <MenuFlyoutItem Text="导出系统收货单 (导入另一系统)" Tag="{Binding}" Click="ExportSystemExcelFlyoutItem_Click">
                                                     <MenuFlyoutItem.Icon>
                                                         <FontIcon Glyph="&#xEDE1;"/>
+                                                    </MenuFlyoutItem.Icon>
+                                                </MenuFlyoutItem>
+                                                <MenuFlyoutItem Text="导出厂家采购单 (仅品名与数量)" Tag="{Binding}" Click="ExportVendorExcelFlyoutItem_Click">
+                                                    <MenuFlyoutItem.Icon>
+                                                        <FontIcon Glyph="&#xE8F1;"/>
                                                     </MenuFlyoutItem.Icon>
                                                 </MenuFlyoutItem>
                                                 <MenuFlyoutSeparator/>
@@ -628,10 +645,34 @@
 
                     <!-- 顶部标题与表头录入 -->
                     <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,10">
+                        <!-- 采购单修改模式指示横幅 -->
+                        <Border Visibility="{x:Bind ViewModel.IsEditingOrder, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE70F;" FontSize="13" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
+                                    <TextBlock Text="{x:Bind ViewModel.EditingBannerText, Mode=OneWay}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button Grid.Column="1" 
+                                        Command="{Binding CancelOrderEditCommand}" 
+                                        Height="26" Padding="8,0" FontSize="11" CornerRadius="4">
+                                    <TextBlock Text="取消修改"/>
+                                </Button>
+                            </Grid>
+                        </Border>
+
                         <Grid>
                             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE8F1;" FontSize="15" Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"/>
-                                <TextBlock Text="待制采购单" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Text="{x:Bind ViewModel.CartTitle, Mode=OneWay}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                 <Border Background="{ThemeResource AccentFillColorDefaultBrush}" 
                                         CornerRadius="10" 
                                         Padding="6,1" 
@@ -851,7 +892,7 @@
                                     FontWeight="SemiBold">
                                 <StackPanel Orientation="Horizontal" Spacing="6">
                                     <FontIcon Glyph="&#xE74E;" FontSize="13"/>
-                                    <TextBlock Text="生成采购单" FontSize="13"/>
+                                    <TextBlock Text="{x:Bind GetCreateOrSaveButtonText(ViewModel.IsEditingOrder), Mode=OneWay}" FontSize="13"/>
                                 </StackPanel>
                             </Button>
                         </Grid>

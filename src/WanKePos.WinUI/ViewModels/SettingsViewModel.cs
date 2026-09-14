@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
@@ -421,6 +421,6 @@ public partial class SettingsViewModel : ObservableObject
             }
         }
         catch { }
-        return "0.2.2-beta";
+        return "0.2.3";
     }
 }

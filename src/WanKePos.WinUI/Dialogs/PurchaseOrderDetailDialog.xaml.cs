@@ -15,7 +15,8 @@ public enum PurchaseOrderDetailAction
 {
     None,
     StockIn,
-    ExportExcel
+    ExportExcel,
+    Edit
 }
 
 public sealed partial class PurchaseOrderDetailDialog : ContentDialog
@@ -40,6 +41,9 @@ public sealed partial class PurchaseOrderDetailDialog : ContentDialog
             ? _order.ReceivedAt.Value.ToString("yyyy-MM-dd HH:mm:ss") 
             : "未入库 (待货到入库)";
         RemarkTextBlock.Text = !string.IsNullOrWhiteSpace(_order.Remark) ? _order.Remark : "无备注";
+
+        // 仅待入库单据允许修改
+        EditOrderButton.Visibility = _order.Status == PurchaseOrderStatus.Draft ? Visibility.Visible : Visibility.Collapsed;
 
         // 状态徽章样式与文本设置
         var statusConverter = new PurchaseOrderStatusConverter();
@@ -100,6 +104,12 @@ public sealed partial class PurchaseOrderDetailDialog : ContentDialog
         {
             icon.Glyph = "\uE73E"; // 勾选成功对勾
         }
+    }
+
+    private void EditOrderButton_Click(object sender, RoutedEventArgs e)
+    {
+        ResultAction = PurchaseOrderDetailAction.Edit;
+        this.Hide();
     }
 
     private void ContentDialog_PrimaryButtonClick(ContentDialog sender, ContentDialogButtonClickEventArgs args)
