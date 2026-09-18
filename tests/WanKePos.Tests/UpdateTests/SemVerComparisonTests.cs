@@ -26,6 +26,13 @@ public class SemVerComparisonTests
     [InlineData("0.2.2-pre1", "0.2.2-pre2", true)]
     [InlineData("0.2.2-pre2", "0.2.2-pre1", false)]
     [InlineData("0.2.2-preview1", "0.2.2-preview2", true)]
+    // 4段数字版本 (如 0.2.3 vs 0.2.3.1)
+    [InlineData("0.2.3", "0.2.3.1", true)]
+    [InlineData("0.2.3.1", "0.2.3", false)]
+    [InlineData("0.2.3.1", "0.2.3.2", true)]
+    [InlineData("0.2.3.1", "0.2.4", true)]
+    [InlineData("v0.2.3", "v0.2.3.1", true)]
+    [InlineData("v0.2.3.1", "v0.2.3", false)]
     public void IsNewerVersion_ShouldCorrectlyCompareVersions(string current, string remote, bool expected)
     {
         var result = UpdateService.IsNewerVersion(current, remote);

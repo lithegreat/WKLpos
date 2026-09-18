@@ -1,5 +1,5 @@
 ﻿param(
-    [string]$Version = "0.2.3",
+    [string]$Version = "0.2.3.1",
     $RunInstaller = $true,
     [ValidateSet("FrameworkDependent", "SelfContained", "Both")]
     [string]$PackageMode = "FrameworkDependent",
@@ -13,14 +13,14 @@ $RunInstaller = [System.Convert]::ToBoolean($RunInstaller)
 # 规范化版本号 (移除前导 v 或 V)
 $cleanVersion = $Version.TrimStart('v', 'V')
 if ([string]::IsNullOrWhiteSpace($cleanVersion)) {
-    $cleanVersion = "0.2.3"
+    $cleanVersion = "0.2.3.1"
 }
 
-# 提取纯数字版本用于 Windows 文件与程序集属性 (如 0.2.0 -> 0.2.0.0)
+# 提取纯数字版本用于 Windows 文件与程序集属性 (如 0.2.0 -> 0.2.0.0 或 0.2.3.1 -> 0.2.3.1)
 $rawNumeric = ($cleanVersion -split '-')[0]
 $parts = $rawNumeric -split '\.'
-while ($parts.Length -lt 3) { $parts += "0" }
-$numericVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
+while ($parts.Length -lt 4) { $parts += "0" }
+$numericVersion = "$($parts[0]).$($parts[1]).$($parts[2]).$($parts[3])"
 
 # 根据打包速度档位设置 Inno Setup 压缩级别
 $compressionLevel = switch ($Speed) {
