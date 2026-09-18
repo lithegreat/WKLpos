@@ -877,7 +877,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
             RemarkInput = $"AI拍照识别单据 ({DateTime.Now:yyyy-MM-dd HH:mm})";
         }
 
-        // 2. 匹配已有商品库或自动为新商品建档
+        // 2. 匹配已有商品库（未匹配商品不自动建档，跳过并提示用户手动建档）
         var allProducts = (await _productRepo.GetAllAsync()).ToList();
         var barcodeDict = allProducts
             .Where(p => !string.IsNullOrWhiteSpace(p.Barcode))
@@ -887,7 +887,7 @@ public partial class PurchaseOrderViewModel : ObservableObject
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
         int matchedCount = 0;
-        int newProductCount = 0;
+        var unmatchedItems = new List<string>();
 
         foreach (var item in dto.Items)
         {
@@ -918,36 +918,9 @@ public partial class PurchaseOrderViewModel : ObservableObject
 
             if (targetProduct == null)
             {
-                // 本地库未找到该商品：自动在商品库中建档预存，分配条码
-                var newBarcode = !string.IsNullOrWhiteSpace(item.Barcode)
-                    ? item.Barcode
-                    : $"AI{DateTime.Now:yyMMddHHmmss}{Random.Shared.Next(100, 999)}";
-
-                var newProduct = new Product
-                {
-                    Barcode = newBarcode,
-                    Name = item.Name,
-                    Specification = item.Specification,
-                    SaleUnit = string.IsNullOrWhiteSpace(item.SaleUnit) ? "件" : item.SaleUnit,
-                    CostPrice = item.CostPrice,
-                    RetailPrice = item.CostPrice > 0 ? Math.Round(item.CostPrice * 1.35m, 2) : 0,
-                    Stock = 0,
-                    StoreCategory = "其他",
-                    Supplier = dto.Supplier,
-                    SaleMethod = "按件",
-                    ProductType = "标品",
-                    CreatedAt = DateTime.UtcNow,
-                    LastModified = DateTime.UtcNow
-                };
-
-                await _productRepo.AddOrUpdateAsync(newProduct);
-                targetProduct = await _productRepo.GetByBarcodeAsync(newBarcode) ?? newProduct;
-
-                // 注册到本地字典防止同单内重复项二次创建
-                barcodeDict[targetProduct.Barcode] = targetProduct;
-                nameDict[targetProduct.Name] = targetProduct;
-                allProducts.Add(targetProduct);
-                newProductCount++;
+                // 本地商品库未匹配到该商品，跳过（不自动建档，由用户手动在商品管理中添加）
+                unmatchedItems.Add(item.Name);
+                continue;
             }
 
             // 进价决策：如果目标商品在商品库中有真实进价（>0），优先沿用商品库内的真实进价；
@@ -987,19 +960,22 @@ public partial class PurchaseOrderViewModel : ObservableObject
         // 切换到【制作采购单】工作台（快速制作与待制采购单同屏显示）
         SelectedTabIndex = 1;
 
-        if (newProductCount > 0)
-        {
-            await LoadCategoriesAsync();
-            await RefreshAvailableProductsAsync();
-            WeakReferenceMessenger.Default.Send(new ProductsChangedMessage());
-        }
+        var importedCount = matchedCount;
+        var unmatchedInfo = unmatchedItems.Count > 0
+            ? $"• 未匹配商品 (已跳过): {unmatchedItems.Count} 个\n" +
+              $"  → {string.Join("、", unmatchedItems.Take(10))}" +
+              (unmatchedItems.Count > 10 ? $" 等共 {unmatchedItems.Count} 个" : "") + "\n"
+            : "";
 
-        ShowMessage?.Invoke("AI 单据导入成功",
-            $"已成功导入 {dto.Items.Count} 项采购商品！\n" +
+        ShowMessage?.Invoke(unmatchedItems.Count > 0 ? "AI 单据导入完成（部分商品未匹配）" : "AI 单据导入成功",
+            $"已成功导入 {importedCount} / {dto.Items.Count} 项采购商品！\n" +
             $"• 库中已匹配商品: {matchedCount} 个\n" +
-            $"• 自动建档新商品: {newProductCount} 个\n" +
+            unmatchedInfo +
             $"• 当前采购总件数: {DraftTotalQuantity:0.##} 件\n" +
             $"• 当前采购总金额: ¥{DraftTotalAmount:F2}\n\n" +
+            (unmatchedItems.Count > 0
+                ? "⚠️ 未匹配的商品请先在【商品管理】中手动建档，然后重新导入即可自动匹配。\n\n"
+                : "") +
             "明细已载入待制采购单工作台，请核实数量及进价后点击【💾 生成采购单】。");
     }
 }

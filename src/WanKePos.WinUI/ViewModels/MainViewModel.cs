@@ -130,11 +130,15 @@ namespace WanKePos.WinUI.ViewModels
                 var ver = Assembly.GetExecutingAssembly().GetName().Version;
                 if (ver != null && !(ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
                 {
+                    if (ver.Revision > 0)
+                    {
+                        return $"v{ver.Major}.{ver.Minor}.{ver.Build}.{ver.Revision}";
+                    }
                     return ver.Build >= 0 ? $"v{ver.Major}.{ver.Minor}.{ver.Build}" : $"v{ver.Major}.{ver.Minor}.0";
                 }
             }
             catch { }
-            return "v0.2.3";
+            return "v0.2.3.1";
         }
     }
 }

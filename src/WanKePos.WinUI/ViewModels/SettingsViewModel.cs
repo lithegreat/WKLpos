@@ -417,10 +417,14 @@ public partial class SettingsViewModel : ObservableObject
             var ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
             if (ver != null && !(ver.Major == 0 && ver.Minor == 0 && ver.Build == 0))
             {
+                if (ver.Revision > 0)
+                {
+                    return $"{ver.Major}.{ver.Minor}.{ver.Build}.{ver.Revision}";
+                }
                 return ver.Build >= 0 ? $"{ver.Major}.{ver.Minor}.{ver.Build}" : $"{ver.Major}.{ver.Minor}.0";
             }
         }
         catch { }
-        return "0.2.3";
+        return "0.2.3.1";
     }
 }

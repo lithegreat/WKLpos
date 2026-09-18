@@ -28,8 +28,8 @@ Write-Host "==========================================" -ForegroundColor Cyan
 # 1. 规范化与校验版本号
 $cleanVersion = $Version.Trim().TrimStart('v', 'V')
 $cleanVersion = $cleanVersion -replace '\s+', '-'
-if ($cleanVersion -notmatch '^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$') {
-    Write-Host "错误: 版本号格式不合法! 请使用标准语义化版本 (如 0.2.1 或 0.2.2-beta)。当前输入: $Version" -ForegroundColor Red
+if ($cleanVersion -notmatch '^\d+\.\d+\.\d+(\.\d+)?(-[a-zA-Z0-9.]+)?$') {
+    Write-Host "错误: 版本号格式不合法! 请使用标准语义化版本 (如 0.2.1 或 0.2.2-beta 或 0.2.3.1)。当前输入: $Version" -ForegroundColor Red
     exit 1
 }
 $isPrerelease = $cleanVersion -match "(pre|beta|alpha|rc)"
@@ -37,8 +37,8 @@ $tag = "v$cleanVersion"
 
 $rawNumeric = ($cleanVersion -split '-')[0]
 $parts = $rawNumeric -split '\.'
-while ($parts.Length -lt 3) { $parts += "0" }
-$numericVersion = "$($parts[0]).$($parts[1]).$($parts[2]).0"
+while ($parts.Length -lt 4) { $parts += "0" }
+$numericVersion = "$($parts[0]).$($parts[1]).$($parts[2]).$($parts[3])"
 
 if ([string]::IsNullOrWhiteSpace($Title)) {
     $typeLabel = if ($isPrerelease) { " (预览版 Pre-Release)" } else { "" }
@@ -165,7 +165,7 @@ if (Test-Path $readmePath) {
 $mainVmPath = Join-Path $rootDir "src\WanKePos.WinUI\ViewModels\MainViewModel.cs"
 if (Test-Path $mainVmPath) {
     $mainVm = [System.IO.File]::ReadAllText($mainVmPath, [System.Text.Encoding]::UTF8)
-    $mainVm = [System.Text.RegularExpressions.Regex]::Replace($mainVm, 'return "v\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?";', "return `"$tag`";")
+    $mainVm = [System.Text.RegularExpressions.Regex]::Replace($mainVm, 'return "v\d+\.\d+\.\d+(\.\d+)?(-[a-zA-Z0-9.]+)?";', "return `"$tag`";")
     [System.IO.File]::WriteAllText($mainVmPath, $mainVm, [System.Text.Encoding]::UTF8)
     Write-Host "  -> 已更新: $mainVmPath" -ForegroundColor Gray
 }
@@ -174,7 +174,7 @@ if (Test-Path $mainVmPath) {
 $settingsVmPath = Join-Path $rootDir "src\WanKePos.WinUI\ViewModels\SettingsViewModel.cs"
 if (Test-Path $settingsVmPath) {
     $settingsVm = [System.IO.File]::ReadAllText($settingsVmPath, [System.Text.Encoding]::UTF8)
-    $settingsVm = [System.Text.RegularExpressions.Regex]::Replace($settingsVm, 'return "\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?";', "return `"$cleanVersion`";")
+    $settingsVm = [System.Text.RegularExpressions.Regex]::Replace($settingsVm, 'return "\d+\.\d+\.\d+(\.\d+)?(-[a-zA-Z0-9.]+)?";', "return `"$cleanVersion`";")
     [System.IO.File]::WriteAllText($settingsVmPath, $settingsVm, [System.Text.Encoding]::UTF8)
     Write-Host "  -> 已更新: $settingsVmPath" -ForegroundColor Gray
 }

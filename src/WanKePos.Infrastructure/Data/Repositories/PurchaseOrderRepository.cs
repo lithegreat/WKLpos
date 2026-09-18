@@ -39,6 +39,7 @@ public class PurchaseOrderRepository : IPurchaseOrderRepository
     public async Task<List<PurchaseOrder>> GetAllAsync()
     {
         return await _dbContext.PurchaseOrders
+            .AsNoTracking()
             .Include(po => po.Items)
                 .ThenInclude(poi => poi.Product)
             .OrderByDescending(po => po.CreatedAt)
